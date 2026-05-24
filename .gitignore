@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+dist
+*.tsbuildinfo
+*.log
+.env
+.env.local
+.env.*.local
+wahaj-netlify-source
+wahaj-netlify-source.zip
+wahaj-full-netlify-upload
+wahaj-full-netlify-upload.zip
+
+# Local Netlify folder
+.netlify
