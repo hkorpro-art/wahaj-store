@@ -933,7 +933,8 @@ function ProductsManager({
 }) {
   const [form, setForm] = useState<ProductFormState>(emptyProductForm);
   const [message, setMessage] = useState("");
-  const [dropLabel, setDropLabel] = useState("اسحبي الصور هنا لمراجعة الملفات، ثم ضعي روابط Cloudinary في الحقل.");
+  const [dropLabel, setDropLabel] = useState("ارفعي الصور من الزر أو بالسحب، وسيتم إضافة روابط Cloudinary تلقائياً.");
+  const [uploading, setUploading] = useState(false);
 
   function submitProduct() {
     const parsedPrice = Number(form.price);
@@ -982,11 +983,46 @@ function ProductsManager({
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     const files = Array.from(event.dataTransfer.files);
-    setDropLabel(
-      files.length > 0
-        ? `${files.length.toLocaleString("ar-YE")} ملف جاهز للمراجعة. الرفع الفعلي يحتاج مفاتيح Cloudinary.`
-        : "اسحبي الصور هنا لمراجعة الملفات، ثم ضعي روابط Cloudinary في الحقل."
-    );
+    void uploadFiles(files);
+  }
+
+  async function uploadFiles(files: File[]) {
+    if (files.length === 0) {
+      return;
+    }
+
+    setUploading(true);
+    setMessage("");
+    setDropLabel(`جاري رفع ${files.length.toLocaleString("ar-YE")} صورة...`);
+
+    try {
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+
+      const response = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !Array.isArray(payload?.urls)) {
+        throw new Error(payload?.message || "تعذر رفع الصور.");
+      }
+
+      const existing = splitList(form.images);
+      const merged = [...existing, ...payload.urls].filter(Boolean);
+      const unique = Array.from(new Set(merged)).slice(0, 8);
+
+      setForm((current) => ({ ...current, images: unique.join("\n") }));
+      setDropLabel(`تم رفع ${payload.urls.length.toLocaleString("ar-YE")} صورة بنجاح.`);
+      setMessage("تم رفع الصور وإضافتها تلقائياً في حقل روابط الصور.");
+    } catch (error) {
+      const uploadMessage = error instanceof Error ? error.message : "تعذر رفع الصور الآن.";
+      setMessage(uploadMessage);
+      setDropLabel("فشل رفع الصور. تحققي من مفاتيح Cloudinary ثم أعيدي المحاولة.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -1125,6 +1161,22 @@ function ProductsManager({
               <input className="AdminInput" type="date" value={form.discountEndsAt} onChange={(event) => setForm({ ...form, discountEndsAt: event.target.value })} title="نهاية الخصم" />
             </div>
             <textarea className="AdminInput min-h-24 py-3" value={form.images} onChange={(event) => setForm({ ...form, images: event.target.value })} placeholder="روابط الصور، كل رابط في سطر" />
+            <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-wahaj-border bg-white px-4 text-sm font-bold text-wahaj-rose">
+              <UploadCloud className="h-5 w-5" />
+              {uploading ? "جاري الرفع..." : "اختيار صور من الجهاز"}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/avif"
+                multiple
+                className="hidden"
+                disabled={uploading}
+                onChange={(event) => {
+                  const files = Array.from(event.target.files || []);
+                  void uploadFiles(files);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </label>
             <textarea className="AdminInput min-h-24 py-3" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="الوصف الفاخر" />
             <input className="AdminInput" value={form.material} onChange={(event) => setForm({ ...form, material: event.target.value })} placeholder="الخامة" />
             <div className="grid grid-cols-2 gap-2">
