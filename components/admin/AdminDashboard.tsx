@@ -893,6 +893,76 @@ function emptyProductForm(): ProductFormState {
   };
 }
 
+type ImageKitAuthParameters = {
+  expire: number;
+  signature: string;
+  token: string;
+};
+
+type ImageKitUploadResponse = {
+  message?: string;
+  url?: string;
+};
+
+const PRODUCT_IMAGE_MAX_FILE_SIZE = 7 * 1024 * 1024;
+const PRODUCT_IMAGE_ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+
+async function getImageKitAuthParameters() {
+  const response = await fetch("/api/imagekit-auth", { cache: "no-store" });
+  const payload = (await response.json().catch(() => null)) as (ImageKitAuthParameters & { message?: string }) | null;
+
+  if (!response.ok || !payload?.signature || !payload?.token || !payload?.expire) {
+    throw new Error(payload?.message || "تعذر جلب بيانات مصادقة ImageKit.");
+  }
+
+  return payload;
+}
+
+function createProductImageFileName(fileName: string) {
+  const cleaned = fileName.replace(/[^\w.-]+/g, "-").replace(/-+/g, "-");
+  return `${Date.now()}-${cleaned || "wahaj-product-image"}`;
+}
+
+async function uploadProductImageToImageKit(file: File) {
+  if (!PRODUCT_IMAGE_ALLOWED_TYPES.has(file.type)) {
+    throw new Error(`نوع ملف غير مدعوم: ${file.name}`);
+  }
+
+  if (file.size > PRODUCT_IMAGE_MAX_FILE_SIZE) {
+    throw new Error(`حجم الملف كبير جداً: ${file.name}`);
+  }
+
+  const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY;
+
+  if (!publicKey) {
+    throw new Error("قيمة NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY غير متوفرة.");
+  }
+
+  const auth = await getImageKitAuthParameters();
+  const formData = new FormData();
+
+  formData.append("file", file);
+  formData.append("fileName", createProductImageFileName(file.name));
+  formData.append("publicKey", publicKey);
+  formData.append("signature", auth.signature);
+  formData.append("expire", String(auth.expire));
+  formData.append("token", auth.token);
+  formData.append("folder", "/wahaj/products");
+  formData.append("useUniqueFileName", "true");
+
+  const response = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+    method: "POST",
+    body: formData
+  });
+  const payload = (await response.json().catch(() => null)) as ImageKitUploadResponse | null;
+
+  if (!response.ok || !payload?.url) {
+    throw new Error(payload?.message || `تعذر رفع الصورة: ${file.name}`);
+  }
+
+  return payload.url;
+}
+
 function productToForm(product: ManagedProduct): ProductFormState {
   return {
     id: product.id,
@@ -933,7 +1003,7 @@ function ProductsManager({
 }) {
   const [form, setForm] = useState<ProductFormState>(emptyProductForm);
   const [message, setMessage] = useState("");
-  const [dropLabel, setDropLabel] = useState("ارفعي الصور من الزر أو بالسحب، وسيتم إضافة روابط Cloudinary تلقائياً.");
+  const [dropLabel, setDropLabel] = useState("ارفعي الصور من الزر أو بالسحب، وسيتم إضافة روابط ImageKit تلقائياً.");
   const [uploading, setUploading] = useState(false);
 
   function submitProduct() {
@@ -993,33 +1063,25 @@ function ProductsManager({
 
     setUploading(true);
     setMessage("");
-    setDropLabel(`جاري رفع ${files.length.toLocaleString("ar-YE")} صورة...`);
+    setDropLabel(`Uploading ${files.length.toLocaleString("ar-YE")} image(s)...`);
 
     try {
-      const formData = new FormData();
-      files.forEach((file) => formData.append("files", file));
-
-      const response = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: formData
-      });
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok || !Array.isArray(payload?.urls)) {
-        throw new Error(payload?.message || "تعذر رفع الصور.");
+      if (files.length > 8) {
+        throw new Error("Maximum 8 images are allowed per upload.");
       }
 
+      const urls = await Promise.all(files.map((file) => uploadProductImageToImageKit(file)));
       const existing = splitList(form.images);
-      const merged = [...existing, ...payload.urls].filter(Boolean);
+      const merged = [...existing, ...urls].filter(Boolean);
       const unique = Array.from(new Set(merged)).slice(0, 8);
 
       setForm((current) => ({ ...current, images: unique.join("\n") }));
-      setDropLabel(`تم رفع ${payload.urls.length.toLocaleString("ar-YE")} صورة بنجاح.`);
-      setMessage("تم رفع الصور وإضافتها تلقائياً في حقل روابط الصور.");
+      setDropLabel(`Uploaded ${urls.length.toLocaleString("ar-YE")} image(s) to ImageKit.`);
+      setMessage("Image URLs were added to the product form successfully.");
     } catch (error) {
-      const uploadMessage = error instanceof Error ? error.message : "تعذر رفع الصور الآن.";
+      const uploadMessage = error instanceof Error ? error.message : "Unable to upload images right now.";
       setMessage(uploadMessage);
-      setDropLabel("فشل رفع الصور. تحققي من مفاتيح Cloudinary ثم أعيدي المحاولة.");
+      setDropLabel("Upload failed. Please verify the ImageKit settings and try again.");
     } finally {
       setUploading(false);
     }
@@ -1761,7 +1823,7 @@ function ContentManager({
             ["الطلبات والعملاء", "فعلي محليًا"],
             ["البنرات والستوري", "متصل بالواجهة"],
             ["Supabase / Firebase", "جاهز للربط عند إضافة المفاتيح"],
-            ["Cloudinary", "يحتاج مفاتيح الرفع للإنتاج"]
+            ["ImageKit", "Enabled for direct product image uploads"]
           ].map(([label, value]) => (
             <div key={label} className="flex items-center justify-between rounded-[8px] bg-wahaj-card px-3 py-2 text-sm font-bold">
               {label}

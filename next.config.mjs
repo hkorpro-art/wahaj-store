@@ -8,7 +8,7 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "res.cloudinary.com"
+        hostname: "ik.imagekit.io"
       }
     ],
     formats: ["image/avif", "image/webp"]
