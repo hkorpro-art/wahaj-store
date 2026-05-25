@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import ProductDetailClient from "@/components/storefront/ProductDetailClient";
 import { products } from "@/lib/data";
+import { imageUrl } from "@/lib/imagekit";
 import { getManagedProducts } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +36,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     openGraph: {
       title: `${product.name} | WAHAJ`,
       description: product.description,
-      images: [product.images[0]]
+      images: [imageUrl(product.images[0], { width: 1200 })]
     }
   };
 }

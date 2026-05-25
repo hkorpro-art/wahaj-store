@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ManagedProduct } from "@/lib/admin-local";
 import { formatPrice } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
+import { imageUrl } from "@/lib/imagekit";
 import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
 import { buildSingleProductMessage, whatsappUrl } from "@/lib/whatsapp";
 
@@ -30,7 +31,9 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
   const [product, setProduct] = useState<ManagedProduct | null>(initialProduct);
   const [similarProducts, setSimilarProducts] = useState<ManagedProduct[]>(initialSimilarProducts);
   const [liveResolved, setLiveResolved] = useState(!isFirebaseClientConfigured || !db);
-  const [selectedImage, setSelectedImage] = useState(initialProduct?.images[0] ?? "");
+  const [selectedImage, setSelectedImage] = useState(
+    initialProduct?.images[0] ? imageUrl(initialProduct.images[0], { width: 1200 }) : ""
+  );
   const [fullscreen, setFullscreen] = useState(false);
   const [color, setColor] = useState(initialProduct?.colors[0] ?? "");
   const [size, setSize] = useState(initialProduct?.sizes[0] ?? "");
@@ -87,7 +90,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       return;
     }
 
-    setSelectedImage(product.images[0] ?? "");
+    setSelectedImage(product.images[0] ? imageUrl(product.images[0], { width: 1200 }) : "");
     setColor(product.colors[0] ?? "");
     setSize(product.sizes[0] ?? "");
   }, [product]);
@@ -187,17 +190,22 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           </motion.div>
 
           <div className="mt-3 flex gap-3 overflow-x-auto pb-1 hide-scrollbar">
-            {product.images.map((image) => (
-              <button
-                key={image}
-                onClick={() => setSelectedImage(image)}
-                className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-[8px] border ${
-                  selectedImage === image ? "border-wahaj-rose shadow-glow" : "border-wahaj-border"
-                }`}
-              >
-                <Image src={image} alt={product.name} fill sizes="80px" className="object-cover" />
-              </button>
-            ))}
+            {product.images.map((image) => {
+              const thumbSrc = imageUrl(image, { width: 160, height: 160 });
+              const isSelected = selectedImage === thumbSrc || selectedImage === imageUrl(image, { width: 1200 });
+
+              return (
+                <button
+                  key={image.url}
+                  onClick={() => setSelectedImage(imageUrl(image, { width: 1200 }))}
+                  className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-[8px] border ${
+                    isSelected ? "border-wahaj-rose shadow-glow" : "border-wahaj-border"
+                  }`}
+                >
+                  <Image src={thumbSrc} alt={product.name} fill sizes="80px" className="object-cover" />
+                </button>
+              );
+            })}
           </div>
         </section>
 
@@ -345,7 +353,13 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
                 className="overflow-hidden rounded-[8px] border border-wahaj-border bg-white/76 shadow-soft"
               >
                 <div className="relative aspect-[4/5]">
-                  <Image src={item.images[0]} alt={item.name} fill sizes="220px" className="object-cover" />
+                  <Image
+                    src={imageUrl(item.images[0], { width: 440, height: 550 })}
+                    alt={item.name}
+                    fill
+                    sizes="220px"
+                    className="object-cover"
+                  />
                 </div>
                 <div className="p-3">
                   <p className="line-clamp-2 min-h-10 text-sm font-bold text-wahaj-ink">{item.name}</p>

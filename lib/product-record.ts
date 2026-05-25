@@ -1,4 +1,5 @@
 import type { ManagedProduct } from "./admin-local";
+import { parseStoredImages } from "./imagekit";
 
 export const FIRESTORE_PRODUCTS_COLLECTION = "production_products";
 
@@ -7,7 +8,7 @@ type ProductRow = Record<string, unknown>;
 export function rowToManagedProduct(row: ProductRow): ManagedProduct | null {
   const id = stringValue(row.id);
   const name = stringValue(row.name);
-  const imageList = arrayValue(row.images);
+  const imageList = parseStoredImages(row.images);
 
   if (!id || !name || imageList.length === 0) {
     return null;

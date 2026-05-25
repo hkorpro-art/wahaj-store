@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot } from "firebase/firestore";
 import {
   BadgePlus,
   Boxes,
@@ -33,6 +33,7 @@ import {
 } from "@/lib/admin-local";
 import { categories, formatPrice, products, stories } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
+import { imageUrl, MENU_ICON_IDS, parseStoredImage, type MenuIconId, type MenuIconsRecord } from "@/lib/imagekit";
 import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
 import { buildCartMessage, buildSingleProductMessage, whatsappUrl } from "@/lib/whatsapp";
 import type { CartItem, Category, Product } from "@/lib/types";
@@ -101,6 +102,7 @@ export default function WahajStorefront() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeStory, setActiveStory] = useState<ManagedStory | null>(null);
   const [storyFilter, setStoryFilter] = useState<StoryFilter>("all");
+  const [menuIcons, setMenuIcons] = useState<MenuIconsRecord>({});
 
   useEffect(() => {
     const timer = window.setTimeout(() => setSplash(false), 1450);
@@ -159,6 +161,52 @@ export default function WahajStorefront() {
       void loadStoreProducts();
     }
 
+    async function loadMenuIcons() {
+      try {
+        const response = await fetch(`/api/store-menu-icons?refresh=${Date.now()}`, { cache: "no-store" });
+        const payload = (await response.json().catch(() => null)) as { icons?: MenuIconsRecord } | null;
+
+        if (active && response.ok) {
+          setMenuIcons(payload?.icons || {});
+        }
+      } catch {
+        if (active) {
+          setMenuIcons({});
+        }
+      }
+    }
+
+    const unsubscribeMenuIcons =
+      db && isFirebaseClientConfigured
+        ? onSnapshot(
+            doc(db, "store_settings", "menu_icons"),
+            (snapshot) => {
+              if (!active) {
+                return;
+              }
+
+              const data = snapshot.data() as Record<string, unknown> | undefined;
+              const icons: MenuIconsRecord = {};
+
+              for (const id of MENU_ICON_IDS) {
+                const parsed = parseStoredImage(data?.[id]);
+                if (parsed) {
+                  icons[id] = parsed;
+                }
+              }
+
+              setMenuIcons(icons);
+            },
+            () => {
+              void loadMenuIcons();
+            }
+          )
+        : null;
+
+    if (!unsubscribeMenuIcons) {
+      void loadMenuIcons();
+    }
+
     try {
       const savedContent = window.localStorage.getItem(adminStorageKeys.content);
       const savedStories = window.localStorage.getItem(adminStorageKeys.stories);
@@ -178,8 +226,22 @@ export default function WahajStorefront() {
     return () => {
       active = false;
       unsubscribeProducts?.();
+      unsubscribeMenuIcons?.();
     };
   }, []);
+
+  const displayStories = useMemo(() => {
+    return storeStories.map((story) => {
+      const iconId = (story.target || story.id) as MenuIconId;
+      const icon = menuIcons[iconId];
+
+      if (icon) {
+        return { ...story, image: imageUrl(icon, { width: 128, height: 128 }) };
+      }
+
+      return { ...story, image: imageUrl(story.image, { width: 128, height: 128 }) };
+    });
+  }, [storeStories, menuIcons]);
 
   const filteredProducts = useMemo(() => {
     return storeProducts.filter((product) => {
@@ -298,7 +360,7 @@ export default function WahajStorefront() {
       <OfferBar offers={siteContent.offerMessages} />
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
-        <StoriesRail stories={storeStories.filter((story) => story.visible !== false)} activeStoryId={storyFilter} onOpen={handleStorySelect} />
+        <StoriesRail stories={displayStories.filter((story) => story.visible !== false)} activeStoryId={storyFilter} onOpen={handleStorySelect} />
         <HeroSection content={siteContent} />
         <CategoryRail activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
 
@@ -360,7 +422,13 @@ export default function WahajStorefront() {
                     className="glass min-w-40 rounded-[8px] p-2"
                   >
                     <div className="relative aspect-[4/5] overflow-hidden rounded-[8px]">
-                      <Image src={product.images[0]} alt={product.name} fill sizes="160px" className="object-cover" />
+                      <Image
+                        src={imageUrl(product.images[0], { width: 320, height: 400 })}
+                        alt={product.name}
+                        fill
+                        sizes="160px"
+                        className="object-cover"
+                      />
                     </div>
                     <p className="mt-2 line-clamp-2 text-sm font-bold">{product.name}</p>
                     <p className="text-sm text-wahaj-rose">{formatPrice(product.price)}</p>
@@ -726,7 +794,7 @@ function ProductCard({ product, isInspired, priority, onCart, onInspiration }: P
       <div className="relative">
         <Link href={productHref} className="relative block aspect-[4/5] overflow-hidden bg-wahaj-card">
           <Image
-            src={product.images[0]}
+            src={imageUrl(product.images[0], { width: 640, height: 800 })}
             alt={product.name}
             fill
             priority={priority}
@@ -942,7 +1010,13 @@ function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }:
                 items.map((item) => (
                   <div key={item.product.id} className="flex gap-3 rounded-[8px] border border-wahaj-border bg-white/78 p-2">
                     <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-[8px]">
-                      <Image src={item.product.images[0]} alt={item.product.name} fill sizes="80px" className="object-cover" />
+                      <Image
+                        src={imageUrl(item.product.images[0], { width: 160, height: 160 })}
+                        alt={item.product.name}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                      />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="line-clamp-2 font-bold text-wahaj-ink">{item.product.name}</p>

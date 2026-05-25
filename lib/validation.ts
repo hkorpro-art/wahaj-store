@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { InventoryStatus, ProductBadge, ProductStatus } from "./types";
 
+const storedImageSchema = z.object({
+  url: z.string().url(),
+  fileId: z.string()
+});
+
 export const productInputSchema = z.object({
   id: z.string().min(1).max(120),
   slug: z.string().min(1).max(160),
@@ -17,7 +22,7 @@ export const productInputSchema = z.object({
   tags: z.array(z.string().min(1)).max(12).default([]),
   stock: z.number().int().min(0),
   inventoryStatus: z.custom<InventoryStatus>((value) => typeof value === "string"),
-  images: z.array(z.string().url()).min(1).max(8),
+  images: z.array(storedImageSchema).min(1).max(8),
   colors: z.array(z.string()).default([]),
   sizes: z.array(z.string()).default([]),
   views: z.number().int().min(0).default(0),

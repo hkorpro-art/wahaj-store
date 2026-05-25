@@ -60,6 +60,15 @@ import {
   type StoryTarget
 } from "@/lib/admin-local";
 import { analytics, categories, coupons as seedCoupons, formatPrice, orders as seedOrders, products as seedProducts, stories as seedStories } from "@/lib/data";
+import {
+  imageUrl,
+  MENU_ICON_IDS,
+  storeImage,
+  type ImageKitFolder,
+  type MenuIconId,
+  type MenuIconsRecord,
+  type StoredImage
+} from "@/lib/imagekit";
 import type { Order, OrderStatus, ProductBadge, ProductStatus } from "@/lib/types";
 
 const tabs = [
@@ -863,7 +872,7 @@ type ProductFormState = {
   description: string;
   material: string;
   stock: string;
-  images: string;
+  images: StoredImage[];
   colors: string;
   sizes: string;
   tags: string;
@@ -882,7 +891,7 @@ function emptyProductForm(): ProductFormState {
     description: "",
     material: "زركون فاخر مع طلاء Rose Gold مقاوم للبهتان",
     stock: "10",
-    images: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1100&q=85",
+    images: [storeImage("https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1100&q=85")],
     colors: "روز قولد، فضي، ذهبي ناعم",
     sizes: "قابل للتعديل، S، M",
     tags: "وهاج، زركون، جديد",
@@ -902,6 +911,7 @@ type ImageKitAuthParameters = {
 type ImageKitUploadResponse = {
   message?: string;
   url?: string;
+  fileId?: string;
 };
 
 const PRODUCT_IMAGE_MAX_FILE_SIZE = 7 * 1024 * 1024;
@@ -923,7 +933,7 @@ function createProductImageFileName(fileName: string) {
   return `${Date.now()}-${cleaned || "wahaj-product-image"}`;
 }
 
-async function uploadProductImageToImageKit(file: File) {
+async function uploadImageToImageKit(file: File, folder: ImageKitFolder): Promise<StoredImage> {
   if (!PRODUCT_IMAGE_ALLOWED_TYPES.has(file.type)) {
     throw new Error(`نوع ملف غير مدعوم: ${file.name}`);
   }
@@ -947,7 +957,7 @@ async function uploadProductImageToImageKit(file: File) {
   formData.append("signature", auth.signature);
   formData.append("expire", String(auth.expire));
   formData.append("token", auth.token);
-  formData.append("folder", "/wahaj/products");
+  formData.append("folder", folder);
   formData.append("useUniqueFileName", "true");
 
   const response = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
@@ -960,7 +970,268 @@ async function uploadProductImageToImageKit(file: File) {
     throw new Error(payload?.message || `تعذر رفع الصورة: ${file.name}`);
   }
 
-  return payload.url;
+  return storeImage(payload.url, payload.fileId || "");
+}
+
+async function deleteImageFromImageKit(fileId: string) {
+  if (!fileId) {
+    return;
+  }
+
+  const response = await fetch("/api/imagekit-delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fileId })
+  });
+  const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+
+  if (!response.ok) {
+    throw new Error(payload?.message || "تعذر حذف الصورة من ImageKit.");
+  }
+}
+
+const menuIconLabels: Record<MenuIconId, string> = {
+  new: "جديد",
+  offers: "عروض",
+  trend: "ترند",
+  sets: "أطقم"
+};
+
+function ProductImagesEditor({
+  images,
+  uploading,
+  dropLabel,
+  onChange,
+  onUploadFiles
+}: {
+  images: StoredImage[];
+  uploading: boolean;
+  dropLabel: string;
+  onChange: (images: StoredImage[]) => void;
+  onUploadFiles: (files: File[]) => void;
+}) {
+  async function removeImage(index: number) {
+    const target = images[index];
+    if (!target) {
+      return;
+    }
+
+    try {
+      await deleteImageFromImageKit(target.fileId);
+      onChange(images.filter((_, itemIndex) => itemIndex !== index));
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "تعذر حذف الصورة.");
+    }
+  }
+
+  function moveImage(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= images.length) {
+      return;
+    }
+
+    const next = [...images];
+    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    onChange(next);
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    onUploadFiles(Array.from(event.dataTransfer.files));
+  }
+
+  return (
+    <div className="space-y-3">
+      {images.length > 0 ? (
+        <div className="grid grid-cols-2 gap-2">
+          {images.map((image, index) => (
+            <div key={`${image.url}-${index}`} className="relative overflow-hidden rounded-[8px] border border-wahaj-border bg-white">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageUrl(image)} alt="" className="aspect-square w-full object-cover" />
+              <span className="absolute right-2 top-2 rounded-full bg-wahaj-ink/72 px-2 py-0.5 text-xs font-bold text-white">
+                {index + 1}
+              </span>
+              <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 bg-wahaj-ink/55 p-1">
+                <button
+                  type="button"
+                  onClick={() => moveImage(index, -1)}
+                  disabled={index === 0}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-wahaj-rose disabled:opacity-40"
+                  aria-label="تحريك الصورة للأعلى"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveImage(index, 1)}
+                  disabled={index === images.length - 1}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-wahaj-rose disabled:opacity-40"
+                  aria-label="تحريك الصورة للأسفل"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void removeImage(index)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600"
+                  aria-label="حذف الصورة"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="rounded-[8px] border border-dashed border-wahaj-border bg-wahaj-bg px-3 py-4 text-center text-sm text-wahaj-text/65">
+          لم تُرفع صور بعد. الصورة الأولى هي صورة الغلاف في المتجر.
+        </p>
+      )}
+
+      <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-wahaj-border bg-white px-4 text-sm font-bold text-wahaj-rose">
+        <UploadCloud className="h-5 w-5" />
+        {uploading ? "جاري الرفع..." : "اختيار صور من الجهاز"}
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/avif"
+          multiple
+          className="hidden"
+          disabled={uploading}
+          onChange={(event) => {
+            onUploadFiles(Array.from(event.target.files || []));
+            event.currentTarget.value = "";
+          }}
+        />
+      </label>
+
+      <div
+        onDrop={handleDrop}
+        onDragOver={(event) => event.preventDefault()}
+        className="grid min-h-28 place-items-center rounded-[8px] border border-dashed border-wahaj-rose bg-wahaj-soft/45 p-4 text-center"
+      >
+        <div>
+          <UploadCloud className="mx-auto h-7 w-7 text-wahaj-rose" />
+          <p className="mt-2 text-sm font-bold">{dropLabel}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MenuIconsManager() {
+  const [icons, setIcons] = useState<MenuIconsRecord>({});
+  const [uploadingId, setUploadingId] = useState<MenuIconId | null>(null);
+  const [message, setMessage] = useState("");
+  const [syncLabel, setSyncLabel] = useState("جاري التحميل...");
+
+  useEffect(() => {
+    void loadIcons();
+  }, []);
+
+  async function loadIcons() {
+    try {
+      const response = await fetch(`/api/store-menu-icons?refresh=${Date.now()}`, { cache: "no-store" });
+      const payload = (await response.json().catch(() => null)) as { icons?: MenuIconsRecord; source?: string } | null;
+
+      if (!response.ok) {
+        throw new Error("تعذر تحميل أيقونات القوائم.");
+      }
+
+      setIcons(payload?.icons || {});
+      setSyncLabel(payload?.source === "firebase" ? "متصل بـ Firestore" : "افتراضي");
+    } catch (error) {
+      setSyncLabel("تعذر الاتصال");
+      setMessage(error instanceof Error ? error.message : "تعذر تحميل الأيقونات.");
+    }
+  }
+
+  async function persistIcons(next: MenuIconsRecord) {
+    const response = await fetch("/api/store-menu-icons", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ icons: next })
+    });
+    const payload = (await response.json().catch(() => null)) as { message?: string; saved?: boolean } | null;
+
+    if (!response.ok) {
+      throw new Error(payload?.message || "تعذر حفظ الأيقونات.");
+    }
+
+    setIcons(next);
+    setSyncLabel(payload?.saved ? "متصل بـ Firestore" : "محلي");
+    setMessage(payload?.message || "تم حفظ الأيقونات.");
+  }
+
+  async function uploadIcon(id: MenuIconId, file: File) {
+    setUploadingId(id);
+    setMessage("");
+
+    try {
+      const uploaded = await uploadImageToImageKit(file, "/categories");
+      const previous = icons[id];
+
+      if (previous?.fileId) {
+        try {
+          await deleteImageFromImageKit(previous.fileId);
+        } catch {
+          // Keep going even if old asset cleanup fails.
+        }
+      }
+
+      await persistIcons({ ...icons, [id]: uploaded });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "تعذر رفع الأيقونة.");
+    } finally {
+      setUploadingId(null);
+    }
+  }
+
+  return (
+    <Panel title="أيقونات القوائم الرئيسية" icon={ImageIcon}>
+      <p className="mb-3 text-sm leading-6 text-wahaj-text/70">
+        ارفعي أيقونة لكل قائمة (جديد، عروض، ترند، أطقم). التغييرات تُحفظ في Firestore وتظهر فورًا في الصفحة الرئيسية.
+      </p>
+      <div className="mb-3 rounded-full bg-wahaj-card px-3 py-1 text-xs font-bold text-wahaj-rose">{syncLabel}</div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {MENU_ICON_IDS.map((id) => {
+          const icon = icons[id];
+
+          return (
+            <div key={id} className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
+              <p className="font-bold text-wahaj-ink">{menuIconLabels[id]}</p>
+              <div className="mt-2 flex items-center gap-3">
+                <span className="relative flex h-16 w-16 shrink-0 overflow-hidden rounded-full border border-wahaj-border bg-white">
+                  {icon ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={imageUrl(icon, { width: 128, height: 128 })} alt={menuIconLabels[id]} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="m-auto text-xs text-wahaj-text/45">بدون صورة</span>
+                  )}
+                </span>
+                <label className="inline-flex min-h-10 cursor-pointer items-center justify-center rounded-full border border-wahaj-border bg-white px-3 text-xs font-bold text-wahaj-rose">
+                  {uploadingId === id ? "جاري الرفع..." : "رفع أيقونة"}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/avif"
+                    className="hidden"
+                    disabled={uploadingId !== null}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        void uploadIcon(id, file);
+                      }
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {message ? <p className="mt-3 rounded-[8px] bg-wahaj-card p-3 text-sm font-bold text-wahaj-ink">{message}</p> : null}
+    </Panel>
+  );
 }
 
 function productToForm(product: ManagedProduct): ProductFormState {
@@ -973,7 +1244,7 @@ function productToForm(product: ManagedProduct): ProductFormState {
     description: product.description,
     material: product.material,
     stock: product.stock.toString(),
-    images: product.images.join("\n"),
+    images: [...product.images],
     colors: product.colors.join("، "),
     sizes: product.sizes.join("، "),
     tags: product.tags.join("، "),
@@ -1010,10 +1281,10 @@ function ProductsManager({
     const parsedPrice = Number(form.price);
     const parsedCompareAt = form.compareAt ? Number(form.compareAt) : undefined;
     const parsedStock = Number(form.stock);
-    const images = splitList(form.images);
+    const images = form.images.slice(0, 8);
 
     if (!form.name.trim() || !Number.isFinite(parsedPrice) || parsedPrice <= 0 || images.length === 0) {
-      setMessage("اكتبي اسم المنتج، السعر، ورابط صورة واحد على الأقل.");
+      setMessage("اكتبي اسم المنتج، السعر، وارفعي صورة واحدة على الأقل.");
       return;
     }
 
@@ -1050,12 +1321,6 @@ function ProductsManager({
     setMessage("تم حفظ المنتج بنجاح.");
   }
 
-  function handleDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    const files = Array.from(event.dataTransfer.files);
-    void uploadFiles(files);
-  }
-
   async function uploadFiles(files: File[]) {
     if (files.length === 0) {
       return;
@@ -1070,14 +1335,15 @@ function ProductsManager({
         throw new Error("Maximum 8 images are allowed per upload.");
       }
 
-      const urls = await Promise.all(files.map((file) => uploadProductImageToImageKit(file)));
-      const existing = splitList(form.images);
-      const merged = [...existing, ...urls].filter(Boolean);
-      const unique = Array.from(new Set(merged)).slice(0, 8);
+      const uploaded = await Promise.all(files.map((file) => uploadImageToImageKit(file, "/products")));
+      const merged = [...form.images, ...uploaded];
+      const unique = merged.filter(
+        (image, index, list) => list.findIndex((item) => item.url === image.url) === index
+      ).slice(0, 8);
 
-      setForm((current) => ({ ...current, images: unique.join("\n") }));
-      setDropLabel(`Uploaded ${urls.length.toLocaleString("ar-YE")} image(s) to ImageKit.`);
-      setMessage("Image URLs were added to the product form successfully.");
+      setForm((current) => ({ ...current, images: unique }));
+      setDropLabel(`تم رفع ${uploaded.length.toLocaleString("ar-YE")} صورة إلى ImageKit.`);
+      setMessage("تمت إضافة الصور إلى المنتج بنجاح.");
     } catch (error) {
       const uploadMessage = error instanceof Error ? error.message : "Unable to upload images right now.";
       setMessage(uploadMessage);
@@ -1110,7 +1376,7 @@ function ProductsManager({
                     <div className="flex items-center gap-3">
                       <span className="flex h-12 w-12 overflow-hidden rounded-[8px] bg-wahaj-card">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
+                        <img src={imageUrl(product.images[0])} alt="" className="h-full w-full object-cover" />
                       </span>
                       <div>
                         <p className="font-bold text-wahaj-ink">{product.name}</p>
@@ -1222,23 +1488,13 @@ function ProductsManager({
               <input className="AdminInput" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} placeholder="المخزون" inputMode="numeric" />
               <input className="AdminInput" type="date" value={form.discountEndsAt} onChange={(event) => setForm({ ...form, discountEndsAt: event.target.value })} title="نهاية الخصم" />
             </div>
-            <textarea className="AdminInput min-h-24 py-3" value={form.images} onChange={(event) => setForm({ ...form, images: event.target.value })} placeholder="روابط الصور، كل رابط في سطر" />
-            <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-wahaj-border bg-white px-4 text-sm font-bold text-wahaj-rose">
-              <UploadCloud className="h-5 w-5" />
-              {uploading ? "جاري الرفع..." : "اختيار صور من الجهاز"}
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/avif"
-                multiple
-                className="hidden"
-                disabled={uploading}
-                onChange={(event) => {
-                  const files = Array.from(event.target.files || []);
-                  void uploadFiles(files);
-                  event.currentTarget.value = "";
-                }}
-              />
-            </label>
+            <ProductImagesEditor
+              images={form.images}
+              uploading={uploading}
+              dropLabel={dropLabel}
+              onChange={(images) => setForm({ ...form, images })}
+              onUploadFiles={uploadFiles}
+            />
             <textarea className="AdminInput min-h-24 py-3" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="الوصف الفاخر" />
             <input className="AdminInput" value={form.material} onChange={(event) => setForm({ ...form, material: event.target.value })} placeholder="الخامة" />
             <div className="grid grid-cols-2 gap-2">
@@ -1279,17 +1535,6 @@ function ProductsManager({
               إظهار المنتج في المتجر
               <input type="checkbox" checked={form.visible} onChange={(event) => setForm({ ...form, visible: event.target.checked })} />
             </label>
-
-            <div
-              onDrop={handleDrop}
-              onDragOver={(event) => event.preventDefault()}
-              className="grid min-h-28 place-items-center rounded-[8px] border border-dashed border-wahaj-rose bg-wahaj-soft/45 p-4 text-center"
-            >
-              <div>
-                <UploadCloud className="mx-auto h-7 w-7 text-wahaj-rose" />
-                <p className="mt-2 text-sm font-bold">{dropLabel}</p>
-              </div>
-            </div>
 
             {message ? <p className="rounded-[8px] bg-wahaj-card p-3 text-sm font-bold text-wahaj-ink">{message}</p> : null}
 
@@ -1698,6 +1943,10 @@ function ContentManager({
 
   return (
     <div className="grid gap-5 xl:grid-cols-2">
+      <div className="xl:col-span-2">
+        <MenuIconsManager />
+      </div>
+
       <Panel title="البنرات والنصوص" icon={FileText}>
         <div className="space-y-3">
           <input className="AdminInput" value={draft.heroBadge} onChange={(event) => setDraft({ ...draft, heroBadge: event.target.value })} placeholder="وسم الهيرو" />
@@ -1823,7 +2072,7 @@ function ContentManager({
             ["الطلبات والعملاء", "فعلي محليًا"],
             ["البنرات والستوري", "متصل بالواجهة"],
             ["Supabase / Firebase", "جاهز للربط عند إضافة المفاتيح"],
-            ["ImageKit", "Enabled for direct product image uploads"]
+            ["ImageKit", "منتجات /categories و /products"]
           ].map(([label, value]) => (
             <div key={label} className="flex items-center justify-between rounded-[8px] bg-wahaj-card px-3 py-2 text-sm font-bold">
               {label}

@@ -1,3 +1,4 @@
+import { storeImage } from "./imagekit";
 import type { Category, Coupon, Customer, Order, Product, Story } from "./types";
 
 export const whatsappNumber = "967781679899";
@@ -7,43 +8,37 @@ export const categories: Category[] = [
     id: "crowns",
     name: "تيجان",
     icon: "Crown",
-    image:
-      "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=480&q=80"
+    image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=480&q=80"
   },
   {
     id: "earrings",
     name: "أقراط",
     icon: "Sparkles",
-    image:
-      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=480&q=80"
+    image: "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=480&q=80"
   },
   {
     id: "bracelets",
     name: "أساور",
     icon: "CircleDot",
-    image:
-      "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=480&q=80"
+    image: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=480&q=80"
   },
   {
     id: "zircon",
     name: "زركون",
     icon: "Gem",
-    image:
-      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=480&q=80"
+    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=480&q=80"
   },
   {
     id: "sets",
     name: "أطقم",
     icon: "Boxes",
-    image:
-      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=480&q=80"
+    image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=480&q=80"
   },
   {
     id: "other",
     name: "أخرى",
     icon: "BadgePlus",
-    image:
-      "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=480&q=80"
+    image: "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=480&q=80"
   }
 ];
 
@@ -51,36 +46,31 @@ export const stories: Story[] = [
   {
     id: "new",
     title: "جديد",
-    image:
-      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=420&q=80",
+    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=420&q=80",
     color: "#D89CA4"
   },
   {
     id: "offers",
     title: "عروض",
-    image:
-      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=420&q=80",
+    image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=420&q=80",
     color: "#B76E79"
   },
   {
     id: "trend",
     title: "ترند",
-    image:
-      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=420&q=80",
+    image: "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=420&q=80",
     color: "#E0B56A"
   },
   {
     id: "sets",
     title: "أطقم",
-    image:
-      "https://images.unsplash.com/photo-1512163143273-bde0e3cc7407?auto=format&fit=crop&w=420&q=80",
+    image: "https://images.unsplash.com/photo-1512163143273-bde0e3cc7407?auto=format&fit=crop&w=420&q=80",
     color: "#8FAF9A"
   },
   {
     id: "clients",
     title: "تصوير عميلات",
-    image:
-      "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=420&q=80",
+    image: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=420&q=80",
     color: "#D8A48F"
   }
 ];
@@ -98,9 +88,9 @@ export const products: Product[] = [
     badges: ["جديد", "ترند"],
     status: ["new", "trend", "featured"],
     images: [
-      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1512163143273-bde0e3cc7407?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1100&q=85"
+      storeImage("https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1512163143273-bde0e3cc7407?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1100&q=85")
     ],
     colors: ["روز قولد", "فضي", "ذهبي ناعم"],
     sizes: ["قابل للتعديل", "S", "M"],
@@ -125,9 +115,9 @@ export const products: Product[] = [
     badges: ["محدود", "الأكثر مبيعًا"],
     status: ["best-seller", "featured"],
     images: [
-      "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=1100&q=85"
+      storeImage("https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=1100&q=85")
     ],
     colors: ["فضي", "روز قولد"],
     sizes: ["One Size"],
@@ -151,9 +141,9 @@ export const products: Product[] = [
     badges: ["ترند"],
     status: ["trend"],
     images: [
-      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1602752250015-52934bc45613?auto=format&fit=crop&w=1100&q=85"
+      storeImage("https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1602752250015-52934bc45613?auto=format&fit=crop&w=1100&q=85")
     ],
     colors: ["روز قولد", "ذهبي"],
     sizes: ["خفيف"],
@@ -176,9 +166,9 @@ export const products: Product[] = [
     badges: ["الأكثر مبيعًا"],
     status: ["best-seller"],
     images: [
-      "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1611085583191-a3b181a88401?auto=format&fit=crop&w=1100&q=85"
+      storeImage("https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1611652022419-a9419f74343d?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1611085583191-a3b181a88401?auto=format&fit=crop&w=1100&q=85")
     ],
     colors: ["فضي", "ذهبي ناعم"],
     sizes: ["S", "M", "L"],
@@ -202,9 +192,9 @@ export const products: Product[] = [
     badges: ["جديد"],
     status: ["new"],
     images: [
-      "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1589674781759-c21c37956a44?auto=format&fit=crop&w=1100&q=85"
+      storeImage("https://images.unsplash.com/photo-1603561591411-07134e71a2a9?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1589674781759-c21c37956a44?auto=format&fit=crop&w=1100&q=85")
     ],
     colors: ["فضي", "روز قولد"],
     sizes: ["6", "7", "8", "9"],
@@ -227,9 +217,9 @@ export const products: Product[] = [
     badges: ["مميز"],
     status: ["featured"],
     images: [
-      "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=1100&q=85"
+      storeImage("https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=1100&q=85")
     ],
     colors: ["لؤلؤي", "ذهبي"],
     sizes: ["40cm", "45cm"],
@@ -253,9 +243,9 @@ export const products: Product[] = [
     badges: ["محدود", "مميز"],
     status: ["featured"],
     images: [
-      "https://images.unsplash.com/photo-1512163143273-bde0e3cc7407?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1100&q=85"
+      storeImage("https://images.unsplash.com/photo-1512163143273-bde0e3cc7407?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1100&q=85")
     ],
     colors: ["فضي", "روز قولد"],
     sizes: ["قابل للتعديل"],
@@ -278,9 +268,9 @@ export const products: Product[] = [
     badges: ["جديد"],
     status: ["new"],
     images: [
-      "https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1602752250015-52934bc45613?auto=format&fit=crop&w=1100&q=85",
-      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=1100&q=85"
+      storeImage("https://images.unsplash.com/photo-1630019852942-f89202989a59?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1602752250015-52934bc45613?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=1100&q=85")
     ],
     colors: ["فضي", "ذهبي"],
     sizes: ["One Size"],

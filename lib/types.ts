@@ -1,3 +1,7 @@
+import type { StoredImage } from "./imagekit";
+
+export type { StoredImage };
+
 export type ProductBadge = "جديد" | "ترند" | "الأكثر مبيعًا" | "محدود" | "مميز";
 
 export type ProductStatus = "new" | "trend" | "best-seller" | "featured";
@@ -15,7 +19,7 @@ export type Product = {
   reviews: number;
   badges: ProductBadge[];
   status: ProductStatus[];
-  images: string[];
+  images: StoredImage[];
   colors: string[];
   sizes: string[];
   stock: number;
