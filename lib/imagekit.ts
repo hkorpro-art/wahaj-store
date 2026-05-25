@@ -13,18 +13,32 @@ export function storeImage(url: string, fileId = ""): StoredImage {
   return { url: url.trim(), fileId: fileId.trim() };
 }
 
-export function isStoredImage(value: unknown): value is StoredImage {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as StoredImage).url === "string" &&
-    (value as StoredImage).url.trim().length > 0
+function readImageRecord(value: unknown): StoredImage | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const urlCandidate = [record.url, record.URL, record.src, record.secure_url, record.path].find(
+    (item) => typeof item === "string" && item.trim().startsWith("http")
   );
+  const fileIdCandidate = [record.fileId, record.file_id, record.fileID].find((item) => typeof item === "string");
+
+  if (typeof urlCandidate === "string") {
+    return storeImage(urlCandidate, typeof fileIdCandidate === "string" ? fileIdCandidate : "");
+  }
+
+  return null;
+}
+
+export function isStoredImage(value: unknown): value is StoredImage {
+  return readImageRecord(value) !== null;
 }
 
 export function parseStoredImage(value: unknown): StoredImage | null {
-  if (isStoredImage(value)) {
-    return storeImage(value.url, value.fileId);
+  const fromRecord = readImageRecord(value);
+  if (fromRecord) {
+    return fromRecord;
   }
 
   if (typeof value === "string" && value.trim().startsWith("http")) {
@@ -35,6 +49,11 @@ export function parseStoredImage(value: unknown): StoredImage | null {
 }
 
 export function parseStoredImages(value: unknown): StoredImage[] {
+  const single = parseStoredImage(value);
+  if (single && !Array.isArray(value)) {
+    return [single];
+  }
+
   if (Array.isArray(value)) {
     return value.map(parseStoredImage).filter((item): item is StoredImage => Boolean(item));
   }
@@ -56,13 +75,51 @@ export function parseStoredImages(value: unknown): StoredImage[] {
   return [];
 }
 
-export function imageUrl(image: StoredImage | string | undefined | null, options?: OptimizeOptions): string {
+/** يستخرج رابط الصورة من نص أو كائن { url, fileId } أو أشكال قديمة بأمان. */
+export function resolveImageSrc(image: unknown): string {
   if (!image) {
     return "";
   }
 
-  const url = typeof image === "string" ? image : image.url;
+  if (typeof image === "string") {
+    return image.trim();
+  }
+
+  const parsed = readImageRecord(image);
+  if (parsed?.url) {
+    return parsed.url;
+  }
+
+  if (typeof image === "object" && image !== null && "url" in image) {
+    const url = (image as { url?: unknown }).url;
+    return typeof url === "string" ? url.trim() : "";
+  }
+
+  return "";
+}
+
+export function imageUrl(image: StoredImage | string | unknown, options?: OptimizeOptions): string {
+  const url = resolveImageSrc(image);
+  if (!url) {
+    return "";
+  }
+
   return optimizeImageKitUrl(url, options);
+}
+
+/** أول صورة غلاف للمنتج — يدعم النص والكائن والمصفوفة المختلطة. */
+export function productCoverUrl(images: unknown, options?: OptimizeOptions): string {
+  if (Array.isArray(images)) {
+    for (const item of images) {
+      const url = imageUrl(item, options);
+      if (url) {
+        return url;
+      }
+    }
+    return "";
+  }
+
+  return imageUrl(images, options);
 }
 
 export type OptimizeOptions = {

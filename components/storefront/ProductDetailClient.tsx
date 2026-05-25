@@ -9,7 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ManagedProduct } from "@/lib/admin-local";
 import { formatPrice } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
-import { imageUrl } from "@/lib/imagekit";
+import { imageUrl, productCoverUrl, resolveImageSrc } from "@/lib/imagekit";
 import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
 import { buildSingleProductMessage, whatsappUrl } from "@/lib/whatsapp";
 
@@ -18,6 +18,45 @@ type ProductDetailClientProps = {
   initialProduct: ManagedProduct | null;
   initialSimilarProducts: ManagedProduct[];
 };
+
+function normalizeSlug(value: string) {
+  try {
+    return decodeURIComponent(value).trim().toLowerCase();
+  } catch {
+    return value.trim().toLowerCase();
+  }
+}
+
+function matchesProductRoute(product: ManagedProduct, routeSlug: string) {
+  const normalizedRoute = normalizeSlug(routeSlug);
+  return (
+    normalizeSlug(product.slug) === normalizedRoute ||
+    normalizeSlug(product.id) === normalizedRoute
+  );
+}
+
+function normalizeProductImages(images: ManagedProduct["images"] | unknown): ManagedProduct["images"] {
+  if (!Array.isArray(images)) {
+    const single = resolveImageSrc(images);
+    return single ? [{ url: single, fileId: "" }] : [];
+  }
+
+  return images
+    .map((image) => {
+      const url = resolveImageSrc(image);
+      if (!url) {
+        return null;
+      }
+
+      if (typeof image === "object" && image !== null && "fileId" in image) {
+        const fileId = (image as { fileId?: unknown }).fileId;
+        return { url, fileId: typeof fileId === "string" ? fileId : "" };
+      }
+
+      return { url, fileId: "" };
+    })
+    .filter((image): image is { url: string; fileId: string } => Boolean(image));
+}
 
 const colorMap: Record<string, string> = {
   "روز قولد": "#B76E79",
@@ -28,11 +67,18 @@ const colorMap: Record<string, string> = {
 };
 
 export default function ProductDetailClient({ slug, initialProduct, initialSimilarProducts }: ProductDetailClientProps) {
-  const [product, setProduct] = useState<ManagedProduct | null>(initialProduct);
+  const [product, setProduct] = useState<ManagedProduct | null>(
+    initialProduct
+      ? {
+          ...initialProduct,
+          images: normalizeProductImages(initialProduct.images)
+        }
+      : null
+  );
   const [similarProducts, setSimilarProducts] = useState<ManagedProduct[]>(initialSimilarProducts);
   const [liveResolved, setLiveResolved] = useState(!isFirebaseClientConfigured || !db);
   const [selectedImage, setSelectedImage] = useState(
-    initialProduct?.images[0] ? imageUrl(initialProduct.images[0], { width: 1200 }) : ""
+    initialProduct ? productCoverUrl(initialProduct.images, { width: 1200 }) : ""
   );
   const [fullscreen, setFullscreen] = useState(false);
   const [color, setColor] = useState(initialProduct?.colors[0] ?? "");
@@ -67,12 +113,24 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           .map((item) => item.product as ManagedProduct)
           .filter((item) => item.visible !== false);
 
-        const nextProduct = liveProducts.find((item) => item.slug === slug) ?? null;
+        const nextProduct = liveProducts.find((item) => matchesProductRoute(item, slug)) ?? null;
 
-        setProduct(nextProduct);
+        setProduct((current) => {
+          if (nextProduct) {
+            return {
+              ...nextProduct,
+              images: normalizeProductImages(nextProduct.images)
+            };
+          }
+
+          return current;
+        });
         setSimilarProducts(
           nextProduct
-            ? liveProducts.filter((item) => item.category === nextProduct.category && item.id !== nextProduct.id).slice(0, 4)
+            ? liveProducts
+                .filter((item) => item.category === nextProduct.category && item.id !== nextProduct.id)
+                .slice(0, 4)
+                .map((item) => ({ ...item, images: normalizeProductImages(item.images) }))
             : []
         );
         setLiveResolved(true);
@@ -90,7 +148,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       return;
     }
 
-    setSelectedImage(product.images[0] ? imageUrl(product.images[0], { width: 1200 }) : "");
+    setSelectedImage(productCoverUrl(product.images, { width: 1200 }));
     setColor(product.colors[0] ?? "");
     setSize(product.sizes[0] ?? "");
   }, [product]);
@@ -111,7 +169,10 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     );
   }
 
-  if (!product) {
+  const galleryImages = normalizeProductImages(product?.images);
+  const coverImage = product ? productCoverUrl(galleryImages, { width: 1200 }) : "";
+
+  if (!product || galleryImages.length === 0 || !coverImage) {
     return (
       <main className="min-h-screen bg-wahaj-bg px-4 py-16 text-wahaj-text">
         <div className="mx-auto max-w-xl rounded-[8px] border border-wahaj-border bg-white/75 p-6 text-center shadow-soft">
@@ -165,7 +226,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             className="relative aspect-[4/5] overflow-hidden rounded-[8px] border border-wahaj-border bg-wahaj-card shadow-satin md:aspect-[1/1]"
           >
             <Image
-              src={selectedImage}
+              src={selectedImage || coverImage}
               alt={product.name}
               fill
               priority
@@ -190,14 +251,19 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           </motion.div>
 
           <div className="mt-3 flex gap-3 overflow-x-auto pb-1 hide-scrollbar">
-            {product.images.map((image) => {
-              const thumbSrc = imageUrl(image, { width: 160, height: 160 });
-              const isSelected = selectedImage === thumbSrc || selectedImage === imageUrl(image, { width: 1200 });
+            {galleryImages.map((image, index) => {
+              const thumbSrc = imageUrl(image, { width: 160, height: 160 }) || image?.url || "";
+              const fullSrc = imageUrl(image, { width: 1200 }) || image?.url || "";
+              const isSelected = selectedImage === thumbSrc || selectedImage === fullSrc;
+
+              if (!thumbSrc) {
+                return null;
+              }
 
               return (
                 <button
-                  key={image.url}
-                  onClick={() => setSelectedImage(imageUrl(image, { width: 1200 }))}
+                  key={`${image?.url || "image"}-${index}`}
+                  onClick={() => setSelectedImage(fullSrc)}
                   className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-[8px] border ${
                     isSelected ? "border-wahaj-rose shadow-glow" : "border-wahaj-border"
                   }`}
@@ -354,7 +420,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
               >
                 <div className="relative aspect-[4/5]">
                   <Image
-                    src={imageUrl(item.images[0], { width: 440, height: 550 })}
+                    src={productCoverUrl(item.images, { width: 440, height: 550 }) || "/favicon.ico"}
                     alt={item.name}
                     fill
                     sizes="220px"
@@ -392,7 +458,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
               animate={{ scale: 1 }}
               exit={{ scale: 0.96 }}
             >
-              <Image src={selectedImage} alt={product.name} fill sizes="90vw" className="object-contain" />
+              <Image src={selectedImage || coverImage} alt={product.name} fill sizes="90vw" className="object-contain" />
             </motion.div>
           </motion.div>
         ) : null}

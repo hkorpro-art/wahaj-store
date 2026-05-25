@@ -1,5 +1,5 @@
 import type { ManagedProduct } from "./admin-local";
-import { parseStoredImages } from "./imagekit";
+import { parseStoredImages, storeImage } from "./imagekit";
 
 export const FIRESTORE_PRODUCTS_COLLECTION = "production_products";
 
@@ -9,8 +9,12 @@ export function rowToManagedProduct(row: ProductRow): ManagedProduct | null {
   const id = stringValue(row.id);
   const name = stringValue(row.name);
   const imageList = parseStoredImages(row.images);
+  const images =
+    imageList.length > 0
+      ? imageList
+      : [storeImage("https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1100&q=85")];
 
-  if (!id || !name || imageList.length === 0) {
+  if (!id || !name) {
     return null;
   }
 
@@ -27,7 +31,7 @@ export function rowToManagedProduct(row: ProductRow): ManagedProduct | null {
     reviews: numberValue(row.reviews, 0),
     badges: arrayValue(row.badges) as ManagedProduct["badges"],
     status: arrayValue(row.status) as ManagedProduct["status"],
-    images: imageList,
+    images,
     colors: arrayValue(row.colors),
     sizes: arrayValue(row.sizes),
     stock,
