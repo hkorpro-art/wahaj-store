@@ -31,6 +31,7 @@ import {
   type ManagedStory,
   type SiteContent
 } from "@/lib/admin-local";
+import BrandMark from "@/components/storefront/BrandMark";
 import { categories, formatPrice, products, stories } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl, MENU_ICON_IDS, parseStoredImage, type MenuIconId, type MenuIconsRecord } from "@/lib/imagekit";
@@ -88,7 +89,6 @@ const fadeUp = {
 const seedManagedProducts = products.map((product) => ({ ...product, visible: true }));
 
 export default function WahajStorefront() {
-  const [splash, setSplash] = useState(true);
   const [storeProducts, setStoreProducts] = useState<ManagedProduct[]>(seedManagedProducts);
   const [storeStories, setStoreStories] = useState<ManagedStory[]>(
     stories.map((story) => ({ ...story, visible: true, target: story.id as ManagedStory["target"] }))
@@ -103,11 +103,6 @@ export default function WahajStorefront() {
   const [activeStory, setActiveStory] = useState<ManagedStory | null>(null);
   const [storyFilter, setStoryFilter] = useState<StoryFilter>("all");
   const [menuIcons, setMenuIcons] = useState<MenuIconsRecord>({});
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setSplash(false), 1450);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -320,9 +315,38 @@ export default function WahajStorefront() {
     });
   }
 
-  function openWhatsAppForCart() {
+  async function openWhatsAppForCart(customerName: string, customerPhone: string, isGift: boolean, giftMessage: string) {
     if (cartItems.length === 0) return;
-    window.open(whatsappUrl(buildCartMessage(cartItems)), "_blank", "noopener,noreferrer");
+
+    const order = {
+      customer: customerName,
+      phone: customerPhone,
+      products: cartItems.map((item) => `${item.product.name} (x${item.quantity})`),
+      total: cartTotal,
+      notes: isGift ? `تغليف إهداء: ${giftMessage}` : "طلب عادي",
+      isGift,
+      giftMessage
+    };
+
+    try {
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(order)
+      });
+    } catch (err) {
+      console.error("Failed to save order to Firestore:", err);
+    }
+
+    let message = buildCartMessage(cartItems);
+    message = message.replace("الاسم:", `الاسم: ${customerName}`);
+    if (isGift) {
+      message = message.replace("ملاحظات:", `ملاحظات: إرسال كهدية وتغليف فاخر 🎁\nرسالة الإهداء: "${giftMessage}"`);
+    }
+    window.open(whatsappUrl(message), "_blank", "noopener,noreferrer");
+
+    setCart({});
+    setCartOpen(false);
   }
 
   function handleStorySelect(story: ManagedStory) {
@@ -346,8 +370,6 @@ export default function WahajStorefront() {
 
   return (
     <main className="min-h-screen overflow-hidden bg-wahaj-bg text-wahaj-text">
-      <AnimatePresence>{splash ? <SplashScreen /> : null}</AnimatePresence>
-
       <Header
         cartCount={cartItems.length}
         inspirationCount={inspirationItems.length}
@@ -359,15 +381,15 @@ export default function WahajStorefront() {
 
       <OfferBar offers={siteContent.offerMessages} />
 
-      <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
         <StoriesRail stories={displayStories.filter((story) => story.visible !== false)} activeStoryId={storyFilter} onOpen={handleStorySelect} />
         <HeroSection content={siteContent} />
         <CategoryRail activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
 
-        <motion.section id="products" {...fadeUp} className="mt-9">
+        <motion.section id="products" {...fadeUp} className="lux-section">
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <p className="font-thmanyah text-sm font-medium text-wahaj-rose">مختارات وهاج</p>
+              <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">مختارات وهاج</p>
               <h2 className="type-section text-wahaj-ink">{storyFilterLabels[storyFilter]}</h2>
             </div>
             <div className="flex items-center gap-2">
@@ -385,18 +407,20 @@ export default function WahajStorefront() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {filteredProducts.map((product, index) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                priority={index < 2}
-                isInspired={Boolean(inspiration[product.id])}
-                onCart={addToCart}
-                onInspiration={toggleInspiration}
-              />
-            ))}
-          </div>
+          <motion.div layout className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+            <AnimatePresence mode="popLayout">
+              {filteredProducts.map((product, index) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  priority={index < 2}
+                  isInspired={Boolean(inspiration[product.id])}
+                  onCart={addToCart}
+                  onInspiration={toggleInspiration}
+                />
+              ))}
+            </AnimatePresence>
+          </motion.div>
           {filteredProducts.length === 0 ? (
             <div className="mt-4 rounded-[8px] border border-dashed border-wahaj-border bg-white/70 p-6 text-center text-sm text-wahaj-text/70">
               لا توجد منتجات مطابقة حالياً. أضيفي منتجاً في Firestore أو غيّري البحث والتصنيف.
@@ -408,7 +432,7 @@ export default function WahajStorefront() {
           <div className="satin-surface rounded-[8px] border border-wahaj-border p-4 shadow-soft md:p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="font-thmanyah text-sm font-medium text-wahaj-rose">مساحتك الخاصة</p>
+                <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">مساحتك الخاصة</p>
                 <h2 className="font-display text-2xl font-medium leading-tight text-wahaj-ink">احفظي للإلهام ✨</h2>
               </div>
               <Heart className="h-6 w-6 text-wahaj-rose" />
@@ -470,32 +494,6 @@ export default function WahajStorefront() {
   );
 }
 
-function SplashScreen() {
-  return (
-    <motion.div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-wahaj-bg"
-      initial={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.02 }}
-      transition={{ duration: 0.55, ease: "easeInOut" }}
-    >
-      <div className="absolute inset-0 satin-surface" />
-      <motion.div
-        className="relative flex flex-col items-center"
-        initial={{ opacity: 0, y: 14, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.85, ease: "easeOut" }}
-      >
-        <div className="rose-glow flex h-24 w-24 items-center justify-center rounded-full bg-white/70">
-          <Sparkles className="h-10 w-10 text-wahaj-rose" />
-        </div>
-        <h1 className="mt-5 font-display text-4xl font-medium text-wahaj-ink">وهاج</h1>
-        <p className="font-thmanyah text-sm font-medium text-wahaj-rose">WAHAJ Luxury Accessories</p>
-        <div className="mt-7 lux-loader" />
-      </motion.div>
-    </motion.div>
-  );
-}
-
 type HeaderProps = {
   cartCount: number;
   inspirationCount: number;
@@ -518,8 +516,7 @@ function Header({ cartCount, inspirationCount, query, setQuery, onCart, onMenu }
         </button>
 
         <Link href="/" className="min-w-fit">
-          <p className="font-display text-2xl font-medium text-wahaj-ink">وهاج</p>
-          <p className="-mt-1 font-thmanyah text-[11px] font-medium text-wahaj-rose">WAHAJ</p>
+          <BrandMark size="md" className="items-start text-right" subtitleClassName="text-brand-burgundy/65" />
         </Link>
 
         <label className="glass flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full px-3">
@@ -738,7 +735,7 @@ function CategoryRail({
     <motion.section id="categories" {...fadeUp} className="mt-8">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <p className="font-thmanyah text-sm font-medium text-wahaj-rose">أقسام ناعمة</p>
+          <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">أقسام ناعمة</p>
           <h2 className="type-section text-wahaj-ink">اختاري وهجك</h2>
         </div>
         <ChevronLeft className="h-5 w-5 text-wahaj-rose" />
@@ -787,9 +784,12 @@ function ProductCard({ product, isInspired, priority, onCart, onInspiration }: P
   return (
     <motion.article
       layout
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.92 }}
       className="group overflow-hidden rounded-[8px] border border-wahaj-border bg-white/78 shadow-soft backdrop-blur-xl"
       whileHover={{ y: -4 }}
-      transition={{ duration: 0.25 }}
+      transition={{ duration: 0.35, ease: "easeInOut" }}
     >
       <div className="relative">
         <Link href={productHref} className="relative block aspect-[4/5] overflow-hidden bg-wahaj-card">
@@ -831,7 +831,7 @@ function ProductCard({ product, isInspired, priority, onCart, onInspiration }: P
           <span className="text-wahaj-text/55">({product.reviews})</span>
         </div>
         <div className="mt-2 flex flex-wrap items-end gap-2">
-          <p className="font-thmanyah text-base font-medium text-wahaj-rose">{formatPrice(product.price)}</p>
+          <p className="type-product-price font-medium text-brand-burgundy">{formatPrice(product.price)}</p>
           {product.compareAt ? (
             <p className="text-xs text-wahaj-text/45 line-through">{formatPrice(product.compareAt)}</p>
           ) : null}
@@ -974,100 +974,169 @@ type CartSheetProps = {
   onClose: () => void;
   onQty: (productId: string, delta: number) => void;
   onRemove: (productId: string) => void;
-  onCheckout: () => void;
+  onCheckout: (customerName: string, customerPhone: string, isGift: boolean, giftMessage: string) => void;
 };
 
 function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }: CartSheetProps) {
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [isGift, setIsGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
+  const [error, setError] = useState("");
+
+  function handleCheckoutSubmit() {
+    if (!customerName.trim() || !customerPhone.trim()) {
+      setError("يرجى كتابة الاسم ورقم الهاتف لإتمام الطلب الفاخر.");
+      return;
+    }
+    setError("");
+    onCheckout(customerName.trim(), customerPhone.trim(), isGift, isGift ? giftMessage.trim() : "");
+  }
+
   return (
     <AnimatePresence>
       {open ? (
-        <motion.div className="fixed inset-0 z-[70]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <button className="absolute inset-0 bg-wahaj-ink/25 backdrop-blur-sm" onClick={onClose} aria-label="إغلاق" />
+        <motion.div className="fixed inset-0 z-[70] flex justify-end" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <button className="absolute inset-0 bg-wahaj-ink/35 backdrop-blur-md" onClick={onClose} aria-label="إغلاق" />
           <motion.aside
-            className="glass absolute inset-x-0 bottom-0 mx-auto max-h-[86vh] max-w-lg overflow-hidden rounded-t-[8px] p-4 shadow-satin"
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            className="glass relative h-full w-[86vw] max-w-md overflow-hidden p-6 shadow-satin flex flex-col justify-between"
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 26, stiffness: 240 }}
           >
-            <div className="mb-4 flex items-center justify-between">
+            <div className="flex flex-col h-full justify-between">
               <div>
-                <p className="font-thmanyah text-sm font-medium text-wahaj-rose">سلة وهاج</p>
-                <h2 className="font-display text-3xl font-medium leading-tight text-wahaj-ink">طلبك الناعم</h2>
-              </div>
-              <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="max-h-[48vh] space-y-3 overflow-y-auto pr-1 admin-scrollbar">
-              {items.length === 0 ? (
-                <div className="rounded-[8px] border border-wahaj-border bg-white/70 p-5 text-center">
-                  <ShoppingBag className="mx-auto h-8 w-8 text-wahaj-rose" />
-                  <p className="mt-3 font-bold">السلة فارغة الآن</p>
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">سلة وهاج</p>
+                    <h2 className="font-display text-3xl font-medium leading-tight text-wahaj-ink">طلبك الناعم</h2>
+                  </div>
+                  <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80">
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-              ) : (
-                items.map((item) => (
-                  <div key={item.product.id} className="flex gap-3 rounded-[8px] border border-wahaj-border bg-white/78 p-2">
-                    <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-[8px]">
-                      <Image
-                        src={imageUrl(item.product.images[0], { width: 160, height: 160 })}
-                        alt={item.product.name}
-                        fill
-                        sizes="80px"
-                        className="object-cover"
+
+                <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1 admin-scrollbar">
+                  {items.length === 0 ? (
+                    <div className="rounded-[8px] border border-wahaj-border bg-white/70 p-5 text-center">
+                      <ShoppingBag className="mx-auto h-8 w-8 text-wahaj-rose" />
+                      <p className="mt-3 font-bold">السلة فارغة الآن</p>
+                    </div>
+                  ) : (
+                    items.map((item) => (
+                      <div key={item.product.id} className="flex gap-3 rounded-[8px] border border-wahaj-border bg-white/78 p-2">
+                        <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-[8px]">
+                          <Image
+                            src={imageUrl(item.product.images[0], { width: 160, height: 160 })}
+                            alt={item.product.name}
+                            fill
+                            sizes="80px"
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 font-bold text-wahaj-ink">{item.product.name}</p>
+                          <p className="text-sm text-wahaj-rose">{formatPrice(item.product.price)}</p>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <button
+                              onClick={() => onQty(item.product.id, -1)}
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-wahaj-border"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </button>
+                            <span className="min-w-6 text-center font-bold">{item.quantity}</span>
+                            <button
+                              onClick={() => onQty(item.product.id, 1)}
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-wahaj-border"
+                            >
+                              +
+                            </button>
+                            <button
+                              onClick={() => onRemove(item.product.id)}
+                              className="mr-auto flex h-8 w-8 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <a
+                            href={whatsappUrl(buildSingleProductMessage(item.product, item.quantity))}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-flex rounded-full border border-wahaj-border bg-white/80 px-3 py-1 text-xs font-bold text-wahaj-rose"
+                          >
+                            طلب منتج واحد
+                          </a>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div>
+                {items.length > 0 ? (
+                  <div className="space-y-3 border-t border-wahaj-border/70 pt-4 mb-4">
+                    <p className="text-sm font-bold text-wahaj-ink">تفاصيل الاتصال</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        className="AdminInput"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        placeholder="الاسم الكريم"
+                      />
+                      <input
+                        className="AdminInput"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        placeholder="رقم الهاتف"
+                        inputMode="tel"
                       />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 font-bold text-wahaj-ink">{item.product.name}</p>
-                      <p className="text-sm text-wahaj-rose">{formatPrice(item.product.price)}</p>
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <button
-                          onClick={() => onQty(item.product.id, -1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-full border border-wahaj-border"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </button>
-                        <span className="min-w-6 text-center font-bold">{item.quantity}</span>
-                        <button
-                          onClick={() => onQty(item.product.id, 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-full border border-wahaj-border"
-                        >
-                          +
-                        </button>
-                        <button
-                          onClick={() => onRemove(item.product.id)}
-                          className="mr-auto flex h-8 w-8 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                      <a
-                        href={whatsappUrl(buildSingleProductMessage(item.product, item.quantity))}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 inline-flex rounded-full border border-wahaj-border bg-white/80 px-3 py-1 text-xs font-bold text-wahaj-rose"
-                      >
-                        طلب منتج واحد
-                      </a>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
 
-            <div className="mt-4 rounded-[8px] bg-wahaj-ink p-4 text-white">
-              <div className="flex items-center justify-between text-sm">
-                <span>الإجمالي</span>
-                <span className="font-thmanyah text-xl font-bold">{formatPrice(total)}</span>
+                    <label className="flex items-center gap-2 rounded-[8px] border border-wahaj-border/60 bg-white/50 px-3 py-2 text-xs font-bold cursor-pointer transition hover:bg-white/80">
+                      <input
+                        type="checkbox"
+                        checked={isGift}
+                        onChange={(e) => setIsGift(e.target.checked)}
+                        className="accent-wahaj-rose"
+                      />
+                      <span>إرسال كهدية وتغليف فاخر 🎁</span>
+                    </label>
+
+                    {isGift ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative"
+                      >
+                        <textarea
+                          className="AdminInput min-h-16 py-2 text-sm"
+                          value={giftMessage}
+                          onChange={(e) => setGiftMessage(e.target.value)}
+                          placeholder="اكتبي رسالة الإهداء هنا..."
+                        />
+                      </motion.div>
+                    ) : null}
+
+                    {error ? <p className="text-xs text-red-600 font-bold">{error}</p> : null}
+                  </div>
+                ) : null}
+
+                <div className="rounded-[8px] bg-wahaj-ink p-4 text-white">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>الإجمالي</span>
+                    <span className="font-thmanyah-text text-xl font-bold">{formatPrice(total)}</span>
+                  </div>
+                  <button
+                    onClick={handleCheckoutSubmit}
+                    disabled={items.length === 0}
+                    className="mt-4 flex min-h-12 w-full items-center justify-center rounded-full bg-white font-bold text-wahaj-rose disabled:cursor-not-allowed disabled:opacity-45 transition hover:bg-wahaj-soft"
+                  >
+                    إتمـام الطلب الفاخر ✨
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={onCheckout}
-                disabled={items.length === 0}
-                className="mt-4 flex min-h-12 w-full items-center justify-center rounded-full bg-white font-bold text-wahaj-rose disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                طلب السلة كاملة عبر واتساب
-              </button>
             </div>
           </motion.aside>
         </motion.div>
@@ -1099,10 +1168,7 @@ function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
             transition={{ type: "spring", damping: 26, stiffness: 240 }}
           >
             <div className="flex items-center justify-between">
-              <div>
-                <p className="font-display text-2xl font-medium text-wahaj-ink">وهاج</p>
-                <p className="text-sm text-wahaj-rose">WAHAJ</p>
-              </div>
+              <BrandMark size="md" className="items-start text-right" />
               <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80">
                 <X className="h-5 w-5" />
               </button>

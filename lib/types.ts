@@ -29,6 +29,8 @@ export type Product = {
   tags: string[];
   views: number;
   sold: number;
+  showScarcity?: boolean;
+  scarcityText?: string;
 };
 
 export type Category = {

@@ -258,6 +258,7 @@ export default function AdminDashboard() {
     }
 
     void loadSharedProducts();
+    void loadSharedOrders();
     setOrders(readStored(adminStorageKeys.orders, seedOrders));
     setCoupons(readStored(adminStorageKeys.coupons, seedManagedCoupons()));
     setContent({ ...defaultSiteContent, ...readStored(adminStorageKeys.content, defaultSiteContent) });
@@ -420,8 +421,48 @@ export default function AdminDashboard() {
     });
   }
 
+    });
+  }
+
+  async function loadSharedOrders() {
+    try {
+      const response = await fetch(`/api/orders?refresh=${Date.now()}`, { cache: "no-store" });
+      const payload = await response.json().catch(() => null);
+
+      if (response.ok && Array.isArray(payload?.orders)) {
+        setOrders(payload.orders as Order[]);
+        writeStored(adminStorageKeys.orders, payload.orders);
+      }
+    } catch (error) {
+      console.error("Failed to load shared orders:", error);
+    }
+  }
+
+  async function persistOrder(order: Order) {
+    try {
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(order)
+      });
+    } catch (error) {
+      console.error("Failed to persist order to Firestore:", error);
+    }
+  }
+
+  async function deleteOrderRemote(orderId: string) {
+    try {
+      await fetch(`/api/orders?id=${orderId}`, {
+        method: "DELETE"
+      });
+    } catch (error) {
+      console.error("Failed to delete order from Firestore:", error);
+    }
+  }
+
   function createOrder(order: Order) {
     setOrders((current) => [order, ...current]);
+    void persistOrder(order);
     setProducts((current) => {
       const next: ManagedProduct[] = current.map((product) => {
         if (!order.products.includes(product.name)) return product;
@@ -435,12 +476,20 @@ export default function AdminDashboard() {
   }
 
   function updateOrderStatus(orderId: string, status: OrderStatus) {
-    setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, status } : order)));
+    setOrders((current) => {
+      const next = current.map((order) => (order.id === orderId ? { ...order, status } : order));
+      const targetOrder = next.find((order) => order.id === orderId);
+      if (targetOrder) {
+        void persistOrder(targetOrder);
+      }
+      return next;
+    });
   }
 
   function deleteOrder(orderId: string) {
     setOrders((current) => current.filter((order) => order.id !== orderId));
-    showToast("تم حذف الطلب من السجل المحلي.");
+    void deleteOrderRemote(orderId);
+    showToast("تم حذف الطلب من السجل.");
   }
 
   function toggleVip(phone: string) {
@@ -523,7 +572,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-6">
               <div>
                 <p className="text-sm text-wahaj-rose">لوحة تحكم وهاج</p>
-                <h1 className="font-thmanyah text-2xl font-bold text-wahaj-ink">
+                <h1 className="font-thmanyah-text text-2xl font-bold text-wahaj-ink">
                   {tabs.find((tab) => tab.id === activeTab)?.label}
                 </h1>
               </div>
@@ -690,7 +739,7 @@ function AdminBrand() {
           <Sparkles className="h-6 w-6 text-wahaj-stars" />
         </span>
         <div>
-          <p className="font-thmanyah text-2xl font-bold">وهاج</p>
+          <p className="font-thmanyah-text text-2xl font-bold">وهاج</p>
           <p className="text-xs text-white/68">WAHAJ Admin OS</p>
         </div>
       </div>
@@ -771,7 +820,7 @@ function Overview({
               <p className="text-sm text-wahaj-text/68">{card.label}</p>
               <card.icon className={`h-6 w-6 ${card.tone}`} />
             </div>
-            <p className="mt-3 font-thmanyah text-2xl font-bold text-wahaj-ink">{card.value}</p>
+            <p className="mt-3 font-thmanyah-text text-2xl font-bold text-wahaj-ink">{card.value}</p>
           </motion.div>
         ))}
       </div>
@@ -1576,6 +1625,8 @@ function OrdersManager({
   const [notes, setNotes] = useState("");
   const [manualTotal, setManualTotal] = useState("");
   const [status, setStatus] = useState<OrderStatus>("جديد");
+  const [isGift, setIsGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
   const [message, setMessage] = useState("");
 
   const selectedProducts = products.filter((product) => selected.includes(product.id));
@@ -1598,7 +1649,9 @@ function OrdersManager({
       total,
       notes: notes.trim() || "بدون ملاحظات",
       status,
-      createdAt: new Date().toISOString().slice(0, 10)
+      createdAt: new Date().toISOString().slice(0, 10),
+      isGift,
+      giftMessage: isGift ? giftMessage.trim() : ""
     });
     setCustomer("");
     setPhone("");
@@ -1606,6 +1659,8 @@ function OrdersManager({
     setNotes("");
     setManualTotal("");
     setStatus("جديد");
+    setIsGift(false);
+    setGiftMessage("");
     setMessage("تمت إضافة الطلب.");
   }
 
@@ -1636,6 +1691,13 @@ function OrdersManager({
           </div>
           <input className="AdminInput" value={manualTotal} onChange={(event) => setManualTotal(event.target.value)} placeholder="إجمالي مخصص اختياري" inputMode="numeric" />
           <textarea className="AdminInput min-h-24 py-3" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="ملاحظات الطلب" />
+          <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
+            إرسال كهدية وتغليف فاخر 🎁
+            <input type="checkbox" checked={isGift} onChange={(event) => setIsGift(event.target.checked)} />
+          </label>
+          {isGift ? (
+            <input className="AdminInput" value={giftMessage} onChange={(event) => setGiftMessage(event.target.value)} placeholder="رسالة الإهداء" />
+          ) : null}
           <select className="AdminInput" value={status} onChange={(event) => setStatus(event.target.value as OrderStatus)}>
             {orderStatuses.map((item) => (
               <option key={item}>{item}</option>
@@ -1691,7 +1753,19 @@ function OrdersTable({
                 <p className="line-clamp-2">{order.products.join("، ")}</p>
               </td>
               <td className="font-bold text-wahaj-rose">{formatPrice(order.total)}</td>
-              <td>{order.notes}</td>
+              <td>
+                <p className="line-clamp-2">{order.notes}</p>
+                {order.isGift ? (
+                  <div className="mt-1 flex flex-col gap-1 rounded bg-wahaj-rose/10 p-1.5 text-xs text-wahaj-rose border border-wahaj-rose/20">
+                    <span className="font-bold">🎁 هدية وتغليف فاخر</span>
+                    {order.giftMessage ? (
+                      <span className="italic">"{order.giftMessage}"</span>
+                    ) : (
+                      <span className="text-[10px] text-wahaj-rose/60">(بدون رسالة إهداء)</span>
+                    )}
+                  </div>
+                ) : null}
+              </td>
               <td>
                 {onStatus ? (
                   <select
@@ -1845,7 +1919,7 @@ function CouponsManager({
           {coupons.map((coupon) => (
             <div key={coupon.id} className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="font-thmanyah text-2xl font-bold text-wahaj-ink">{coupon.code}</p>
+                <p className="font-thmanyah-text text-2xl font-bold text-wahaj-ink">{coupon.code}</p>
                 <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-wahaj-rose">
                   {coupon.type === "percentage" ? `${coupon.value}%` : formatPrice(coupon.value)}
                 </span>
@@ -2231,7 +2305,7 @@ function AnalyticsManager({
         <Panel title="معدل التحويل" icon={TrendingUp}>
           <div className="grid h-72 place-items-center">
             <div className="text-center">
-              <p className="font-thmanyah text-6xl font-bold text-wahaj-rose">{conversionRate.toFixed(2)}%</p>
+              <p className="font-thmanyah-text text-6xl font-bold text-wahaj-rose">{conversionRate.toFixed(2)}%</p>
               <p className="mt-3 text-wahaj-text/70">طلبات واتساب مقارنة بمشاهدات المنتجات المسجلة</p>
               <div className="mx-auto mt-6 h-3 w-64 overflow-hidden rounded-full bg-wahaj-card">
                 <div className="h-full rounded-full bg-wahaj-rose" style={{ width: `${Math.min(100, conversionRate * 12)}%` }} />
@@ -2432,7 +2506,7 @@ function Panel({
   return (
     <section className="rounded-[8px] border border-wahaj-border bg-white p-4 shadow-soft">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="font-thmanyah text-xl font-bold text-wahaj-ink">{title}</h2>
+        <h2 className="font-thmanyah-text text-xl font-bold text-wahaj-ink">{title}</h2>
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-wahaj-soft text-wahaj-rose">
           <Icon className="h-5 w-5" />
         </span>

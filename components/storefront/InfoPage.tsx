@@ -1,5 +1,6 @@
 import { ArrowRight, MessageCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
+import BrandMark from "@/components/storefront/BrandMark";
 import { whatsappUrl } from "@/lib/whatsapp";
 
 type InfoPageProps = {
@@ -21,8 +22,7 @@ export default function InfoPage({ title, eyebrow, intro, sections }: InfoPagePr
             <ArrowRight className="h-5 w-5" />
           </Link>
           <div className="text-center">
-            <p className="font-display text-xl font-medium text-wahaj-ink">وهاج</p>
-            <p className="text-xs text-wahaj-rose">WAHAJ</p>
+            <BrandMark size="sm" className="items-start text-right" />
           </div>
           <a
             href={whatsappUrl("مرحبًا وهاج ✨\nأحتاج مساعدة من فريق وهاج.")}

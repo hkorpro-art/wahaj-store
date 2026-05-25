@@ -50,7 +50,7 @@ export default function AdminLogin() {
           <LockKeyhole className="h-7 w-7" />
         </div>
         <div className="mt-5 text-center">
-          <p className="font-thmanyah text-3xl font-bold text-wahaj-ink">وهاج Admin</p>
+          <p className="font-thmanyah-display text-3xl font-bold text-wahaj-ink">وهاج Admin</p>
           <p className="mt-2 text-sm text-wahaj-text/70">دخول آمن لإدارة المتجر والطلبات والمحتوى.</p>
         </div>
 

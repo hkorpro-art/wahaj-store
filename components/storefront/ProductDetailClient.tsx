@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { collection, onSnapshot } from "firebase/firestore";
-import { ArrowRight, Heart, Maximize2, Minus, ShoppingBag, Sparkles, Star, X } from "lucide-react";
+import { ArrowRight, ChevronDown, Heart, Maximize2, Minus, Share2, ShoppingBag, Sparkles, Star, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -86,6 +86,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
   const [quantity, setQuantity] = useState(1);
   const [inspired, setInspired] = useState(false);
   const [added, setAdded] = useState(false);
+  const [careOpen, setCareOpen] = useState(false);
 
   const checkoutUrl = useMemo(
     () => (product ? whatsappUrl(buildSingleProductMessage(product, quantity, { color, size })) : "#"),
@@ -158,12 +159,43 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     window.setTimeout(() => setAdded(false), 1800);
   }
 
+  function handleDirectCheckout(e: React.MouseEvent) {
+    e.preventDefault();
+    if (!product) return;
+    
+    const link = window.location.href;
+    let message = `مرحباً وهاج ✨\nأرغب بطلب القطعة التالية:\n\nالمنتج: ${product.name}\n`;
+    if (color) message += `اللون: ${color}\n`;
+    if (size) message += `المقاس: ${size}\n`;
+    message += `الكمية: ${quantity}\n\n`;
+    message += `رابط القطعة: ${link}`;
+
+    window.open(whatsappUrl(message), "_blank", "noopener,noreferrer");
+  }
+
+  async function handleShare() {
+    if (navigator.share && product) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: `ألقِ نظرة على ${product.name} من وهاج ✨`,
+          url: window.location.href
+        });
+      } catch (err) {
+        console.log("Share failed", err);
+      }
+    } else {
+      await navigator.clipboard.writeText(window.location.href);
+      alert("تم نسخ الرابط!");
+    }
+  }
+
   if (!product && !liveResolved) {
     return (
       <main className="min-h-screen bg-wahaj-bg px-4 py-16 text-wahaj-text">
         <div className="mx-auto max-w-xl rounded-[8px] border border-wahaj-border bg-white/75 p-6 text-center shadow-soft">
-          <p className="font-thmanyah text-sm font-medium text-wahaj-rose">WAHAJ Live</p>
-          <h1 className="mt-3 font-display text-3xl font-medium text-wahaj-ink">جاري تحميل المنتج...</h1>
+          <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">WAHAJ Live</p>
+          <h1 className="mt-3 font-thmanyah-display text-3xl font-medium text-wahaj-ink">جاري تحميل المنتج...</h1>
         </div>
       </main>
     );
@@ -176,8 +208,8 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     return (
       <main className="min-h-screen bg-wahaj-bg px-4 py-16 text-wahaj-text">
         <div className="mx-auto max-w-xl rounded-[8px] border border-wahaj-border bg-white/75 p-6 text-center shadow-soft">
-          <p className="font-thmanyah text-sm font-medium text-wahaj-rose">WAHAJ Live</p>
-          <h1 className="mt-3 font-display text-3xl font-medium text-wahaj-ink">المنتج غير متوفر حالياً</h1>
+          <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">WAHAJ Live</p>
+          <h1 className="mt-3 font-thmanyah-display text-3xl font-medium text-wahaj-ink">المنتج غير متوفر حالياً</h1>
           <p className="mt-3 text-sm leading-7 text-wahaj-text/72">
             إذا كان المنتج قد أُزيل من Firestore فستختفي صفحته مباشرة من العرض الحي.
           </p>
@@ -204,7 +236,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             <ArrowRight className="h-5 w-5" />
           </Link>
           <div className="min-w-0 text-center">
-            <p className="truncate font-thmanyah text-lg font-medium text-wahaj-ink">{product.name}</p>
+            <p className="truncate font-thmanyah-text text-lg font-medium text-wahaj-ink">{product.name}</p>
             <p className="text-xs text-wahaj-rose">WAHAJ Detail</p>
           </div>
           <button
@@ -279,8 +311,8 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           <div className="satin-surface rounded-[8px] border border-wahaj-border p-4 shadow-soft md:p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-thmanyah text-sm font-medium text-wahaj-rose">قطعة مختارة</p>
-                <h1 className="mt-1 font-display text-3xl font-medium leading-tight text-wahaj-ink sm:text-4xl">
+                <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">قطعة مختارة</p>
+                <h1 className="mt-1 font-thmanyah-display text-3xl font-medium leading-tight text-wahaj-ink sm:text-4xl">
                   {product.name}
                 </h1>
               </div>
@@ -291,11 +323,14 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             </div>
 
             <div className="mt-4 flex flex-wrap items-end gap-3">
-              <p className="font-thmanyah text-3xl font-bold text-wahaj-rose">{formatPrice(product.price)}</p>
+              <p className="type-product-price text-3xl font-medium text-brand-burgundy">{formatPrice(product.price)}</p>
               {product.compareAt ? (
                 <p className="pb-1 text-sm text-wahaj-text/45 line-through">{formatPrice(product.compareAt)}</p>
               ) : null}
             </div>
+            {product.showScarcity && product.scarcityText ? (
+              <p className="mt-1 font-thmanyah-text text-sm text-wahaj-rose/80">{product.scarcityText}</p>
+            ) : null}
             <p className="mt-4 leading-8 text-wahaj-text/78">{product.description}</p>
             <p className="mt-3 rounded-[8px] bg-white/70 p-3 text-sm leading-7 text-wahaj-text/74">
               {product.material}
@@ -350,7 +385,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
                 >
                   <Minus className="h-4 w-4" />
                 </button>
-                <span className="min-w-8 text-center font-thmanyah text-xl font-bold">{quantity}</span>
+                <span className="min-w-8 text-center font-thmanyah-text text-xl font-medium">{quantity}</span>
                 <button
                   onClick={() => setQuantity((value) => value + 1)}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-wahaj-border"
@@ -369,15 +404,51 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
               <ShoppingBag className="h-5 w-5" />
               {added ? "تمت إضافة لمستك" : "أضيفي لمستك ✨"}
             </button>
-            <a
-              href={checkoutUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-wahaj-rose px-5 py-3 font-bold text-white shadow-glow"
+            <div className="flex gap-2">
+              <button
+                onClick={handleDirectCheckout}
+                className="flex-1 flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-wahaj-rose px-5 py-3 font-bold text-white shadow-glow"
+              >
+                <Sparkles className="h-5 w-5" />
+                اطلبي الان ✨
+              </button>
+              <button
+                onClick={handleShare}
+                className="flex min-h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-wahaj-rose bg-wahaj-soft text-wahaj-rose transition hover:bg-wahaj-rose hover:text-white"
+                aria-label="مشاركة القطعة"
+              >
+                <Share2 className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-[8px] border border-wahaj-border bg-white/76 shadow-soft">
+            <button
+              onClick={() => setCareOpen((o) => !o)}
+              className="flex w-full items-center justify-between p-4 font-bold text-wahaj-ink"
             >
-              <Sparkles className="h-5 w-5" />
-              احجزي الآن ✨
-            </a>
+              <span>تفاصيل القطعة والعناية بها</span>
+              <ChevronDown className={`h-5 w-5 text-wahaj-rose transition-transform duration-300 ${careOpen ? "rotate-180" : ""}`} />
+            </button>
+            <AnimatePresence>
+              {careOpen ? (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="border-t border-wahaj-border/50 p-4 pt-2 text-sm leading-7 text-wahaj-text/80">
+                    <p>للحفاظ على بريق الزركون ولمعة القطعة الفاخرة لأطول فترة ممكنة:</p>
+                    <ul className="mt-2 list-inside list-disc space-y-1">
+                      <li>تجنبي تعريض القطعة للعطور أو المواد الكيميائية مباشرة.</li>
+                      <li>احفظيها في علبتها الأصلية بعيداً عن الرطوبة.</li>
+                      <li>نظفي القطعة بلطف باستخدام المنديل المرفق بعد كل استخدام.</li>
+                    </ul>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         </section>
       </div>
@@ -385,7 +456,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       <section className="mx-auto mt-8 max-w-6xl px-4 md:px-6 lg:px-8">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="font-thmanyah text-sm font-medium text-wahaj-rose">تقييمات وهاج</p>
+            <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">تقييمات وهاج</p>
             <h2 className="type-section text-wahaj-ink">لمعة وصلت لعميلاتنا</h2>
           </div>
         </div>
@@ -408,7 +479,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       {similarProducts.length > 0 ? (
         <section className="mx-auto mt-8 max-w-6xl px-4 md:px-6 lg:px-8">
           <div className="mb-4">
-            <p className="font-thmanyah text-sm font-medium text-wahaj-rose">قد تناسبك</p>
+            <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">قد تناسبك</p>
             <h2 className="type-section text-wahaj-ink">منتجات مشابهة</h2>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -429,7 +500,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
                 </div>
                 <div className="p-3">
                   <p className="line-clamp-2 min-h-10 text-sm font-bold text-wahaj-ink">{item.name}</p>
-                  <p className="mt-2 text-sm font-bold text-wahaj-rose">{formatPrice(item.price)}</p>
+                  <p className="type-product-price mt-2 font-medium text-brand-burgundy">{formatPrice(item.price)}</p>
                 </div>
               </Link>
             ))}

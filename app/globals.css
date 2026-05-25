@@ -3,24 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --wahaj-primary: #d89ca4;
-  --wahaj-rose: #b76e79;
-  --wahaj-soft: #f3d6d9;
-  --wahaj-bg: #fff9f7;
-  --wahaj-card: #f8eceb;
-  --wahaj-text: #6b4e4e;
-  --wahaj-border: #e8d6d6;
+  --brand-burgundy: #450006;
+  --brand-champagne: #d9c4a0;
+  --brand-gold: #c9a962;
+  --brand-beige: #f3e1e4;
+  --brand-sand: #ede6dc;
+  --brand-ink: #2a1215;
+  --font-thmanyah-display-fallback: Georgia, "Times New Roman", serif;
+  --font-thmanyah-text-fallback: Arial, sans-serif;
+  --wahaj-primary: var(--brand-champagne);
+  --wahaj-rose: var(--brand-burgundy);
+  --wahaj-soft: #f0e6dc;
+  --wahaj-bg: var(--brand-beige);
+  --wahaj-card: var(--brand-sand);
+  --wahaj-text: #6e5254;
+  --wahaj-border: #e0d4c8;
   --wahaj-success: #8faf9a;
-  --wahaj-warning: #d8a48f;
-  --wahaj-stars: #e0b56a;
-  --wahaj-font-sans: var(--font-thmanyah-sans), Arial, sans-serif;
-  --wahaj-font-display: var(--font-thmanyah-serif-display), "Times New Roman", serif;
-  --wahaj-font-features: "ss01" on, "salt" on, "liga" on, "calt" on;
+  --wahaj-warning: var(--brand-gold);
+  --wahaj-stars: var(--brand-gold);
+  --wahaj-ink: var(--brand-ink);
 }
 
 * {
   box-sizing: border-box;
-  letter-spacing: 0;
 }
 
 html {
@@ -28,38 +33,59 @@ html {
   background: var(--wahaj-bg);
 }
 
+html.wahaj-splash-active,
+html[data-splash="active"] {
+  overflow: hidden;
+}
+
 body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at 14% 0%, rgba(224, 181, 106, 0.13), transparent 28%),
-    radial-gradient(circle at 82% 9%, rgba(216, 156, 164, 0.18), transparent 30%),
+    radial-gradient(circle at 14% 0%, rgba(201, 169, 98, 0.1), transparent 28%),
+    radial-gradient(circle at 82% 9%, rgba(69, 0, 6, 0.06), transparent 30%),
     var(--wahaj-bg);
   color: var(--wahaj-text);
-  font-family: var(--font-thmanyah-sans);
+  font-family: var(--font-thmanyah-text), var(--font-thmanyah-text-fallback);
   font-weight: 400;
-  line-height: 1.7;
-  font-feature-settings: var(--wahaj-font-features);
-  font-variant-ligatures: contextual common-ligatures;
+  line-height: 1.75;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
 }
 
-h1,
-h2,
-.wahaj-display,
-.type-hero,
-.type-section,
-.font-alexandria {
-  font-family: var(--font-thmanyah-serif-display);
-  font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: 0;
-  font-feature-settings: var(--wahaj-font-features);
-  font-variant-ligatures: contextual common-ligatures;
+.wahaj-app-shell {
+  min-height: 100vh;
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+  will-change: opacity, transform;
 }
 
+html[data-splash="ready"] .wahaj-app-shell {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.88s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Display: عناوين، شعار، أقسام فاخرة ── */
+h1,
+h2,
+.type-hero,
+.type-section,
+.lux-section > h2,
+.lux-section .type-section,
+.font-thmanyah-display,
+.font-display,
+.wahaj-display {
+  font-family: var(--font-thmanyah-display), var(--font-thmanyah-display-fallback);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+/* ── Text: أزرار، فقرات، أسعار، وصف ── */
 h3,
 h4,
 h5,
@@ -70,12 +96,11 @@ button,
 input,
 textarea,
 select,
-.font-cairo,
-.font-plex,
+label,
+.font-thmanyah-text,
+.font-thmanyah,
 .font-sans {
-  font-family: var(--font-thmanyah-sans);
-  font-feature-settings: var(--wahaj-font-features);
-  font-variant-ligatures: contextual common-ligatures;
+  font-family: var(--font-thmanyah-text), var(--font-thmanyah-text-fallback);
 }
 
 button,
@@ -87,8 +112,9 @@ select {
 
 button,
 .wahaj-button {
+  font-family: var(--font-thmanyah-text), var(--font-thmanyah-text-fallback);
   font-weight: 500;
-  letter-spacing: 0;
+  letter-spacing: 0.02em;
 }
 
 button.font-bold,
@@ -102,7 +128,7 @@ a.flex[class*="rounded"] {
 
 nav,
 .wahaj-nav {
-  font-family: var(--font-thmanyah-sans);
+  font-family: var(--font-thmanyah-text), var(--font-thmanyah-text-fallback);
   font-size: 0.95rem;
   font-weight: 500;
   line-height: 1.7;
@@ -122,25 +148,83 @@ img {
 }
 
 ::selection {
-  background: rgba(216, 156, 164, 0.32);
+  background: rgba(201, 169, 98, 0.28);
+  color: var(--brand-ink);
+}
+
+.wahaj-brand-wordmark {
+  font-family: var(--font-thmanyah-display), var(--font-thmanyah-display-fallback);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--brand-burgundy);
+  text-shadow: 0 0 28px rgba(201, 169, 98, 0.22);
+}
+
+.wahaj-brand-subtitle {
+  font-family: var(--font-thmanyah-text), var(--font-thmanyah-text-fallback);
+  font-size: 0.68rem;
+  font-weight: 300;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(69, 0, 6, 0.62);
+}
+
+.wahaj-splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  pointer-events: all;
+}
+
+.wahaj-splash-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(201, 169, 98, 0.16), transparent 52%),
+    linear-gradient(180deg, #f3e1e4 0%, #ede6dc 100%);
+}
+
+.wahaj-splash-brand-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+}
+
+.wahaj-splash-glow {
+  position: absolute;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: min(72vw, 280px);
+  height: min(72vw, 280px);
+  transform: translate(-50%, -54%);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(201, 169, 98, 0.34) 0%, rgba(201, 169, 98, 0.08) 42%, transparent 72%);
+  filter: blur(8px);
+  pointer-events: none;
 }
 
 .satin-surface {
   background:
     radial-gradient(circle at 16% 12%, rgba(255, 255, 255, 0.9), transparent 34%),
-    radial-gradient(circle at 88% 6%, rgba(216, 156, 164, 0.24), transparent 36%),
-    linear-gradient(145deg, rgba(255, 249, 247, 0.92), rgba(248, 236, 235, 0.9));
+    radial-gradient(circle at 88% 6%, rgba(217, 196, 160, 0.2), transparent 36%),
+    linear-gradient(145deg, rgba(243, 225, 228, 0.92), rgba(237, 230, 220, 0.9));
 }
 
 .glass {
-  border: 1px solid rgba(232, 214, 214, 0.78);
-  background: rgba(255, 252, 250, 0.74);
-  box-shadow: 0 16px 48px rgba(107, 78, 78, 0.09);
+  border: 1px solid rgba(224, 212, 200, 0.78);
+  background: rgba(255, 252, 248, 0.74);
+  box-shadow: 0 16px 48px rgba(42, 18, 21, 0.08);
   backdrop-filter: blur(18px);
 }
 
 .rose-glow {
-  box-shadow: 0 0 0 1px rgba(216, 156, 164, 0.2), 0 16px 44px rgba(183, 110, 121, 0.18);
+  box-shadow: 0 0 0 1px rgba(201, 169, 98, 0.2), 0 16px 44px rgba(69, 0, 6, 0.12);
 }
 
 .hide-scrollbar {
@@ -166,29 +250,46 @@ img {
 }
 
 .type-hero {
-  font-size: clamp(2.5rem, 7vw, 4.5rem);
-  line-height: 1.1;
+  font-family: var(--font-thmanyah-display), var(--font-thmanyah-display-fallback);
+  font-size: clamp(2.65rem, 7.2vw, 4.75rem);
+  line-height: 1.08;
   font-weight: 500;
 }
 
 .type-section {
-  font-size: clamp(1.8rem, 5vw, 3rem);
-  line-height: 1.2;
+  font-family: var(--font-thmanyah-display), var(--font-thmanyah-display-fallback);
+  font-size: clamp(1.95rem, 5.2vw, 3.15rem);
+  line-height: 1.18;
   font-weight: 500;
 }
 
 .type-product-title {
-  font-family: var(--font-thmanyah-sans);
-  font-size: 1rem;
+  font-family: var(--font-thmanyah-display), var(--font-thmanyah-display-fallback);
+  font-size: 1.1rem;
   font-weight: 500;
-  line-height: 1.5;
+  line-height: 1.55;
+}
+
+.type-product-price {
+  font-family: var(--font-thmanyah-text), var(--font-thmanyah-text-fallback);
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .type-product-description {
-  font-family: var(--font-thmanyah-sans);
-  font-size: 0.95rem;
+  font-family: var(--font-thmanyah-text), var(--font-thmanyah-text-fallback);
+  font-size: 1rem;
   font-weight: 400;
-  line-height: 1.8;
+  line-height: 1.85;
+}
+
+.lux-section {
+  margin-top: 2.25rem;
+}
+
+.lux-section:first-of-type {
+  margin-top: 1.5rem;
 }
 
 .offer-marquee {
@@ -204,30 +305,6 @@ img {
   }
 }
 
-.lux-loader {
-  width: 56px;
-  height: 56px;
-  border-radius: 999px;
-  border: 1px solid rgba(183, 110, 121, 0.22);
-  border-top-color: var(--wahaj-rose);
-  animation: spin 1s linear infinite;
-  position: relative;
-}
-
-.lux-loader::after {
-  content: "";
-  position: absolute;
-  inset: 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(224, 181, 106, 0.38);
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .app-safe-bottom {
   padding-bottom: calc(98px + env(safe-area-inset-bottom));
 }
@@ -238,7 +315,7 @@ img {
 }
 
 .admin-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(183, 110, 121, 0.22);
+  background: rgba(69, 0, 6, 0.18);
   border-radius: 999px;
 }
 
@@ -251,9 +328,10 @@ img {
   padding: 0 14px;
   color: var(--wahaj-text);
   outline: none;
+  font-family: var(--font-thmanyah-text), var(--font-thmanyah-text-fallback);
 }
 
 .AdminInput:focus {
   border-color: var(--wahaj-rose);
-  box-shadow: 0 0 0 3px rgba(216, 156, 164, 0.16);
+  box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.2);
 }

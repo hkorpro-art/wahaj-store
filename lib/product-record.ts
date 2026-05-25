@@ -42,7 +42,9 @@ export function rowToManagedProduct(row: ProductRow): ManagedProduct | null {
     views: numberValue(row.views, 0),
     sold: numberValue(row.sold, 0),
     visible: booleanValue(row.visible, true),
-    discountEndsAt: stringValue(row.discount_ends_at ?? row.discountEndsAt) || undefined
+    discountEndsAt: stringValue(row.discount_ends_at ?? row.discountEndsAt) || undefined,
+    showScarcity: booleanValue(row.showScarcity ?? row.show_scarcity, false),
+    scarcityText: stringValue(row.scarcityText ?? row.scarcity_text)
   };
 }
 
@@ -69,7 +71,9 @@ export function productToRow(product: ManagedProduct) {
     views: product.views,
     sold: product.sold,
     visible: product.visible !== false,
-    discount_ends_at: product.discountEndsAt ?? null
+    discount_ends_at: product.discountEndsAt ?? null,
+    show_scarcity: product.showScarcity ?? false,
+    scarcity_text: product.scarcityText ?? ""
   };
 }
 

@@ -36,11 +36,16 @@ export const managedProductsInputSchema = z.object({
 });
 
 export const orderInputSchema = z.object({
+  id: z.string().optional(),
   customer: z.string().min(2).max(80),
   phone: z.string().min(7).max(24),
   products: z.array(z.string().min(1)).min(1),
   total: z.number().nonnegative(),
-  notes: z.string().max(500).optional()
+  notes: z.string().max(500).optional(),
+  isGift: z.boolean().optional(),
+  giftMessage: z.string().max(500).optional(),
+  status: z.string().optional(),
+  createdAt: z.string().optional()
 });
 
 export const loginSchema = z.object({

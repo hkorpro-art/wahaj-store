@@ -1,33 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
+import PremiumSplashLoader from "@/components/storefront/PremiumSplashLoader";
 import "./globals.css";
 
-const thmanyahSans = localFont({
-  src: [
-    {
-      path: "../public/fonts/thmanyah-sans-regular.woff2",
-      weight: "400",
-      style: "normal"
-    },
-    {
-      path: "../public/fonts/thmanyah-sans-medium.woff2",
-      weight: "500",
-      style: "normal"
-    },
-    {
-      path: "../public/fonts/thmanyah-sans-bold.woff2",
-      weight: "700",
-      style: "normal"
-    }
-  ],
-  variable: "--font-thmanyah-sans",
-  display: "swap",
-  preload: true,
-  fallback: ["Arial", "sans-serif"]
-});
-
-const thmanyahSerifDisplay = localFont({
+const thmanyahDisplay = localFont({
   src: [
     {
       path: "../public/fonts/thmanyah-serif-display-regular.woff2",
@@ -38,17 +15,36 @@ const thmanyahSerifDisplay = localFont({
       path: "../public/fonts/thmanyah-serif-display-medium.woff2",
       weight: "500",
       style: "normal"
+    }
+  ],
+  variable: "--font-thmanyah-display",
+  display: "swap",
+  preload: true,
+  fallback: ["Georgia", "Times New Roman", "serif"]
+});
+
+const thmanyahText = localFont({
+  src: [
+    {
+      path: "../public/fonts/thmanyah-sans-light.woff2",
+      weight: "300",
+      style: "normal"
     },
     {
-      path: "../public/fonts/thmanyah-serif-display-bold.woff2",
-      weight: "700",
+      path: "../public/fonts/thmanyah-sans-regular.woff2",
+      weight: "400",
+      style: "normal"
+    },
+    {
+      path: "../public/fonts/thmanyah-sans-medium.woff2",
+      weight: "500",
       style: "normal"
     }
   ],
-  variable: "--font-thmanyah-serif-display",
+  variable: "--font-thmanyah-text",
   display: "swap",
   preload: true,
-  fallback: ["Times New Roman", "serif"]
+  fallback: ["Arial", "sans-serif"]
 });
 
 export const metadata: Metadata = {
@@ -73,14 +69,17 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#FFF9F7"
+  themeColor: "#F3E1E4"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="ar" dir="rtl">
-      <body className={`${thmanyahSans.variable} ${thmanyahSerifDisplay.variable}`}>
-        {children}
+    <html lang="ar" dir="rtl" data-splash="active" suppressHydrationWarning>
+      <body
+        className={`${thmanyahDisplay.variable} ${thmanyahText.variable} font-thmanyah-text font-normal antialiased`}
+      >
+        <PremiumSplashLoader />
+        <div className="wahaj-app-shell">{children}</div>
       </body>
     </html>
   );

@@ -60,11 +60,11 @@ npm run build
 
 اربطي المستودع مع Vercel واضبطي متغيرات البيئة نفسها الموجودة في `.env.example`. لا ترفعي `node_modules` أو `.next`.
 
-## الخطوط
+## الخطوط (ثمانية)
 
-تم اعتماد خطوط ثمانية محليًا داخل `public/fonts`:
+الخطوط مُستضافة محليًا من [font.thmanyah.com](https://font.thmanyah.com/) داخل `public/fonts`:
 
-- `Thmanyah Sans` للواجهة، المنتجات، الأزرار، لوحة التحكم، والمدخلات.
-- `Thmanyah Serif Display` للعناوين الفاخرة والـ Hero والصفحات التحريرية.
+- `font-thmanyah-display` — Thmanyah Serif Display للشعار والعناوين والأقسام الفاخرة.
+- `font-thmanyah-text` — Thmanyah Sans للأزرار والأسعار والوصف وبقية النصوص.
 
-التحميل يتم عبر `next/font/local` مع `preload` و`font-display: swap`، وتم تفعيل خصائص OpenType: `ss01`, `salt`, `liga`, `calt`.
+التحميل عبر `next/font/local` مع `preload` و`font-display: swap`.
