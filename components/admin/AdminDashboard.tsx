@@ -32,7 +32,8 @@ import {
   TrendingUp,
   UploadCloud,
   UsersRound,
-  WandSparkles
+  WandSparkles,
+  X
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ComponentType, type DragEvent, type ReactNode } from "react";
 import {
@@ -51,7 +52,11 @@ import {
 } from "recharts";
 import {
   adminStorageKeys,
+  createEmptyHeroSlide,
+  defaultHeroAnimationSettings,
   defaultSiteContent,
+  type HeroAnimationSettings,
+  type HeroSlide,
   type ManagedCoupon,
   type ManagedNotification,
   type ManagedProduct,
@@ -73,6 +78,7 @@ import type { Order, OrderStatus, ProductBadge, ProductStatus } from "@/lib/type
 
 const tabs = [
   { id: "overview", label: "الرئيسية", icon: LayoutDashboard },
+  { id: "hero", label: "الهيرو", icon: ImageIcon },
   { id: "products", label: "المنتجات", icon: PackagePlus },
   { id: "orders", label: "الطلبات", icon: ShoppingBag },
   { id: "customers", label: "العميلات", icon: UsersRound },
@@ -193,6 +199,8 @@ export default function AdminDashboard() {
   const [stories, setStories] = useState<ManagedStory[]>(seedManagedStories);
   const [notifications, setNotifications] = useState<ManagedNotification[]>(initialNotifications);
   const [vipPhones, setVipPhones] = useState<string[]>([]);
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
+  const [heroSettings, setHeroSettings] = useState<HeroAnimationSettings>(defaultHeroAnimationSettings);
   const [search, setSearch] = useState("");
   const [productSyncState, setProductSyncState] = useState<ProductSyncState>("loading");
   const [toast, setToast] = useState("جاري التحقق من ربط المنتجات بقاعدة البيانات المشتركة...");
@@ -265,7 +273,11 @@ export default function AdminDashboard() {
     setStories(readStored(adminStorageKeys.stories, seedManagedStories()));
     setNotifications(readStored(adminStorageKeys.notifications, initialNotifications));
     setVipPhones(readStored(adminStorageKeys.vipPhones, []));
+    setHeroSlides(readStored(adminStorageKeys.heroSlides, []));
+    setHeroSettings({ ...defaultHeroAnimationSettings, ...readStored(adminStorageKeys.heroSettings, defaultHeroAnimationSettings) });
     setHydrated(true);
+
+    void loadHeroSlides();
   }, []);
 
   useEffect(() => {
@@ -291,6 +303,55 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (hydrated) writeStored(adminStorageKeys.vipPhones, vipPhones);
   }, [hydrated, vipPhones]);
+
+  useEffect(() => {
+    if (hydrated) writeStored(adminStorageKeys.heroSlides, heroSlides);
+  }, [hydrated, heroSlides]);
+
+  useEffect(() => {
+    if (hydrated) writeStored(adminStorageKeys.heroSettings, heroSettings);
+  }, [hydrated, heroSettings]);
+
+  async function loadHeroSlides() {
+    try {
+      const response = await fetch(`/api/hero-slides?refresh=${Date.now()}`, { cache: "no-store" });
+      const payload = await response.json().catch(() => null);
+      if (response.ok && payload) {
+        if (Array.isArray(payload.slides) && payload.slides.length > 0) {
+          setHeroSlides(payload.slides);
+        }
+        if (payload.settings) {
+          setHeroSettings(payload.settings);
+        }
+      }
+    } catch {
+      // use local state
+    }
+  }
+
+  async function persistHeroSlides(slides: HeroSlide[]) {
+    try {
+      await fetch("/api/hero-slides", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slides })
+      });
+    } catch {
+      // local-only
+    }
+  }
+
+  async function persistHeroSettings(settings: HeroAnimationSettings) {
+    try {
+      await fetch("/api/hero-slides", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings)
+      });
+    } catch {
+      // local-only
+    }
+  }
 
   const filteredProducts = useMemo(() => {
     const term = search.trim();
@@ -418,9 +479,6 @@ export default function AdminDashboard() {
       [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
       void persistProducts(next, "Product order updated for customers.");
       return next;
-    });
-  }
-
     });
   }
 
@@ -651,6 +709,25 @@ export default function AdminDashboard() {
                 conversionRate={conversionRate}
                 abandonedRate={abandonedRate}
                 onQuickAction={setActiveTab}
+              />
+            ) : null}
+
+            {activeTab === "hero" ? (
+              <HeroCarouselManager
+                slides={heroSlides}
+                settings={heroSettings}
+                products={products}
+                showToast={showToast}
+                onSlidesChange={(next) => {
+                  setHeroSlides(next);
+                  void persistHeroSlides(next);
+                  showToast("تم تحديث شرائح الهيرو.");
+                }}
+                onSettingsChange={(next) => {
+                  setHeroSettings(next);
+                  void persistHeroSettings(next);
+                  showToast("تم تحديث إعدادات الحركة.");
+                }}
               />
             ) : null}
 
@@ -991,6 +1068,31 @@ async function uploadImageToImageKit(file: File, folder: ImageKitFolder): Promis
     throw new Error(`حجم الملف كبير جداً: ${file.name}`);
   }
 
+  // Check if we are running on localhost to apply the hybrid proxy solution
+  const isLocalhost = typeof window !== "undefined" && 
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
+  if (isLocalhost) {
+    const proxyFormData = new FormData();
+    proxyFormData.append("file", file);
+    proxyFormData.append("folder", folder);
+    proxyFormData.append("fileName", createProductImageFileName(file.name));
+
+    const response = await fetch("/api/imagekit-upload", {
+      method: "POST",
+      body: proxyFormData
+    });
+
+    const payload = (await response.json().catch(() => null)) as ImageKitUploadResponse | null;
+
+    if (!response.ok || !payload?.url) {
+      throw new Error(payload?.message || `تعذر رفع الصورة عبر البروكسي: ${file.name}`);
+    }
+
+    return storeImage(payload.url, payload.fileId || "");
+  }
+
+  // Otherwise, use direct client-side upload for production (avoiding serverless body size limits)
   const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY;
 
   if (!publicKey) {
@@ -998,6 +1100,7 @@ async function uploadImageToImageKit(file: File, folder: ImageKitFolder): Promis
   }
 
   const auth = await getImageKitAuthParameters();
+
   const formData = new FormData();
 
   formData.append("file", file);
@@ -1013,6 +1116,7 @@ async function uploadImageToImageKit(file: File, folder: ImageKitFolder): Promis
     method: "POST",
     body: formData
   });
+
   const payload = (await response.json().catch(() => null)) as ImageKitUploadResponse | null;
 
   if (!response.ok || !payload?.url) {
@@ -2423,6 +2527,588 @@ function AiAssistant({ initialName }: { initialName: string }) {
         </div>
       </Panel>
     </div>
+  );
+}
+
+function HeroCarouselManager({
+  slides,
+  settings,
+  products,
+  showToast,
+  onSlidesChange,
+  onSettingsChange
+}: {
+  slides: HeroSlide[];
+  settings: HeroAnimationSettings;
+  products: ManagedProduct[];
+  showToast: (message: string) => void;
+  onSlidesChange: (slides: HeroSlide[]) => void;
+  onSettingsChange: (settings: HeroAnimationSettings) => void;
+}) {
+  const [editingSlide, setEditingSlide] = useState<HeroSlide | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [previewSlide, setPreviewSlide] = useState<HeroSlide | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [isDesktop, setIsDesktop] = useState(true);
+
+  useEffect(() => {
+    function checkWidth() {
+      setIsDesktop(window.innerWidth >= 1280);
+    }
+    checkWidth();
+    window.addEventListener("resize", checkWidth);
+    return () => window.removeEventListener("resize", checkWidth);
+  }, []);
+
+  function handleAdd() {
+    const newSlide = createEmptyHeroSlide();
+    newSlide.sortOrder = slides.length;
+    setEditingSlide(newSlide);
+    setIsAdding(true);
+  }
+
+  function handleSaveSlide(slide: HeroSlide) {
+    const next = isAdding
+      ? [...slides, slide]
+      : slides.map((s) => (s.id === slide.id ? slide : s));
+    onSlidesChange(next.sort((a, b) => a.sortOrder - b.sortOrder));
+    setEditingSlide(null);
+    setIsAdding(false);
+  }
+
+  function handleDeleteSlide(id: string) {
+    onSlidesChange(slides.filter((s) => s.id !== id));
+  }
+
+  function handleDuplicateSlide(slide: HeroSlide) {
+    const copy = {
+      ...slide,
+      id: `hero-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      title: slide.title + " (نسخة)",
+      sortOrder: slides.length,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    onSlidesChange([...slides, copy].sort((a, b) => a.sortOrder - b.sortOrder));
+  }
+
+  function handleToggleActive(id: string) {
+    const slide = slides.find((s) => s.id === id);
+    if (!slide) return;
+    if (!slide.isActive) {
+      const hasValidDest = slide.destinationType === "url"
+        ? slide.destinationValue.trim().length > 0
+        : slide.destinationValue.trim().length > 0;
+      if (!hasValidDest) {
+        showToast("لا يمكن التنشيط بدون وجهة صحيحة.");
+        return;
+      }
+    }
+    onSlidesChange(slides.map((s) => (s.id === id ? { ...s, isActive: !s.isActive, updatedAt: new Date().toISOString() } : s)));
+  }
+
+  function handleMoveSlide(id: string, direction: -1 | 1) {
+    const sorted = [...slides].sort((a, b) => a.sortOrder - b.sortOrder);
+    const idx = sorted.findIndex((s) => s.id === id);
+    const target = idx + direction;
+    if (idx < 0 || target < 0 || target >= sorted.length) return;
+    [sorted[idx], sorted[target]] = [sorted[target], sorted[idx]];
+    const reordered = sorted.map((s, i) => ({ ...s, sortOrder: i }));
+    onSlidesChange(reordered);
+  }
+
+  function handleDragStart(e: DragEvent, index: number) {
+    setDragIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  }
+
+  function handleDragOver(e: DragEvent) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+
+  function handleDrop(e: DragEvent, dropIndex: number) {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === dropIndex) return;
+    const sorted = [...slides].sort((a, b) => a.sortOrder - b.sortOrder);
+    const [moved] = sorted.splice(dragIndex, 1);
+    sorted.splice(dropIndex, 0, moved);
+    const reordered = sorted.map((s, i) => ({ ...s, sortOrder: i }));
+    onSlidesChange(reordered);
+    setDragIndex(null);
+  }
+
+  const activeSlides = slides.filter((s) => {
+    const now = new Date().toISOString();
+    if (s.startDate && s.startDate > now) return false;
+    if (s.endDate && s.endDate < now) return false;
+    return s.isActive;
+  });
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-3">
+      <div className="space-y-5 xl:col-span-2">
+        <Panel title="شرائح الهيرو" icon={ImageIcon}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-wahaj-text/64">{slides.length} شريحة / {activeSlides.length} نشطة</p>
+              <button onClick={handleAdd} className="rounded-full bg-wahaj-rose px-4 py-2 text-sm font-bold text-white">
+                + شريحة جديدة
+              </button>
+            </div>
+
+            {slides.length === 0 ? (
+              <EmptyState text="لا توجد شرائح بعد. أضفي شريحة لتظهر في الهيرو." />
+            ) : (
+              <div className="space-y-2">
+                {[...slides].sort((a, b) => a.sortOrder - b.sortOrder).map((slide, index) => (
+                  <div
+                    key={slide.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e as unknown as DragEvent, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e as unknown as DragEvent, index)}
+                    className={`flex items-center gap-3 rounded-[8px] border bg-white p-3 transition-all ${
+                      dragIndex === index ? "border-wahaj-rose shadow-glow opacity-70" : "border-wahaj-border"
+                    } ${!slide.isActive ? "opacity-50" : ""}`}
+                  >
+                    <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-wahaj-text/40" />
+
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[6px] bg-wahaj-card">
+                      {slide.image.url ? (
+                        <img src={slide.image.url} alt={slide.title} className="h-full w-full object-contain" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <ImageIcon className="h-5 w-5 text-wahaj-text/30" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-wahaj-ink">{slide.title || "بدون عنوان"}</p>
+                      <p className="truncate text-xs text-wahaj-text/64">{slide.subtitle || `Focus: ${slide.focusX ?? 50}%, ${slide.focusY ?? 40}%`}</p>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => handleMoveSlide(slide.id, -1)} disabled={index === 0} className="flex h-7 w-7 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose disabled:opacity-30" aria-label="تحريك لأعلى">
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => handleMoveSlide(slide.id, 1)} disabled={index === slides.length - 1} className="flex h-7 w-7 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose disabled:opacity-30" aria-label="تحريك لأسفل">
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => handleToggleActive(slide.id)} className={`flex h-7 w-7 items-center justify-center rounded-full ${slide.isActive ? "bg-wahaj-success/18 text-wahaj-success" : "bg-wahaj-card text-wahaj-text/40"}`} aria-label="تفعيل/تعطيل">
+                        <Eye className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => setPreviewSlide(slide)} className="flex h-7 w-7 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose" aria-label="معاينة">
+                        <Sparkles className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => { setEditingSlide(slide); setIsAdding(false); }} className="flex h-7 w-7 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose" aria-label="تعديل">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => handleDuplicateSlide(slide)} className="flex h-7 w-7 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose" aria-label="تكرار">
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => handleDeleteSlide(slide.id)} className="flex h-7 w-7 items-center justify-center rounded-full bg-red-50 text-red-500" aria-label="حذف">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Panel>
+
+        <Panel title="إعدادات الحركة" icon={Settings2}>
+          <div className="space-y-4">
+            <label className="flex items-center justify-between gap-3">
+              <span className="text-sm font-bold">إظهار الهيرو</span>
+              <button onClick={() => onSettingsChange({ ...settings, showHero: !settings.showHero })} className={`relative h-6 w-11 rounded-full transition-colors ${settings.showHero ? "bg-wahaj-success" : "bg-wahaj-border"}`}>
+                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.showHero ? "left-5.5 translate-x-0" : "left-0.5"}`} />
+              </button>
+            </label>
+
+            <label className="flex items-center justify-between gap-3">
+              <span className="text-sm font-bold">التشغيل التلقائي</span>
+              <button onClick={() => onSettingsChange({ ...settings, autoPlay: !settings.autoPlay })} className={`relative h-6 w-11 rounded-full transition-colors ${settings.autoPlay ? "bg-wahaj-success" : "bg-wahaj-border"}`}>
+                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.autoPlay ? "left-5.5 translate-x-0" : "left-0.5"}`} />
+              </button>
+            </label>
+
+            <label className="flex items-center justify-between gap-3">
+              <span className="text-sm font-bold">تأثير الطفو</span>
+              <button onClick={() => onSettingsChange({ ...settings, floatingEffect: !settings.floatingEffect })} className={`relative h-6 w-11 rounded-full transition-colors ${settings.floatingEffect ? "bg-wahaj-success" : "bg-wahaj-border"}`}>
+                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${settings.floatingEffect ? "left-5.5 translate-x-0" : "left-0.5"}`} />
+              </button>
+            </label>
+
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-sm font-bold">سرعة الانتقال</span>
+                <span className="text-xs text-wahaj-text/64">{settings.transitionSpeed}ms</span>
+              </div>
+              <input type="range" min={200} max={2000} step={50} value={settings.transitionSpeed} onChange={(e) => onSettingsChange({ ...settings, transitionSpeed: Number(e.target.value) })} className="w-full accent-wahaj-rose" />
+            </div>
+
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-sm font-bold">فترة التشغيل التلقائي</span>
+                <span className="text-xs text-wahaj-text/64">{settings.autoPlayInterval / 1000}s</span>
+              </div>
+              <input type="range" min={2000} max={15000} step={500} value={settings.autoPlayInterval} onChange={(e) => onSettingsChange({ ...settings, autoPlayInterval: Number(e.target.value) })} className="w-full accent-wahaj-rose" />
+            </div>
+
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-sm font-bold">ضبابية الخلفية</span>
+                <span className="text-xs text-wahaj-text/64">{settings.backgroundBlur}px</span>
+              </div>
+              <input type="range" min={0} max={12} step={1} value={settings.backgroundBlur} onChange={(e) => onSettingsChange({ ...settings, backgroundBlur: Number(e.target.value) })} className="w-full accent-wahaj-rose" />
+            </div>
+
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-sm font-bold">مقياس المنتجات الجانبية</span>
+                <span className="text-xs text-wahaj-text/64">{settings.sideScale}</span>
+              </div>
+              <input type="range" min={0.3} max={1} step={0.05} value={settings.sideScale} onChange={(e) => onSettingsChange({ ...settings, sideScale: Number(e.target.value) })} className="w-full accent-wahaj-rose" />
+            </div>
+          </div>
+        </Panel>
+      </div>
+
+      <div className="xl:col-span-1">
+        {!isDesktop && editingSlide ? null : editingSlide ? (
+          <SlideEditor slide={editingSlide} products={products} onSave={handleSaveSlide} onCancel={() => { setEditingSlide(null); setIsAdding(false); }} />
+        ) : previewSlide ? (
+          <SlidePreview slide={previewSlide} settings={settings} products={products} onClose={() => setPreviewSlide(null)} />
+        ) : (
+          <Panel title="معاينة سريعة" icon={Eye}>
+            <div className="rounded-[8px] bg-gradient-to-b from-wahaj-bg via-wahaj-card/40 to-wahaj-bg p-4 text-center">
+              <ImageIcon className="mx-auto h-10 w-10 text-wahaj-text/20" />
+              <p className="mt-2 text-sm text-wahaj-text/50">اختاري شريحة للمعاينة</p>
+            </div>
+          </Panel>
+        )}
+      </div>
+
+      {!isDesktop && editingSlide && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <button className="absolute inset-0 bg-wahaj-ink/40 backdrop-blur-sm" onClick={() => { setEditingSlide(null); setIsAdding(false); }} aria-label="إغلاق" />
+          <div className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-[12px] border border-wahaj-border bg-white shadow-satin">
+            <div className="flex items-center justify-between border-b border-wahaj-border px-4 py-3">
+              <h3 className="font-thmanyah-text text-lg font-bold text-wahaj-ink">
+                {editingSlide.id.startsWith("hero-") && !editingSlide.title ? "شريحة جديدة" : `تعديل: ${editingSlide.title}`}
+              </h3>
+              <button onClick={() => { setEditingSlide(null); setIsAdding(false); }} className="flex h-8 w-8 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <SlideEditorForm slide={editingSlide} products={products} onSave={handleSaveSlide} onCancel={() => { setEditingSlide(null); setIsAdding(false); }} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SlideEditor({
+  slide,
+  products,
+  onSave,
+  onCancel
+}: {
+  slide: HeroSlide;
+  products: ManagedProduct[];
+  onSave: (slide: HeroSlide) => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Panel title={slide.id.startsWith("hero-") && !slide.title ? "شريحة جديدة" : `تعديل: ${slide.title}`} icon={Pencil}>
+      <SlideEditorForm slide={slide} products={products} onSave={onSave} onCancel={onCancel} />
+    </Panel>
+  );
+}
+
+function SlideEditorForm({
+  slide,
+  products,
+  onSave,
+  onCancel
+}: {
+  slide: HeroSlide;
+  products: ManagedProduct[];
+  onSave: (slide: HeroSlide) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<HeroSlide>(() => ({ ...slide, autoContrast: slide.autoContrast ?? true }));
+  const [uploading, setUploading] = useState(false);
+
+  const destinationCategories = [
+    { id: "new", label: "جديد" },
+    { id: "sets", label: "أطقم" },
+    { id: "offers", label: "عروض" },
+    { id: "trend", label: "ترند" },
+    { id: "clients", label: "تصوير عميلات" }
+  ];
+
+  const hasValidDestination = draft.destinationType === "url"
+    ? draft.destinationValue.trim().length > 0
+    : draft.destinationValue.trim().length > 0;
+
+  function getDestinationLabel(): string {
+    if (draft.destinationType === "product") {
+      const p = products.find((p) => p.id === draft.destinationValue);
+      return p ? `منتج → ${p.name}` : "لم يُختار منتج";
+    }
+    if (draft.destinationType === "category") {
+      const c = destinationCategories.find((c) => c.id === draft.destinationValue);
+      return c ? `تصنيف → ${c.label}` : "لم يُختار تصنيف";
+    }
+    return draft.destinationValue ? `رابط → ${draft.destinationValue}` : "لم يُحدد رابط";
+  }
+
+  async function handleImageUpload(file: File, field: "image" | "mobileImage") {
+    setUploading(true);
+    try {
+      const storedImage = await uploadImageToImageKit(file, "/products");
+      setDraft((prev) => ({
+        ...prev,
+        [field]: storedImage,
+        updatedAt: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.error("Upload failed:", error);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="mb-1 block text-xs font-bold text-wahaj-text/64">صورة الحملة</label>
+        <div className="flex items-center gap-3">
+          <label className="flex min-h-[60px] flex-1 cursor-pointer items-center justify-center rounded-[8px] border-2 border-dashed border-wahaj-border bg-wahaj-bg p-3 text-center text-xs text-wahaj-text/50 transition hover:border-wahaj-rose">
+            {uploading ? (
+              <span>جار الرفع...</span>
+            ) : draft.image.url ? (
+              <img src={draft.image.url} alt="" className="max-h-16 object-contain" />
+            ) : (
+              <span>اضغط لرفع الصورة الرئيسية</span>
+            )}
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f, "image"); }} />
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-bold text-wahaj-text/64">صورة الموبايل (اختيارية)</label>
+        <label className="flex min-h-[50px] cursor-pointer items-center justify-center rounded-[8px] border-2 border-dashed border-wahaj-border bg-wahaj-bg p-3 text-center text-xs text-wahaj-text/50 transition hover:border-wahaj-rose">
+          {draft.mobileImage?.url ? (
+            <img src={draft.mobileImage.url} alt="" className="max-h-12 object-contain" />
+          ) : (
+            <span>اضغط لرفع صورة الموبايل</span>
+          )}
+          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f, "mobileImage"); }} />
+        </label>
+      </div>
+
+      <input className="AdminInput" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value, updatedAt: new Date().toISOString() })} placeholder="عنوان الحملة" />
+      <input className="AdminInput" value={draft.subtitle} onChange={(e) => setDraft({ ...draft, subtitle: e.target.value, updatedAt: new Date().toISOString() })} placeholder="العنوان الفرعي (اختياري)" />
+      <input className="AdminInput" value={draft.ctaText} onChange={(e) => setDraft({ ...draft, ctaText: e.target.value, updatedAt: new Date().toISOString() })} placeholder="نص الزر مثل: اكتشفي" />
+
+      <div className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3 space-y-2">
+        <label className="block text-xs font-bold text-wahaj-text/64">نقطة التركيز (Focus Point)</label>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="mb-1 block text-[10px] font-bold text-wahaj-text/50">Focus X ({draft.focusX}%)</label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={draft.focusX}
+              onChange={(e) => setDraft({ ...draft, focusX: Number(e.target.value), updatedAt: new Date().toISOString() })}
+              className="w-full accent-wahaj-rose"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[10px] font-bold text-wahaj-text/50">Focus Y ({draft.focusY}%)</label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={draft.focusY}
+              onChange={(e) => setDraft({ ...draft, focusY: Number(e.target.value), updatedAt: new Date().toISOString() })}
+              className="w-full accent-wahaj-rose"
+            />
+          </div>
+        </div>
+        <p className="text-[10px] text-wahaj-text/40">X: الأفقية (0 = يسار، 100 = يمين) — Y: الرأسية (0 = أعلى، 100 = أسفل)</p>
+      </div>
+
+      <div className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3 space-y-2">
+        <label className="block text-xs font-bold text-wahaj-text/64">وجهة الزر</label>
+        <select
+          className="AdminInput"
+          value={draft.destinationType}
+          onChange={(e) => {
+            const t = e.target.value as HeroSlide["destinationType"];
+            setDraft({ ...draft, destinationType: t, destinationValue: "", updatedAt: new Date().toISOString() });
+          }}
+        >
+          <option value="product">منتج</option>
+          <option value="category">تصنيف</option>
+          <option value="url">رابط مخصص</option>
+        </select>
+
+        {draft.destinationType === "product" && (
+          <select
+            className="AdminInput"
+            value={draft.destinationValue}
+            onChange={(e) => setDraft({ ...draft, destinationValue: e.target.value, updatedAt: new Date().toISOString() })}
+          >
+            <option value="">— اختر منتج —</option>
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        )}
+
+        {draft.destinationType === "category" && (
+          <select
+            className="AdminInput"
+            value={draft.destinationValue}
+            onChange={(e) => setDraft({ ...draft, destinationValue: e.target.value, updatedAt: new Date().toISOString() })}
+          >
+            <option value="">— اختر تصنيف —</option>
+            {destinationCategories.map((c) => (
+              <option key={c.id} value={c.id}>{c.label}</option>
+            ))}
+          </select>
+        )}
+
+        {draft.destinationType === "url" && (
+          <input
+            className="AdminInput"
+            value={draft.destinationValue}
+            onChange={(e) => setDraft({ ...draft, destinationValue: e.target.value, updatedAt: new Date().toISOString() })}
+            placeholder="https://... أو /category/new"
+          />
+        )}
+
+        <p className="text-[11px] text-wahaj-text/50">{getDestinationLabel()}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="mb-1 block text-xs font-bold text-wahaj-text/64">تاريخ البدء</label>
+          <input type="date" className="AdminInput" value={draft.startDate || ""} onChange={(e) => setDraft({ ...draft, startDate: e.target.value || undefined, updatedAt: new Date().toISOString() })} />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-bold text-wahaj-text/64">تاريخ الانتهاء</label>
+          <input type="date" className="AdminInput" value={draft.endDate || ""} onChange={(e) => setDraft({ ...draft, endDate: e.target.value || undefined, updatedAt: new Date().toISOString() })} />
+        </div>
+      </div>
+
+      <label className="flex items-center gap-2">
+        <input type="checkbox" checked={draft.isActive} onChange={(e) => setDraft({ ...draft, isActive: e.target.checked, updatedAt: new Date().toISOString() })} className="accent-wahaj-rose" />
+        <span className="text-sm font-bold">نشط</span>
+      </label>
+
+      <label className="flex items-center gap-2">
+        <input type="checkbox" checked={draft.autoContrast} onChange={(e) => setDraft({ ...draft, autoContrast: e.target.checked, updatedAt: new Date().toISOString() })} className="accent-wahaj-rose" />
+        <span className="text-sm font-bold">Auto Contrast</span>
+      </label>
+
+      {!hasValidDestination && (
+        <p className="rounded-[8px] bg-wahaj-rose/10 px-3 py-2 text-xs font-bold text-wahaj-rose">
+          يجب تحديد وجهة صحيحة قبل التنشيط.
+        </p>
+      )}
+
+      <div className="flex gap-2">
+        <button onClick={() => onSave(draft)} disabled={!draft.image.url || !hasValidDestination} className="min-h-10 flex-1 rounded-full bg-wahaj-rose px-4 font-bold text-white disabled:opacity-40">
+          حفظ الشريحة
+        </button>
+        <button onClick={onCancel} className="min-h-10 rounded-full border border-wahaj-border bg-white px-4 font-bold text-wahaj-rose">
+          إلغاء
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SlidePreview({
+  slide,
+  settings,
+  products,
+  onClose
+}: {
+  slide: HeroSlide;
+  settings: HeroAnimationSettings;
+  products: ManagedProduct[];
+  onClose: () => void;
+}) {
+  function getDestinationLabel(): string {
+    if (slide.destinationType === "product") {
+      const p = products.find((p) => p.id === slide.destinationValue);
+      return p ? `منتج → ${p.name}` : "لم يُختار منتج";
+    }
+    if (slide.destinationType === "category") {
+      const cats: Record<string, string> = { new: "جديد", sets: "أطقم", offers: "عروض", trend: "ترند", clients: "تصوير عميلات" };
+      return cats[slide.destinationValue] ? `تصنيف → ${cats[slide.destinationValue]}` : "لم يُختار تصنيف";
+    }
+    return slide.destinationValue ? `رابط → ${slide.destinationValue}` : "لم يُحدد رابط";
+  }
+
+  return (
+    <Panel title="معاينة الشريحة" icon={Eye}>
+      <div className="space-y-4">
+        <button onClick={onClose} className="text-xs text-wahaj-rose font-bold">← رجوع</button>
+
+        <div className="relative overflow-hidden rounded-[8px] bg-gradient-to-b from-wahaj-bg via-wahaj-card/40 to-wahaj-bg" style={{ height: 320 }}>
+          {slide.image.url && (
+            <img
+              src={slide.image.url}
+              alt={slide.title}
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 object-contain"
+              style={{
+                maxWidth: "80%",
+                maxHeight: "70%",
+                filter: `blur(${settings.backgroundBlur}px)`
+              }}
+            />
+          )}
+
+          <div className="absolute inset-x-0 bottom-0 flex flex-col items-center p-4 text-center">
+            <span className="inline-flex items-center gap-1 rounded-full bg-wahaj-rose/10 px-2 py-0.5 text-[10px] font-bold text-wahaj-rose">
+              <Sparkles className="h-2.5 w-2.5" />
+              معاينة
+            </span>
+            <p className="mt-2 font-thmanyah-display text-lg font-medium text-wahaj-ink">{slide.title || "عنوان الحملة"}</p>
+            {slide.subtitle && <p className="text-sm text-wahaj-text/70">{slide.subtitle}</p>}
+            <button className="mt-2 rounded-full bg-wahaj-ink px-4 py-1.5 text-xs font-bold text-white">
+              {slide.ctaText || "اكتشفي"}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-1 text-xs">
+          <InfoRow label="الوجهة" value={getDestinationLabel()} />
+          <InfoRow label="الحالة" value={slide.isActive ? "نشط" : "معطل"} />
+          <InfoRow label="الترتيب" value={String(slide.sortOrder)} />
+          {slide.startDate && <InfoRow label="يبدأ" value={slide.startDate} />}
+          {slide.endDate && <InfoRow label="ينتهي" value={slide.endDate} />}
+          <InfoRow label="نقطة التركيز" value={`X: ${slide.focusX ?? 50}% — Y: ${slide.focusY ?? 40}%`} />
+          <InfoRow label="السرعة" value={`${settings.transitionSpeed}ms`} />
+          <InfoRow label="التشغيل التلقائي" value={settings.autoPlay ? "مفعّل" : "معطّل"} />
+          <InfoRow label="تأثير الطفو" value={settings.floatingEffect ? "مفعّل" : "معطّل"} />
+        </div>
+      </div>
+    </Panel>
   );
 }
 

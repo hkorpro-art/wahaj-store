@@ -65,6 +65,8 @@ export type Order = {
   notes: string;
   status: OrderStatus;
   createdAt: string;
+  isGift?: boolean;
+  giftMessage?: string;
 };
 
 export type Customer = {

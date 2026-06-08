@@ -335,3 +335,137 @@ img {
   border-color: var(--wahaj-rose);
   box-shadow: 0 0 0 3px rgba(201, 169, 98, 0.2);
 }
+
+/* ── Luxury Grain Texture Overlay ── */
+.luxury-grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px;
+}
+
+/* ── Soft Radial Lighting ── */
+.luxury-radial-light::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 10%, rgba(201, 169, 98, 0.06), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 85%, rgba(69, 0, 6, 0.04), transparent 55%);
+}
+
+/* ── Premium Card Depth ── */
+.luxury-depth {
+  box-shadow:
+    0 1px 2px rgba(42, 18, 21, 0.04),
+    0 4px 12px rgba(42, 18, 21, 0.04),
+    0 12px 32px rgba(42, 18, 21, 0.06);
+}
+
+.luxury-depth-hover {
+  box-shadow:
+    0 2px 4px rgba(42, 18, 21, 0.05),
+    0 8px 24px rgba(42, 18, 21, 0.06),
+    0 20px 48px rgba(42, 18, 21, 0.08);
+}
+
+/* ── Hero Carousel Spotlight ── */
+.hero-spotlight {
+  position: relative;
+}
+
+.hero-spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 60% at 50% 45%, rgba(201, 169, 98, 0.08), transparent 65%);
+}
+
+/* ── Smooth Scroll Reveal ── */
+@keyframes luxury-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.luxury-reveal {
+  animation: luxury-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* ── Premium Button States ── */
+.btn-luxury {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-luxury:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(69, 0, 6, 0.15);
+}
+
+.btn-luxury:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ── Image Hover Zoom ── */
+.img-luxury-zoom {
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .img-luxury-zoom {
+  transform: scale(1.04);
+}
+
+/* ── Wordmark Shine Sweep ── */
+@keyframes shine-sweep {
+  0%   { transform: translateX(-75%); }
+  10%  { transform: translateX(75%); }
+  100% { transform: translateX(75%); }
+}
+
+.shine-sweep-wrap {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.shine-sweep-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0) 30%,
+    rgba(255,255,255,0.2) 45%,
+    rgba(255,255,255,0.35) 50%,
+    rgba(255,255,255,0.2) 55%,
+    rgba(255,255,255,0) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: shine-sweep 12s ease-in-out infinite;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shine-sweep-wrap::after {
+    display: none;
+  }
+}

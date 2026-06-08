@@ -24,7 +24,9 @@ export default function BrandMark({
 }: BrandMarkProps) {
   return (
     <div className={cn("inline-flex flex-col items-center text-center", className)}>
-      <span className={cn("wahaj-brand-wordmark font-thmanyah-display leading-none", sizeClasses[size])}>وهاج</span>
+      <span className="shine-sweep-wrap">
+        <span className={cn("wahaj-brand-wordmark font-thmanyah-display leading-none", sizeClasses[size])}>وهاج</span>
+      </span>
       {showSubtitle ? (
         <span className={cn("wahaj-brand-subtitle font-thmanyah-text mt-1.5", subtitleClassName)}>{subtitle}</span>
       ) : null}

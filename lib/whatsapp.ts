@@ -36,25 +36,21 @@ export function buildSingleProductMessage(
   options?: {
     color?: string;
     size?: string;
+    url?: string;
   }
 ) {
-  const total = product.price * quantity;
-
-  return [
-    "مرحبًا وهاج ✨",
-    "أرغب بحجز هذه القطعة:",
+  const lines = [
+    "مرحباً عائلة وهاج ✨",
+    "",
+    "أود طلب:",
     product.name,
-    `الكمية: ${quantity}`,
-    options?.color ? `اللون: ${options.color}` : null,
-    options?.size ? `المقاس: ${options.size}` : null,
-    `السعر: ${product.price.toLocaleString("ar-YE")} ر.ي`,
-    `الإجمالي: ${total.toLocaleString("ar-YE")} ر.ي`,
-    "الاسم:",
-    "المدينة:",
-    "ملاحظات:"
-  ]
-    .filter(Boolean)
-    .join("\n");
+    "",
+    options?.color ? `اللون:\n${options.color}` : null,
+    options?.size ? `المقاس:\n${options.size}` : null,
+    options?.url ? `رابط المنتج:\n${options.url}` : null
+  ];
+
+  return lines.filter(Boolean).join("\n");
 }
 
 export function whatsappUrl(message: string) {

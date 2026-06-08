@@ -3,15 +3,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { collection, doc, onSnapshot } from "firebase/firestore";
 import {
-  BadgePlus,
-  Boxes,
   ChevronLeft,
-  CircleDot,
-  Crown,
   Gem,
   Heart,
   Home,
   Menu,
+  MessageCircle,
   Minus,
   Search,
   ShoppingBag,
@@ -31,59 +28,41 @@ import {
   type ManagedStory,
   type SiteContent
 } from "@/lib/admin-local";
+import { type ElementContrasts } from "@/lib/contrast";
 import BrandMark from "@/components/storefront/BrandMark";
-import { categories, formatPrice, products, stories } from "@/lib/data";
+import LifestyleHero from "@/components/storefront/LifestyleHero";
+import { formatPrice, products, stories } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl, MENU_ICON_IDS, parseStoredImage, type MenuIconId, type MenuIconsRecord } from "@/lib/imagekit";
 import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
 import { buildCartMessage, buildSingleProductMessage, whatsappUrl } from "@/lib/whatsapp";
-import type { CartItem, Category, Product } from "@/lib/types";
-
-const categoryIcons = {
-  Crown,
-  Sparkles,
-  CircleDot,
-  Gem,
-  Boxes,
-  BadgePlus
-};
-
-type StoryFilter = "all" | "new" | "offers" | "trend" | "sets";
-
-const storyFilterLabels: Record<StoryFilter, string> = {
-  all: "لمسات تصنع الفرق",
-  new: "وصل حديثًا",
-  offers: "عروض وهاج",
-  trend: "منتجات ترند",
-  sets: "أطقم وهاج"
-};
-
-const heroSlides = [
-  {
-    image:
-      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1300&q=88",
-    title: "مجموعة لونا",
-    note: "لمسات تصنع الفرق"
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1300&q=88",
-    title: "أطقم زركون",
-    note: "لأنك تستحقين التألق"
-  },
-  {
-    image:
-      "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=1300&q=88",
-    title: "أقراط ترند",
-    note: "نعومة تكمّل حضورك"
-  }
-];
+import type { CartItem, Product } from "@/lib/types";
 
 const fadeUp = {
-  initial: { opacity: 0, y: 18 },
+  initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] }
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }
+} as const;
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.05
+    }
+  }
+} as const;
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }
+  }
 } as const;
 
 const seedManagedProducts = products.map((product) => ({ ...product, visible: true }));
@@ -94,15 +73,14 @@ export default function WahajStorefront() {
     stories.map((story) => ({ ...story, visible: true, target: story.id as ManagedStory["target"] }))
   );
   const [siteContent, setSiteContent] = useState<SiteContent>(defaultSiteContent);
-  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeCategory, setActiveCategory] = useState<LuxuryCategoryId>("new");
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [inspiration, setInspiration] = useState<Record<string, Product>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeStory, setActiveStory] = useState<ManagedStory | null>(null);
-  const [storyFilter, setStoryFilter] = useState<StoryFilter>("all");
   const [menuIcons, setMenuIcons] = useState<MenuIconsRecord>({});
+  const [heroContrasts, setHeroContrasts] = useState<ElementContrasts>({ logo: "dark", menu: "dark", cart: "dark", search: "dark" });
 
   useEffect(() => {
     let active = true;
@@ -241,21 +219,24 @@ export default function WahajStorefront() {
   const filteredProducts = useMemo(() => {
     return storeProducts.filter((product) => {
       const matchesVisibility = product.visible !== false;
-      const matchesCategory = activeCategory === "all" || product.category === activeCategory;
-      const matchesStory =
-        storyFilter === "all" ||
-        (storyFilter === "new" && product.status.includes("new")) ||
-        (storyFilter === "offers" && Boolean(product.compareAt)) ||
-        (storyFilter === "trend" && product.status.includes("trend")) ||
-        (storyFilter === "sets" && product.category === "sets");
+      const matchesCategory =
+        activeCategory === "new"
+          ? product.status.includes("new")
+          : activeCategory === "sets"
+            ? product.category === "sets"
+            : activeCategory === "offers"
+              ? Boolean(product.compareAt)
+              : activeCategory === "trend"
+                ? product.status.includes("trend")
+                : true;
       const matchesQuery =
         query.trim().length === 0 ||
         product.name.includes(query.trim()) ||
         product.tags.some((tag) => tag.includes(query.trim()));
 
-      return matchesVisibility && matchesCategory && matchesStory && matchesQuery;
+      return matchesVisibility && matchesCategory && matchesQuery;
     });
-  }, [storeProducts, activeCategory, storyFilter, query]);
+  }, [storeProducts, activeCategory, query]);
 
   const cartItems = Object.values(cart);
   const cartTotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -349,58 +330,45 @@ export default function WahajStorefront() {
     setCartOpen(false);
   }
 
-  function handleStorySelect(story: ManagedStory) {
-    const target = story.target || story.id;
-
-    if (target === "clients") {
-      setActiveStory(story);
-      return;
+  function handleCategorySelect(id: LuxuryCategoryId) {
+    setActiveCategory(id);
+    if (id === "clients") {
+      window.requestAnimationFrame(() => {
+        document.getElementById("inspiration")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } else {
+      window.requestAnimationFrame(() => {
+        document.getElementById("products")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     }
-
-    const nextFilter = (target === "new" || target === "offers" || target === "trend" || target === "sets"
-      ? target
-      : "all") as StoryFilter;
-
-    setStoryFilter(nextFilter);
-    setActiveCategory("all");
-    window.requestAnimationFrame(() => {
-      document.getElementById("products")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-wahaj-bg text-wahaj-text">
+    <main className="min-h-screen overflow-hidden bg-wahaj-bg text-wahaj-text luxury-grain luxury-radial-light">
       <Header
         cartCount={cartItems.length}
         inspirationCount={inspirationItems.length}
         query={query}
         setQuery={setQuery}
+        heroContrasts={heroContrasts}
         onCart={() => setCartOpen(true)}
         onMenu={() => setMenuOpen(true)}
       />
 
+      <LifestyleHero products={storeProducts} onContrastChange={setHeroContrasts} />
+
       <OfferBar offers={siteContent.offerMessages} />
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
-        <StoriesRail stories={displayStories.filter((story) => story.visible !== false)} activeStoryId={storyFilter} onOpen={handleStorySelect} />
-        <HeroSection content={siteContent} />
-        <CategoryRail activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
+        <CategoryNav activeCategory={activeCategory} onSelect={handleCategorySelect} />
 
         <motion.section id="products" {...fadeUp} className="lux-section">
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">مختارات وهاج</p>
-              <h2 className="type-section text-wahaj-ink">{storyFilterLabels[storyFilter]}</h2>
+              <h2 className="type-section text-wahaj-ink">{luxuryCategories.find((c) => c.id === activeCategory)?.label || "الكل"}</h2>
             </div>
             <div className="flex items-center gap-2">
-              {storyFilter !== "all" ? (
-                <button
-                  onClick={() => setStoryFilter("all")}
-                  className="rounded-full border border-wahaj-border bg-white/70 px-3 py-1 text-xs font-medium text-wahaj-rose"
-                >
-                  عرض الكل
-                </button>
-              ) : null}
               <span className="rounded-full border border-wahaj-border bg-white/70 px-3 py-1 text-xs text-wahaj-text">
                 {filteredProducts.length} قطعة
               </span>
@@ -443,7 +411,7 @@ export default function WahajStorefront() {
                   <Link
                     href={`/product/${product.slug}`}
                     key={product.id}
-                    className="glass min-w-40 rounded-[8px] p-2"
+                    className="glass min-w-40 rounded-[8px] p-2 luxury-depth transition-all duration-300 hover:luxury-depth-hover group"
                   >
                     <div className="relative aspect-[4/5] overflow-hidden rounded-[8px]">
                       <Image
@@ -451,7 +419,7 @@ export default function WahajStorefront() {
                         alt={product.name}
                         fill
                         sizes="160px"
-                        className="object-cover"
+                        className="object-cover img-luxury-zoom"
                       />
                     </div>
                     <p className="mt-2 line-clamp-2 text-sm font-bold">{product.name}</p>
@@ -489,85 +457,144 @@ export default function WahajStorefront() {
       />
 
       <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <StoryModal story={activeStory} onClose={() => setActiveStory(null)} />
     </main>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════
+   HEADER — Premium Glass Nav
+   ═══════════════════════════════════════════════════════════ */
 
 type HeaderProps = {
   cartCount: number;
   inspirationCount: number;
   query: string;
   setQuery: (value: string) => void;
+  heroContrasts: ElementContrasts;
   onCart: () => void;
   onMenu: () => void;
 };
 
-function Header({ cartCount, inspirationCount, query, setQuery, onCart, onMenu }: HeaderProps) {
+function Header({ cartCount, inspirationCount, query, setQuery, heroContrasts, onCart, onMenu }: HeaderProps) {
+  const menuIsDark = heroContrasts.menu === "dark";
+  const logoIsDark = heroContrasts.logo === "dark";
+  const cartIsDark = heroContrasts.cart === "dark";
+  const searchIsDark = heroContrasts.search === "dark";
+
+  /* Menu icon */
+  const menuBg = menuIsDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.75)";
+  const menuBorder = menuIsDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.08)";
+  const menuColor = menuIsDark ? "#FFFFFF" : "#450006";
+  const menuHoverBg = menuIsDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)";
+
+  /* Cart icon */
+  const cartBg = cartIsDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.75)";
+  const cartBorder = cartIsDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.08)";
+  const cartColor = cartIsDark ? "#FFFFFF" : "#450006";
+  const cartHoverBg = cartIsDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)";
+
+  /* Logo */
+  const logoColor = logoIsDark ? "#FFFFFF" : "#450006";
+  const logoShadow = logoIsDark ? "drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]" : "";
+
+  /* Search bar */
+  const searchBg = searchIsDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.75)";
+  const searchBorder = searchIsDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.08)";
+  const searchColor = searchIsDark ? "#FFFFFF" : "#450006";
+  const searchPlaceholder = searchIsDark ? "rgba(255,255,255,0.5)" : "rgba(69,0,6,0.5)";
+  const searchFocusBorder = searchIsDark ? "rgba(255,255,255,0.4)" : "rgba(69,0,6,0.3)";
+
   return (
-    <header className="sticky top-0 z-50 border-b border-wahaj-border/70 bg-wahaj-bg/74 backdrop-blur-2xl">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
+    <header className="absolute inset-x-0 top-0 z-50">
+      <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:px-6 lg:px-8">
         <button
           aria-label="القائمة"
           onClick={onMenu}
-          className="glass flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-wahaj-rose"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full backdrop-blur-md transition-all duration-300"
+          style={{ backgroundColor: menuBg, color: menuColor, border: `1px solid ${menuBorder}` }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = menuHoverBg; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = menuBg; }}
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-[18px] w-[18px]" />
         </button>
 
-        <Link href="/" className="min-w-fit">
-          <BrandMark size="md" className="items-start text-right" subtitleClassName="text-brand-burgundy/65" />
-        </Link>
-
-        <label className="glass flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full px-3">
-          <Search className="h-4 w-4 shrink-0 text-wahaj-rose" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-wahaj-text/45"
-            placeholder="ابحثي عن زركون، تاج، طقم..."
-          />
-        </label>
-
-        <Link
-          aria-label="احفظي للإلهام"
-          href="#inspiration"
-          className="glass relative hidden h-11 w-11 shrink-0 items-center justify-center rounded-full text-wahaj-rose sm:flex"
-        >
-          <Heart className="h-5 w-5" />
-          {inspirationCount > 0 ? <Counter value={inspirationCount} /> : null}
-        </Link>
+        <div className="flex flex-1 items-center justify-center">
+          <Link href="/" className={`px-4 py-1 ${logoShadow}`}>
+            <BrandMark
+              size="md"
+              showSubtitle={false}
+              className="items-center text-center"
+            />
+          </Link>
+        </div>
 
         <button
           aria-label="السلة"
           onClick={onCart}
-          className="glass relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-wahaj-rose"
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full backdrop-blur-md transition-all duration-300"
+          style={{ backgroundColor: cartBg, color: cartColor, border: `1px solid ${cartBorder}` }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = cartHoverBg; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = cartBg; }}
         >
-          <ShoppingBag className="h-5 w-5" />
+          <ShoppingBag className="h-[18px] w-[18px]" />
           {cartCount > 0 ? <Counter value={cartCount} /> : null}
         </button>
       </div>
+
+      <div className="mx-auto max-w-6xl px-4 pb-3 sm:px-6 lg:px-8">
+        <label
+          className="flex h-9 items-center gap-2 rounded-full px-3 backdrop-blur-md transition-all duration-300"
+          style={{
+            backgroundColor: searchBg,
+            border: `1px solid ${searchBorder}`,
+            color: searchColor
+          }}
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" style={{ color: searchColor, opacity: 0.7 }} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="h-full min-w-0 flex-1 bg-transparent text-xs outline-none"
+            style={{ color: searchColor }}
+            placeholder="ابحثي عن زركون، تاج، طقم..."
+          />
+        </label>
+      </div>
+      <style>{`
+        .wahaj-brand-wordmark { color: ${logoColor} !important; text-shadow: ${logoIsDark ? "0 2px 10px rgba(0,0,0,0.25)" : "none"} !important; }
+        input::placeholder { color: ${searchPlaceholder} !important; opacity: 1 !important; }
+      `}</style>
     </header>
   );
 }
 
 function Counter({ value }: { value: number }) {
   return (
-    <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-wahaj-rose px-1 text-[11px] font-bold text-white shadow-glow">
+    <motion.span
+      key={value}
+      initial={{ scale: 1 }}
+      animate={{ scale: [1, 1.2, 1] }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-wahaj-rose px-1 text-[11px] font-bold text-white shadow-glow"
+    >
       {value}
-    </span>
+    </motion.span>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════
+   OFFER BAR — Animated Marquee
+   ═══════════════════════════════════════════════════════════ */
 
 function OfferBar({ offers }: { offers: string[] }) {
   const items = offers.length > 0 ? offers : defaultSiteContent.offerMessages;
 
   return (
-    <div className="overflow-hidden border-b border-wahaj-border/60 bg-wahaj-rose text-white">
-      <div className="offer-marquee flex w-max gap-8 whitespace-nowrap py-2 text-sm">
+    <div className="overflow-hidden border-b border-white/20 bg-white/30 backdrop-blur-sm">
+      <div className="offer-marquee flex w-max gap-6 whitespace-nowrap py-2 text-[11px]">
         {[...items, ...items, ...items].map((offer, index) => (
-          <span key={`${offer}-${index}`} className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-wahaj-stars" />
+          <span key={`${offer}-${index}`} className="flex items-center gap-1.5 text-wahaj-rose/70">
+            <Sparkles className="h-3 w-3 text-wahaj-rose/40" />
             {offer}
           </span>
         ))}
@@ -576,199 +603,103 @@ function OfferBar({ offers }: { offers: string[] }) {
   );
 }
 
-function StoriesRail({
-  stories: items,
-  activeStoryId,
-  onOpen
-}: {
-  stories: ManagedStory[];
-  activeStoryId: string;
-  onOpen: (story: ManagedStory) => void;
-}) {
-  return (
-    <motion.section aria-label="stories" {...fadeUp} className="flex gap-4 overflow-x-auto pb-3 pt-1 hide-scrollbar">
-      {items.map((story) => {
-        const active = (story.target || story.id) === activeStoryId;
+/* ═══════════════════════════════════════════════════════════
+   CATEGORY NAV — Premium Luxury Text Navigation
+   ═══════════════════════════════════════════════════════════ */
 
-        return (
-          <button
-            key={story.id}
-            onClick={() => onOpen(story)}
-            className="group min-w-20 text-center"
-            aria-pressed={active}
-          >
-            <span
-              className={`mx-auto block rounded-full p-[2px] transition group-hover:scale-105 ${
-                active ? "shadow-glow" : "shadow-soft"
-              }`}
-              style={{
-                background: `linear-gradient(135deg, ${story.color}, #E0B56A)`
-              }}
-            >
-              <span
-                className={`relative block h-16 w-16 overflow-hidden rounded-full border-2 ${
-                  active ? "border-wahaj-rose" : "border-white"
-                }`}
-              >
-                <Image src={story.image} alt={story.title} fill sizes="64px" className="object-cover" />
-              </span>
-            </span>
-            <span className={`mt-2 block text-xs font-bold ${active ? "text-wahaj-rose" : "text-wahaj-text"}`}>
-              {story.title}
-            </span>
-          </button>
-        );
-      })}
-    </motion.section>
-  );
-}
+const luxuryCategories = [
+  { id: "new", label: "جديد" },
+  { id: "sets", label: "أطقم" },
+  { id: "offers", label: "عروض" },
+  { id: "trend", label: "ترند" },
+  { id: "clients", label: "تصوير عميلات" }
+] as const;
 
-function HeroSection({ content }: { content: SiteContent }) {
-  const [activeSlide, setActiveSlide] = useState(0);
-  const slide = heroSlides[activeSlide];
+type LuxuryCategoryId = (typeof luxuryCategories)[number]["id"];
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setActiveSlide((current) => (current + 1) % heroSlides.length);
-    }, 4200);
-
-    return () => window.clearInterval(timer);
-  }, []);
-
-  return (
-    <motion.section
-      {...fadeUp}
-      className="relative mt-3 overflow-hidden rounded-[8px] border border-wahaj-border bg-wahaj-card shadow-satin"
-    >
-      <div className="absolute inset-0 satin-surface" />
-      <div className="relative grid gap-5 p-4 md:grid-cols-[1fr_1.08fr] md:p-7">
-        <div className="z-10 flex min-h-[310px] flex-col justify-between">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1 text-xs font-bold text-wahaj-rose shadow-soft">
-              <Sparkles className="h-4 w-4" />
-              {content.heroBadge}
-            </span>
-            <h1 className="type-hero mt-5 max-w-xl text-wahaj-ink">
-              {content.heroTitle}
-            </h1>
-            <p className="mt-3 max-w-lg text-base leading-8 text-wahaj-text/78">
-              {content.heroDescription}
-            </p>
-          </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="#products"
-              className="inline-flex min-h-12 items-center justify-center rounded-full bg-wahaj-rose px-5 font-bold text-white shadow-glow"
-            >
-              {content.primaryCta}
-            </Link>
-            <Link
-              href="#categories"
-              className="inline-flex min-h-12 items-center justify-center rounded-full border border-wahaj-border bg-white/70 px-5 font-bold text-wahaj-rose"
-            >
-              {content.secondaryCta}
-            </Link>
-          </div>
-        </div>
-
-        <div className="relative min-h-[310px] overflow-hidden rounded-[8px] bg-white/45 shadow-soft">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={slide.image}
-              className="absolute inset-0"
-              initial={{ opacity: 0, scale: 1.04 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.02 }}
-              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <Image
-                src={slide.image}
-                alt={slide.title}
-                fill
-                priority={activeSlide === 0}
-                sizes="(min-width: 768px) 48vw, 100vw"
-                className="object-cover"
-              />
-            </motion.div>
-          </AnimatePresence>
-          <div className="absolute inset-0 bg-gradient-to-t from-wahaj-ink/38 via-transparent to-white/8" />
-          <div className="absolute bottom-4 right-4 rounded-[8px] border border-white/60 bg-white/72 p-3 backdrop-blur-xl">
-            <p className="text-xs text-wahaj-rose">{slide.note}</p>
-            <p className="font-display text-lg font-medium text-wahaj-ink">{slide.title}</p>
-          </div>
-          <div className="absolute bottom-4 left-4 flex gap-2">
-            {heroSlides.map((item, index) => (
-              <button
-                key={item.image}
-                onClick={() => setActiveSlide(index)}
-                className={`h-2.5 rounded-full transition-all ${
-                  index === activeSlide ? "w-7 bg-white shadow-glow" : "w-2.5 bg-white/55"
-                }`}
-                aria-label={`عرض ${item.title}`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </motion.section>
-  );
-}
-
-function CategoryRail({
+function CategoryNav({
   activeCategory,
-  setActiveCategory
+  onSelect
 }: {
-  activeCategory: string;
-  setActiveCategory: (category: string) => void;
+  activeCategory: LuxuryCategoryId;
+  onSelect: (id: LuxuryCategoryId) => void;
 }) {
-  const allCategories: Array<Category | { id: string; name: string; icon: string; image: string }> = [
-    {
-      id: "all",
-      name: "الكل",
-      icon: "Sparkles",
-      image: categories[0].image
-    },
-    ...categories
-  ];
-
   return (
-    <motion.section id="categories" {...fadeUp} className="mt-8">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">أقسام ناعمة</p>
-          <h2 className="type-section text-wahaj-ink">اختاري وهجك</h2>
-        </div>
-        <ChevronLeft className="h-5 w-5 text-wahaj-rose" />
-      </div>
-      <div className="flex gap-4 overflow-x-auto pb-2 hide-scrollbar">
-        {allCategories.map((category) => {
-          const Icon = categoryIcons[category.icon as keyof typeof categoryIcons] || Sparkles;
-          const active = activeCategory === category.id;
+    <motion.nav
+      id="categories"
+      aria-label="تصنيفات المنتجات"
+      className="mt-6 mb-2"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, margin: "-40px" }}
+    >
+      <motion.div
+        className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 sm:gap-x-2"
+        variants={{
+          hidden: { opacity: 0 },
+          show: {
+            opacity: 1,
+            transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+          }
+        }}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: "-40px" }}
+      >
+        {luxuryCategories.map((cat) => {
+          const active = activeCategory === cat.id;
           return (
-            <button
-              key={category.id}
-              onClick={() => setActiveCategory(category.id)}
-              className="group min-w-[86px] text-center"
+            <motion.button
+              key={cat.id}
+              onClick={() => onSelect(cat.id)}
+              className="group relative px-4 py-2 sm:px-5 sm:py-2.5"
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                show: {
+                  opacity: 1,
+                  y: 0,
+                  transition: { duration: 0.7, ease: [0.4, 0, 0.2, 1] }
+                }
+              }}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.97 }}
             >
               <span
-                className={`mx-auto flex h-[74px] w-[74px] items-center justify-center rounded-full border transition duration-300 ${
+                className={`relative z-10 text-sm sm:text-base font-medium transition-colors duration-500 ${
                   active
-                    ? "border-wahaj-rose bg-white shadow-glow"
-                    : "border-wahaj-border bg-white/72 shadow-soft group-hover:scale-105"
+                    ? "text-wahaj-rose"
+                    : "text-wahaj-text/60 group-hover:text-wahaj-ink"
                 }`}
               >
-                <Icon className={`h-8 w-8 ${active ? "text-wahaj-rose" : "text-wahaj-text/70"}`} strokeWidth={1.55} />
+                {cat.label}
               </span>
-              <span className={`mt-2 block text-sm font-bold ${active ? "text-wahaj-rose" : "text-wahaj-text"}`}>
-                {category.name}
-              </span>
-            </button>
+              <motion.span
+                className="absolute bottom-1 left-1/2 h-[1.5px] -translate-x-1/2 bg-wahaj-rose"
+                initial={false}
+                animate={{
+                  width: active ? "60%" : "0%",
+                  opacity: active ? 1 : 0
+                }}
+                transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
+              />
+              <span
+                className={`absolute inset-0 rounded-full transition-all duration-500 ${
+                  active
+                    ? "bg-wahaj-rose/8"
+                    : "bg-transparent group-hover:bg-wahaj-ink/4"
+                }`}
+              />
+            </motion.button>
           );
         })}
-      </div>
-    </motion.section>
+      </motion.div>
+    </motion.nav>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════
+   PRODUCT CARD — Premium Luxury Card
+   ═══════════════════════════════════════════════════════════ */
 
 type ProductCardProps = {
   product: Product;
@@ -784,12 +715,12 @@ function ProductCard({ product, isInspired, priority, onCart, onInspiration }: P
   return (
     <motion.article
       layout
-      initial={{ opacity: 0, scale: 0.92 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.92 }}
-      className="group overflow-hidden rounded-[8px] border border-wahaj-border bg-white/78 shadow-soft backdrop-blur-xl"
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.35, ease: "easeInOut" }}
+      initial={{ opacity: 0, scale: 0.95, y: 12 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="group overflow-hidden rounded-[8px] border border-wahaj-border bg-white/78 luxury-depth backdrop-blur-xl transition-all duration-400 hover:luxury-depth-hover"
+      whileHover={{ y: -6 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], layout: { duration: 0.3 } }}
     >
       <div className="relative">
         <Link href={productHref} className="relative block aspect-[4/5] overflow-hidden bg-wahaj-card">
@@ -799,31 +730,32 @@ function ProductCard({ product, isInspired, priority, onCart, onInspiration }: P
             fill
             priority={priority}
             sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-            className="object-cover transition duration-700 group-hover:scale-105"
+            className="object-cover img-luxury-zoom"
           />
           <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-wahaj-ink/38 to-transparent" />
         </Link>
         <div className="absolute right-2 top-2 flex flex-wrap gap-1">
           {product.badges.slice(0, 2).map((badge) => (
-            <span key={badge} className="rounded-full bg-white/82 px-2 py-1 text-[10px] font-bold text-wahaj-rose">
+            <span key={badge} className="rounded-full bg-white/82 px-2 py-1 text-[10px] font-bold text-wahaj-rose backdrop-blur-sm">
               {badge}
             </span>
           ))}
         </div>
-        <button
+        <motion.button
           aria-label="احفظي للإلهام"
           onClick={() => onInspiration(product)}
-          className={`absolute left-2 top-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/70 backdrop-blur-xl transition ${
-            isInspired ? "bg-wahaj-rose text-white shadow-glow" : "bg-white/76 text-wahaj-rose"
+          className={`absolute left-2 top-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/70 backdrop-blur-xl transition-all duration-300 ${
+            isInspired ? "bg-wahaj-rose text-white shadow-glow" : "bg-white/76 text-wahaj-rose hover:shadow-glow"
           }`}
+          whileTap={{ scale: 0.9 }}
         >
           <Heart className="h-4 w-4" fill={isInspired ? "currentColor" : "none"} />
-        </button>
+        </motion.button>
       </div>
 
       <div className="p-3">
         <Link href={productHref}>
-          <h3 className="type-product-title line-clamp-2 min-h-12 text-wahaj-ink">{product.name}</h3>
+          <h3 className="type-product-title line-clamp-2 min-h-12 text-wahaj-ink transition-colors duration-300 group-hover:text-wahaj-rose">{product.name}</h3>
         </Link>
         <div className="mt-2 flex items-center gap-1 text-xs text-wahaj-stars">
           <Star className="h-4 w-4" fill="currentColor" />
@@ -836,17 +768,22 @@ function ProductCard({ product, isInspired, priority, onCart, onInspiration }: P
             <p className="text-xs text-wahaj-text/45 line-through">{formatPrice(product.compareAt)}</p>
           ) : null}
         </div>
-        <button
+        <motion.button
           onClick={() => onCart(product)}
-          className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-wahaj-ink px-3 text-sm font-bold text-white transition hover:bg-wahaj-rose"
+          className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-wahaj-ink px-3 text-sm font-bold text-white transition-all duration-350 hover:bg-wahaj-rose btn-luxury"
+          whileTap={{ scale: 0.97 }}
         >
           <ShoppingBag className="h-4 w-4" />
           أضيفي للسلة
-        </button>
+        </motion.button>
       </div>
     </motion.article>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════
+   LUXURY INFO — Value Proposition
+   ═══════════════════════════════════════════════════════════ */
 
 function LuxuryInfo() {
   const items = [
@@ -856,34 +793,30 @@ function LuxuryInfo() {
   ];
 
   return (
-    <motion.section {...fadeUp} className="mt-10 grid gap-3 md:grid-cols-3">
-      {items.map((item) => (
-        <div key={item.title} className="rounded-[8px] border border-wahaj-border bg-white/70 p-4 shadow-soft">
-          <Sparkles className="h-5 w-5 text-wahaj-rose" />
-          <h3 className="mt-3 font-display text-lg font-medium text-wahaj-ink">{item.title}</h3>
-          <p className="mt-2 text-sm leading-7 text-wahaj-text/72">{item.text}</p>
-        </div>
-      ))}
-      <div className="md:col-span-3 mt-2 flex flex-wrap justify-center gap-3 text-sm text-wahaj-text/72">
-        <Link href="/about" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2">
-          من نحن
-        </Link>
-        <Link href="/faq" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2">
-          الأسئلة الشائعة
-        </Link>
-        <Link href="/order-policy" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2">
-          سياسة الطلب
-        </Link>
-        <Link href="/exchange-policy" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2">
-          سياسة الاستبدال
-        </Link>
-        <Link href="/contact" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2">
-          تواصل معنا
-        </Link>
+    <motion.section {...fadeUp} className="mt-10">
+      <motion.div variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-60px" }} className="grid gap-3 md:grid-cols-3">
+        {items.map((item) => (
+          <motion.div variants={staggerItem} key={item.title} className="rounded-[8px] border border-wahaj-border bg-white/70 p-5 shadow-soft luxury-depth transition-all duration-350 hover:luxury-depth-hover">
+            <Sparkles className="h-5 w-5 text-wahaj-rose" />
+            <h3 className="mt-3 font-display text-lg font-medium text-wahaj-ink">{item.title}</h3>
+            <p className="mt-2 text-sm leading-7 text-wahaj-text/72">{item.text}</p>
+          </motion.div>
+        ))}
+      </motion.div>
+      <div className="md:col-span-3 mt-4 flex flex-wrap justify-center gap-3 text-sm text-wahaj-text/72">
+        <Link href="/about" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2 btn-luxury">من نحن</Link>
+        <Link href="/faq" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2 btn-luxury">الأسئلة الشائعة</Link>
+        <Link href="/order-policy" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2 btn-luxury">سياسة الطلب</Link>
+        <Link href="/exchange-policy" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2 btn-luxury">سياسة الاستبدال</Link>
+        <Link href="/contact" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2 btn-luxury">تواصل معنا</Link>
       </div>
     </motion.section>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════
+   BOTTOM NAVIGATION — Floating Premium Bar
+   ═══════════════════════════════════════════════════════════ */
 
 function BottomNavigation({
   cartCount,
@@ -909,7 +842,7 @@ function BottomNavigation({
           const Icon = item.icon;
           const content = (
             <>
-              <span className="relative flex h-9 w-9 items-center justify-center rounded-full text-wahaj-rose">
+              <span className="relative flex h-9 w-9 items-center justify-center rounded-full text-wahaj-rose transition-all duration-300">
                 <Icon className="h-5 w-5" />
                 {item.count ? <Counter value={item.count} /> : null}
               </span>
@@ -922,7 +855,7 @@ function BottomNavigation({
               <button
                 key={item.label}
                 onClick={item.action}
-                className={`flex min-w-0 flex-col items-center justify-center rounded-full py-1 ${
+                className={`flex min-w-0 flex-col items-center justify-center rounded-full py-1 transition-all duration-300 ${
                   index === 2 ? "bg-wahaj-rose/12 shadow-glow" : ""
                 }`}
               >
@@ -935,7 +868,7 @@ function BottomNavigation({
             <Link
               key={item.label}
               href={item.href}
-              className={`flex min-w-0 flex-col items-center justify-center rounded-full py-1 ${
+              className={`flex min-w-0 flex-col items-center justify-center rounded-full py-1 transition-all duration-300 ${
                 index === 0 ? "bg-white/60" : ""
               }`}
             >
@@ -948,6 +881,10 @@ function BottomNavigation({
   );
 }
 
+/* ═══════════════════════════════════════════════════════════
+   FLOATING WHATSAPP — Premium CTA
+   ═══════════════════════════════════════════════════════════ */
+
 function FloatingWhatsApp({ items }: { items: CartItem[] }) {
   const href =
     items.length > 0
@@ -955,17 +892,25 @@ function FloatingWhatsApp({ items }: { items: CartItem[] }) {
       : whatsappUrl("مرحبًا وهاج ✨\nأرغب بمعرفة أحدث القطع المتوفرة.");
 
   return (
-    <a
+    <motion.a
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="fixed bottom-24 left-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-wahaj-success text-white shadow-glow"
+      animate={{ scale: [1, 1.04, 1] }}
+      whileHover={{ y: -3, scale: 1.08 }}
+      whileTap={{ scale: 0.96 }}
+      transition={{ duration: 1, repeat: Infinity, repeatDelay: 7, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed bottom-24 left-4 z-30 flex h-13 w-13 items-center justify-center rounded-full bg-wahaj-success text-white shadow-glow"
       aria-label="واتساب وهاج"
     >
-      <Sparkles className="h-5 w-5" />
-    </a>
+      <MessageCircle className="h-6 w-6" fill="currentColor" strokeWidth={1.5} />
+    </motion.a>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════
+   CART SHEET — Premium Slide-in Cart
+   ═══════════════════════════════════════════════════════════ */
 
 type CartSheetProps = {
   open: boolean;
@@ -1012,7 +957,7 @@ function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }:
                     <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">سلة وهاج</p>
                     <h2 className="font-display text-3xl font-medium leading-tight text-wahaj-ink">طلبك الناعم</h2>
                   </div>
-                  <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80">
+                  <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 btn-luxury">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
@@ -1025,7 +970,7 @@ function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }:
                     </div>
                   ) : (
                     items.map((item) => (
-                      <div key={item.product.id} className="flex gap-3 rounded-[8px] border border-wahaj-border bg-white/78 p-2">
+                      <motion.div key={item.product.id} layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex gap-3 rounded-[8px] border border-wahaj-border bg-white/78 p-2 luxury-depth">
                         <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-[8px]">
                           <Image
                             src={imageUrl(item.product.images[0], { width: 160, height: 160 })}
@@ -1041,20 +986,20 @@ function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }:
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             <button
                               onClick={() => onQty(item.product.id, -1)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full border border-wahaj-border"
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-wahaj-border btn-luxury"
                             >
                               <Minus className="h-4 w-4" />
                             </button>
                             <span className="min-w-6 text-center font-bold">{item.quantity}</span>
                             <button
                               onClick={() => onQty(item.product.id, 1)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full border border-wahaj-border"
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-wahaj-border btn-luxury"
                             >
                               +
                             </button>
                             <button
                               onClick={() => onRemove(item.product.id)}
-                              className="mr-auto flex h-8 w-8 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose"
+                              className="mr-auto flex h-8 w-8 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose btn-luxury"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -1063,12 +1008,12 @@ function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }:
                             href={whatsappUrl(buildSingleProductMessage(item.product, item.quantity))}
                             target="_blank"
                             rel="noreferrer"
-                            className="mt-3 inline-flex rounded-full border border-wahaj-border bg-white/80 px-3 py-1 text-xs font-bold text-wahaj-rose"
+                            className="mt-3 inline-flex rounded-full border border-wahaj-border bg-white/80 px-3 py-1 text-xs font-bold text-wahaj-rose btn-luxury"
                           >
                             طلب منتج واحد
                           </a>
                         </div>
-                      </div>
+                      </motion.div>
                     ))
                   )}
                 </div>
@@ -1131,7 +1076,7 @@ function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }:
                   <button
                     onClick={handleCheckoutSubmit}
                     disabled={items.length === 0}
-                    className="mt-4 flex min-h-12 w-full items-center justify-center rounded-full bg-white font-bold text-wahaj-rose disabled:cursor-not-allowed disabled:opacity-45 transition hover:bg-wahaj-soft"
+                    className="mt-4 flex min-h-12 w-full items-center justify-center rounded-full bg-white font-bold text-wahaj-rose disabled:cursor-not-allowed disabled:opacity-45 btn-luxury hover:bg-wahaj-soft"
                   >
                     إتمـام الطلب الفاخر ✨
                   </button>
@@ -1144,6 +1089,10 @@ function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }:
     </AnimatePresence>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MENU SHEET — Premium Navigation Drawer
+   ═══════════════════════════════════════════════════════════ */
 
 function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const links = [
@@ -1169,7 +1118,7 @@ function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           >
             <div className="flex items-center justify-between">
               <BrandMark size="md" className="items-start text-right" />
-              <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80">
+              <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 btn-luxury">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1179,7 +1128,7 @@ function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
                   key={href}
                   href={href}
                   onClick={onClose}
-                  className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white/70 px-4 py-3 font-bold"
+                  className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white/70 px-4 py-3 font-bold btn-luxury"
                 >
                   {label}
                   <ChevronLeft className="h-4 w-4 text-wahaj-rose" />
@@ -1187,41 +1136,6 @@ function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
               ))}
             </div>
           </motion.aside>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
-  );
-}
-
-function StoryModal({ story, onClose }: { story: ManagedStory | null; onClose: () => void }) {
-  return (
-    <AnimatePresence>
-      {story ? (
-        <motion.div
-          className="fixed inset-0 z-[78] flex items-center justify-center bg-wahaj-ink/70 p-4 backdrop-blur-xl"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="relative aspect-[9/16] w-full max-w-sm overflow-hidden rounded-[8px] bg-wahaj-card shadow-satin"
-            initial={{ scale: 0.92, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.94, y: 20 }}
-          >
-            <Image src={story.image} alt={story.title} fill sizes="360px" className="object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-wahaj-ink/72 via-transparent to-wahaj-ink/12" />
-            <button
-              onClick={onClose}
-              className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/80"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <div className="absolute inset-x-4 bottom-5 text-white">
-              <p className="font-display text-2xl font-medium">{story.title}</p>
-              <p className="mt-2 text-sm leading-7 text-white/82">لمعة وهاج المختارة لهذا الأسبوع.</p>
-            </div>
-          </motion.div>
         </motion.div>
       ) : null}
     </AnimatePresence>

@@ -7,7 +7,7 @@ export const MENU_ICON_IDS = ["new", "offers", "trend", "sets"] as const;
 export type MenuIconId = (typeof MENU_ICON_IDS)[number];
 export type MenuIconsRecord = Partial<Record<MenuIconId, StoredImage>>;
 
-export type ImageKitFolder = "/products" | "/categories";
+export type ImageKitFolder = "/products" | "/categories" | "/hero";
 
 export function storeImage(url: string, fileId = ""): StoredImage {
   return { url: url.trim(), fileId: fileId.trim() };

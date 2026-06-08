@@ -58,3 +58,37 @@ export const aiRequestSchema = z.object({
   productName: z.string().min(2).max(120),
   details: z.string().max(700).optional()
 });
+
+export const heroSlideInputSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().max(120),
+  subtitle: z.string().max(200),
+  image: z.object({ url: z.string(), fileId: z.string() }),
+  mobileImage: z.object({ url: z.string(), fileId: z.string() }).optional(),
+  focusX: z.number().min(0).max(100),
+  focusY: z.number().min(0).max(100),
+  autoContrast: z.boolean(),
+  ctaText: z.string().max(60),
+  destinationType: z.enum(["product", "category", "url"]),
+  destinationValue: z.string().max(200),
+  sortOrder: z.number().int().min(0),
+  isActive: z.boolean(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+
+export const heroSettingsInputSchema = z.object({
+  transitionSpeed: z.number().min(200).max(2000),
+  autoPlay: z.boolean(),
+  autoPlayInterval: z.number().min(2000).max(15000),
+  floatingEffect: z.boolean(),
+  backgroundBlur: z.number().min(0).max(12),
+  sideScale: z.number().min(0.3).max(1),
+  showHero: z.boolean()
+});
+
+export const managedHeroSlidesInputSchema = z.object({
+  slides: z.array(heroSlideInputSchema)
+});
