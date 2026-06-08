@@ -5,7 +5,6 @@ import { collection, doc, onSnapshot } from "firebase/firestore";
 import {
   ChevronLeft,
   Gem,
-  Heart,
   Home,
   Menu,
   MessageCircle,
@@ -76,7 +75,6 @@ export default function WahajStorefront() {
   const [activeCategory, setActiveCategory] = useState<LuxuryCategoryId>("new");
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, CartItem>>({});
-  const [inspiration, setInspiration] = useState<Record<string, Product>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuIcons, setMenuIcons] = useState<MenuIconsRecord>({});
@@ -240,7 +238,6 @@ export default function WahajStorefront() {
 
   const cartItems = Object.values(cart);
   const cartTotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const inspirationItems = Object.values(inspiration);
 
   function addToCart(product: Product) {
     setCart((current) => {
@@ -284,18 +281,6 @@ export default function WahajStorefront() {
     });
   }
 
-  function toggleInspiration(product: Product) {
-    setInspiration((current) => {
-      const next = { ...current };
-      if (next[product.id]) {
-        delete next[product.id];
-      } else {
-        next[product.id] = product;
-      }
-      return next;
-    });
-  }
-
   async function openWhatsAppForCart(customerName: string, customerPhone: string, isGift: boolean, giftMessage: string) {
     if (cartItems.length === 0) return;
 
@@ -332,22 +317,15 @@ export default function WahajStorefront() {
 
   function handleCategorySelect(id: LuxuryCategoryId) {
     setActiveCategory(id);
-    if (id === "clients") {
-      window.requestAnimationFrame(() => {
-        document.getElementById("inspiration")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    } else {
-      window.requestAnimationFrame(() => {
-        document.getElementById("products")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    }
+    window.requestAnimationFrame(() => {
+      document.getElementById("products")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   return (
     <main className="min-h-screen overflow-hidden bg-wahaj-bg text-wahaj-text luxury-grain luxury-radial-light">
       <Header
         cartCount={cartItems.length}
-        inspirationCount={inspirationItems.length}
         query={query}
         setQuery={setQuery}
         heroContrasts={heroContrasts}
@@ -382,9 +360,7 @@ export default function WahajStorefront() {
                   key={product.id}
                   product={product}
                   priority={index < 2}
-                  isInspired={Boolean(inspiration[product.id])}
                   onCart={addToCart}
-                  onInspiration={toggleInspiration}
                 />
               ))}
             </AnimatePresence>
@@ -396,51 +372,11 @@ export default function WahajStorefront() {
           ) : null}
         </motion.section>
 
-        <motion.section id="inspiration" {...fadeUp} className="mt-10">
-          <div className="satin-surface rounded-[8px] border border-wahaj-border p-4 shadow-soft md:p-6">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">مساحتك الخاصة</p>
-                <h2 className="font-display text-2xl font-medium leading-tight text-wahaj-ink">احفظي للإلهام ✨</h2>
-              </div>
-              <Heart className="h-6 w-6 text-wahaj-rose" />
-            </div>
-            {inspirationItems.length > 0 ? (
-              <div className="mt-4 flex gap-3 overflow-x-auto pb-2 hide-scrollbar">
-                {inspirationItems.map((product) => (
-                  <Link
-                    href={`/product/${product.slug}`}
-                    key={product.id}
-                    className="glass min-w-40 rounded-[8px] p-2 luxury-depth transition-all duration-300 hover:luxury-depth-hover group"
-                  >
-                    <div className="relative aspect-[4/5] overflow-hidden rounded-[8px]">
-                      <Image
-                        src={imageUrl(product.images[0], { width: 320, height: 400 })}
-                        alt={product.name}
-                        fill
-                        sizes="160px"
-                        className="object-cover img-luxury-zoom"
-                      />
-                    </div>
-                    <p className="mt-2 line-clamp-2 text-sm font-bold">{product.name}</p>
-                    <p className="text-sm text-wahaj-rose">{formatPrice(product.price)}</p>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-3 text-sm leading-7 text-wahaj-text/75">
-                القطع التي تلامس ذوقك ستظهر هنا بنعومة.
-              </p>
-            )}
-          </div>
-        </motion.section>
-
         <LuxuryInfo />
       </div>
 
       <BottomNavigation
         cartCount={cartItems.length}
-        inspirationCount={inspirationItems.length}
         onCart={() => setCartOpen(true)}
       />
 
@@ -467,7 +403,6 @@ export default function WahajStorefront() {
 
 type HeaderProps = {
   cartCount: number;
-  inspirationCount: number;
   query: string;
   setQuery: (value: string) => void;
   heroContrasts: ElementContrasts;
@@ -475,7 +410,7 @@ type HeaderProps = {
   onMenu: () => void;
 };
 
-function Header({ cartCount, inspirationCount, query, setQuery, heroContrasts, onCart, onMenu }: HeaderProps) {
+function Header({ cartCount, query, setQuery, heroContrasts, onCart, onMenu }: HeaderProps) {
   const menuIsDark = heroContrasts.menu === "dark";
   const logoIsDark = heroContrasts.logo === "dark";
   const cartIsDark = heroContrasts.cart === "dark";
@@ -703,13 +638,11 @@ function CategoryNav({
 
 type ProductCardProps = {
   product: Product;
-  isInspired: boolean;
   priority?: boolean;
   onCart: (product: Product) => void;
-  onInspiration: (product: Product) => void;
 };
 
-function ProductCard({ product, isInspired, priority, onCart, onInspiration }: ProductCardProps) {
+function ProductCard({ product, priority, onCart }: ProductCardProps) {
   const productHref = `/product/${product.slug}`;
 
   return (
@@ -741,16 +674,6 @@ function ProductCard({ product, isInspired, priority, onCart, onInspiration }: P
             </span>
           ))}
         </div>
-        <motion.button
-          aria-label="احفظي للإلهام"
-          onClick={() => onInspiration(product)}
-          className={`absolute left-2 top-2 flex h-9 w-9 items-center justify-center rounded-full border border-white/70 backdrop-blur-xl transition-all duration-300 ${
-            isInspired ? "bg-wahaj-rose text-white shadow-glow" : "bg-white/76 text-wahaj-rose hover:shadow-glow"
-          }`}
-          whileTap={{ scale: 0.9 }}
-        >
-          <Heart className="h-4 w-4" fill={isInspired ? "currentColor" : "none"} />
-        </motion.button>
       </div>
 
       <div className="p-3">
@@ -820,24 +743,21 @@ function LuxuryInfo() {
 
 function BottomNavigation({
   cartCount,
-  inspirationCount,
   onCart
 }: {
   cartCount: number;
-  inspirationCount: number;
   onCart: () => void;
 }) {
   const items = [
     { label: "الرئيسية", href: "/", icon: Home },
     { label: "الأقسام", href: "#categories", icon: Gem },
     { label: "السلة", href: "#", icon: ShoppingBag, action: onCart, count: cartCount },
-    { label: "احفظي للإلهام", href: "#inspiration", icon: Heart, count: inspirationCount },
     { label: "حسابي", href: "/admin/login", icon: UserRound }
   ];
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-lg px-3 pb-3">
-      <div className="glass grid grid-cols-5 gap-1 rounded-full px-2 py-2 shadow-satin">
+      <div className="glass grid grid-cols-4 gap-1 rounded-full px-2 py-2 shadow-satin">
         {items.map((item, index) => {
           const Icon = item.icon;
           const content = (

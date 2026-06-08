@@ -205,8 +205,7 @@ export default function LifestyleHero({ products, onContrastChange }: LifestyleH
 
   return (
     <section
-      className="relative w-full overflow-hidden"
-      style={{ height: "100dvh" }}
+      className="relative w-full overflow-hidden h-[75dvh] sm:h-[100dvh]"
       onMouseEnter={pause}
       onMouseLeave={resume}
     >
@@ -271,7 +270,7 @@ export default function LifestyleHero({ products, onContrastChange }: LifestyleH
             {/* Campaign copy — bottom-left */}
             {isActive && (
               <motion.div
-                className="absolute inset-x-0 bottom-0 px-6 pb-20 pt-28 sm:px-10 md:px-16"
+                className="absolute inset-x-0 bottom-0 px-6 pb-16 pt-16 sm:px-10 sm:pb-20 sm:pt-28 md:px-16"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
@@ -299,7 +298,7 @@ export default function LifestyleHero({ products, onContrastChange }: LifestyleH
                       </p>
                     )}
                     <span
-                      className="mt-6 inline-flex min-h-[46px] items-center justify-center rounded-full px-8 text-sm font-bold transition-colors duration-300 btn-luxury"
+                      className="mt-4 inline-flex min-h-[46px] items-center justify-center rounded-full px-8 text-sm font-bold transition-colors duration-300 btn-luxury sm:mt-6"
                       style={{
                         backgroundColor: textIsDark ? "#450006" : "#FFFFFF",
                         color: textIsDark ? "#FFFFFF" : "#2A1215"
