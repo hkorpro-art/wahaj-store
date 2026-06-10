@@ -12,8 +12,13 @@ function PageViewTracker() {
   useEffect(() => {
     if (!pathname || !posthog) return;
 
-    const url = window.location.origin + pathname + (searchParams?.toString() ? "?" + searchParams.toString() : "");
-    posthog.capture("$pageview", { $current_url: url });
+    const currentUrl = window.location.origin + pathname + (searchParams?.toString() ? "?" + searchParams.toString() : "");
+
+    posthog.capture("$pageview", { $current_url: currentUrl });
+
+    return () => {
+      posthog.capture("$pageleave", { $current_url: currentUrl });
+    };
   }, [pathname, searchParams, posthog]);
 
   return null;

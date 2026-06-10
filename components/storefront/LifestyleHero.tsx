@@ -24,28 +24,17 @@ type LifestyleHeroProps = {
   onSearchChange?: (value: string) => void;
 };
 
-const fallbackSlides: HeroSlide[] = [
-  {
-    id: "fallback-1",
-    title: "مجموعة وهاج الرمضانية",
-    subtitle: "قطع محدودة مستوحاة من جمال الليالي",
-    image: { url: "https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=1600&q=85", fileId: "" },
-    focusX: 50, focusY: 35, autoContrast: true,
-    ctaText: "تسوّقي الآن",
-    destinationType: "category", destinationValue: "sets",
-    sortOrder: 0, isActive: true, createdAt: "", updatedAt: ""
-  },
-  {
-    id: "fallback-2",
-    title: "إطلالة متألقة",
-    subtitle: "أناقة ت redefine مع كل تفصيلة",
-    image: { url: "https://images.unsplash.com/photo-1515562141589-67f0d569b986?auto=format&fit=crop&w=1600&q=85", fileId: "" },
-    focusX: 50, focusY: 30, autoContrast: true,
-    ctaText: "اكتشفي",
-    destinationType: "category", destinationValue: "new",
-    sortOrder: 1, isActive: true, createdAt: "", updatedAt: ""
-  }
-];
+function HeroSkeleton() {
+  return (
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-wahaj-beige/30">
+      <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-wahaj-beige/40 to-wahaj-muted/20" />
+      <div className="absolute bottom-28 left-1/2 w-4/5 max-w-md -translate-x-1/2 space-y-4 text-center">
+        <div className="mx-auto h-11 w-3/4 rounded-lg bg-white/30" />
+        <div className="mx-auto h-6 w-1/2 rounded-lg bg-white/20" />
+      </div>
+    </div>
+  );
+}
 
 function resolveDestination(slide: HeroSlide, products: ManagedProduct[]): string {
   if (slide.destinationType === "product") {
@@ -60,7 +49,7 @@ function resolveDestination(slide: HeroSlide, products: ManagedProduct[]): strin
 
 export default function LifestyleHero({ products, onContrastChange, searchQuery = "", onSearchChange }: LifestyleHeroProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [slides, setSlides] = useState<HeroSlide[]>([]);
+  const [slides, setSlides] = useState<HeroSlide[] | null>(null);
   const [settings, setSettings] = useState<HeroAnimationSettings>(defaultHeroAnimationSettings);
   const [topContrast, setTopContrast] = useState<Contrast>("dark");
   const [bottomContrast, setBottomContrast] = useState<Contrast>("dark");
@@ -87,16 +76,17 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
           }
         }
       } catch {
-        // use fallback
+        setSlides([]);
       }
     }
     void load();
     return () => { active = false; };
   }, []);
 
-  const items = slides.length > 0
+  const loading = slides === null;
+  const items = Array.isArray(slides)
     ? slides.filter((s) => s.isActive && s.image.url)
-    : fallbackSlides;
+    : [];
 
   const total = items.length;
   const activeSlide = items[activeIndex] || null;
@@ -191,7 +181,9 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
     }
   }
 
-  if (!settings.showHero || total === 0) return null;
+  if (!settings.showHero) return null;
+  if (loading) return <HeroSkeleton />;
+  if (total === 0) return null;
 
   const dur = settings.transitionSpeed / 1000;
   const isDark = topContrast === "dark";

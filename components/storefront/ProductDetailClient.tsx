@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePostHog } from "posthog-js/react";
+import { useCart } from "@/lib/cart-context";
 import type { ManagedProduct } from "@/lib/admin-local";
 import { formatPrice } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
@@ -168,7 +169,11 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     });
   }, [product, posthog]);
 
+  const { addToCart } = useCart();
+
   function addTouch() {
+    if (!product) return;
+    addToCart(product);
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1800);
   }

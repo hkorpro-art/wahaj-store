@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { collection, onSnapshot } from "firebase/firestore";
 import {
   ChevronLeft,
+  ChevronRight,
   Gem,
   Home,
   Menu,
@@ -13,12 +14,12 @@ import {
   Sparkles,
   Star,
   Trash2,
-  UserRound,
   X
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 import {
   adminStorageKeys,
@@ -26,6 +27,7 @@ import {
   type ManagedProduct,
   type SiteContent
 } from "@/lib/admin-local";
+import { useCart } from "@/lib/cart-context";
 import { type ElementContrasts } from "@/lib/contrast";
 import BrandMark from "@/components/storefront/BrandMark";
 import LifestyleHero from "@/components/storefront/LifestyleHero";
@@ -44,37 +46,18 @@ const fadeUp = {
   transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }
 } as const;
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.05
-    }
-  }
-} as const;
-
-const staggerItem = {
-  hidden: { opacity: 0, y: 16 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }
-  }
-} as const;
-
 const seedManagedProducts = products.map((product) => ({ ...product, visible: true }));
 
 export default function WahajStorefront() {
   const posthog = usePostHog();
+  const { cartItems, cartTotal, cartCount, addToCart: contextAddToCart, updateQuantity, removeFromCart, clearCart } = useCart();
   const [storeProducts, setStoreProducts] = useState<ManagedProduct[]>(seedManagedProducts);
   const [siteContent, setSiteContent] = useState<SiteContent>(defaultSiteContent);
   const [query, setQuery] = useState("");
   const prevQuery = useRef("");
-  const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [addedToast, setAddedToast] = useState<{ visible: boolean; productName: string }>({ visible: false, productName: "" });
   const [heroContrasts, setHeroContrasts] = useState<ElementContrasts>({ logo: "dark", menu: "dark", cart: "dark", search: "dark" });
 
   useEffect(() => {
@@ -158,49 +141,15 @@ export default function WahajStorefront() {
     prevQuery.current = trimmed;
   }, [query, posthog]);
 
-  const cartItems = Object.values(cart);
-  const cartTotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  function handleCartCheckout() {
+    openWhatsAppForCart("", "", false, "");
+  }
 
-  function addToCart(product: Product) {
-    setCart((current) => {
-      const item = current[product.id];
-      return {
-        ...current,
-        [product.id]: {
-          product,
-          quantity: item ? item.quantity + 1 : 1
-        }
-      };
-    });
+  function handleAddToCart(product: Product) {
+    contextAddToCart(product);
     setCartOpen(true);
-  }
-
-  function updateQuantity(productId: string, delta: number) {
-    setCart((current) => {
-      const item = current[productId];
-      if (!item) return current;
-      const nextQuantity = item.quantity + delta;
-      if (nextQuantity < 1) {
-        const next = { ...current };
-        delete next[productId];
-        return next;
-      }
-      return {
-        ...current,
-        [productId]: {
-          ...item,
-          quantity: nextQuantity
-        }
-      };
-    });
-  }
-
-  function removeFromCart(productId: string) {
-    setCart((current) => {
-      const next = { ...current };
-      delete next[productId];
-      return next;
-    });
+    setAddedToast({ visible: true, productName: product.name });
+    setTimeout(() => setAddedToast({ visible: false, productName: "" }), 2500);
   }
 
   async function openWhatsAppForCart(customerName: string, customerPhone: string, isGift: boolean, giftMessage: string) {
@@ -243,7 +192,7 @@ export default function WahajStorefront() {
     }
     window.open(whatsappUrl(message), "_blank", "noopener,noreferrer");
 
-    setCart({});
+    clearCart();
     setCartOpen(false);
   }
 
@@ -267,7 +216,9 @@ export default function WahajStorefront() {
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
 
-        <CircularCollections />
+        <div id="collections-section">
+          <CircularCollections />
+        </div>
 
         <motion.section id="products" {...fadeUp} className="lux-section">
           <div className="mb-4 flex items-end justify-between gap-4">
@@ -289,7 +240,7 @@ export default function WahajStorefront() {
                   key={product.id}
                   product={product}
                   priority={index < 2}
-                  onCart={addToCart}
+                  onCart={handleAddToCart}
                 />
               ))}
             </AnimatePresence>
@@ -301,7 +252,6 @@ export default function WahajStorefront() {
           ) : null}
         </motion.section>
 
-        <LuxuryInfo />
       </div>
 
       <BottomNavigation
@@ -315,13 +265,30 @@ export default function WahajStorefront() {
         open={cartOpen}
         items={cartItems}
         total={cartTotal}
+        products={storeProducts}
         onClose={() => setCartOpen(false)}
         onQty={updateQuantity}
         onRemove={removeFromCart}
-        onCheckout={openWhatsAppForCart}
+        onCheckout={handleCartCheckout}
       />
 
       <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
+
+      <AnimatePresence>
+        {addedToast.visible ? (
+          <motion.div
+            key="cart-toast"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed bottom-28 left-1/2 z-[80] -translate-x-1/2 rounded-2xl border border-wahaj-border/60 bg-white/90 px-5 py-3 text-center shadow-satin backdrop-blur-xl"
+          >
+            <p className="text-sm font-bold text-wahaj-ink">✨ أضيفت إلى طلبك</p>
+            <p className="mt-0.5 text-xs text-wahaj-text/70 line-clamp-1">{addedToast.productName}</p>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </main>
   );
 }
@@ -454,25 +421,25 @@ function ProductCard({ product, priority, onCart }: ProductCardProps) {
       initial={{ opacity: 0, scale: 0.95, y: 12 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="group overflow-hidden rounded-[8px] border border-wahaj-border bg-white/78 luxury-depth backdrop-blur-xl transition-all duration-400 hover:luxury-depth-hover"
-      whileHover={{ y: -6 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], layout: { duration: 0.3 } }}
+      className="group overflow-hidden rounded-xl border border-wahaj-border/50 bg-white/85 shadow-[0_2px_16px_rgba(69,0,6,0.05)] transition-all duration-400 hover:shadow-[0_8px_30px_rgba(69,0,6,0.10)]"
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1], layout: { duration: 0.3 } }}
     >
       <div className="relative">
-        <Link href={productHref} className="relative block aspect-[4/5] overflow-hidden bg-wahaj-card">
+        <Link href={productHref} className="relative block aspect-[3/4] overflow-hidden bg-wahaj-card">
           <Image
-            src={imageUrl(product.images[0], { width: 640, height: 800 })}
+            src={imageUrl(product.images[0], { width: 640, height: 853 })}
             alt={product.name}
             fill
             priority={priority}
             sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-            className="object-cover img-luxury-zoom"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-wahaj-ink/38 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
         </Link>
         <div className="absolute right-2 top-2 flex flex-wrap gap-1">
           {product.badges.slice(0, 2).map((badge) => (
-            <span key={badge} className="rounded-full bg-white/82 px-2 py-1 text-[10px] font-bold text-wahaj-rose backdrop-blur-sm">
+            <span key={badge} className="rounded-full bg-white/85 px-2 py-0.5 text-[10px] font-bold text-wahaj-rose shadow-sm backdrop-blur-sm">
               {badge}
             </span>
           ))}
@@ -481,25 +448,25 @@ function ProductCard({ product, priority, onCart }: ProductCardProps) {
 
       <div className="p-3">
         <Link href={productHref}>
-          <h3 className="type-product-title line-clamp-2 min-h-12 text-wahaj-ink transition-colors duration-300 group-hover:text-wahaj-rose">{product.name}</h3>
+          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-wahaj-ink transition-colors duration-300 group-hover:text-wahaj-rose">{product.name}</h3>
         </Link>
-        <div className="mt-2 flex items-center gap-1 text-xs text-wahaj-stars">
-          <Star className="h-4 w-4" fill="currentColor" />
+        <div className="mt-1.5 flex items-center gap-1 text-[11px] text-wahaj-stars">
+          <Star className="h-3.5 w-3.5" fill="currentColor" />
           <span className="font-bold">{product.rating}</span>
           <span className="text-wahaj-text/55">({product.reviews})</span>
         </div>
-        <div className="mt-2 flex flex-wrap items-end gap-2">
-          <p className="type-product-price font-medium text-brand-burgundy">{formatPrice(product.price)}</p>
+        <div className="mt-1.5 flex flex-wrap items-end gap-2">
+          <p className="text-sm font-semibold text-brand-burgundy">{formatPrice(product.price)}</p>
           {product.compareAt ? (
-            <p className="text-xs text-wahaj-text/45 line-through">{formatPrice(product.compareAt)}</p>
+            <p className="text-[11px] text-wahaj-text/45 line-through">{formatPrice(product.compareAt)}</p>
           ) : null}
         </div>
         <motion.button
           onClick={() => onCart(product)}
-          className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-wahaj-ink px-3 text-sm font-bold text-white transition-all duration-350 hover:bg-wahaj-rose btn-luxury"
+          className="mt-2.5 flex min-h-9 w-full items-center justify-center gap-1.5 rounded-full bg-wahaj-ink px-3 text-xs font-bold text-white transition-all duration-300 hover:bg-wahaj-rose active:scale-[0.97]"
           whileTap={{ scale: 0.97 }}
         >
-          <ShoppingBag className="h-4 w-4" />
+          <ShoppingBag className="h-3.5 w-3.5" />
           أضيفي للسلة
         </motion.button>
       </div>
@@ -508,40 +475,7 @@ function ProductCard({ product, priority, onCart }: ProductCardProps) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LUXURY INFO — Value Proposition
-   ═══════════════════════════════════════════════════════════ */
-
-function LuxuryInfo() {
-  const items = [
-    { title: "طلب واتساب", text: "رسالة مرتبة تلقائيًا بكل المنتجات والأسعار." },
-    { title: "تغليف فاخر", text: "تجربة هدية ناعمة من أول لحظة." },
-    { title: "اختيار دقيق", text: "زركون ولمسات Rose Gold بتفاصيل منتقاة." }
-  ];
-
-  return (
-    <motion.section {...fadeUp} className="mt-10">
-      <motion.div variants={staggerContainer} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-60px" }} className="grid gap-3 md:grid-cols-3">
-        {items.map((item) => (
-          <motion.div variants={staggerItem} key={item.title} className="rounded-[8px] border border-wahaj-border bg-white/70 p-5 shadow-soft luxury-depth transition-all duration-350 hover:luxury-depth-hover">
-            <Sparkles className="h-5 w-5 text-wahaj-rose" />
-            <h3 className="mt-3 font-display text-lg font-medium text-wahaj-ink">{item.title}</h3>
-            <p className="mt-2 text-sm leading-7 text-wahaj-text/72">{item.text}</p>
-          </motion.div>
-        ))}
-      </motion.div>
-      <div className="md:col-span-3 mt-4 flex flex-wrap justify-center gap-3 text-sm text-wahaj-text/72">
-        <Link href="/about" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2 btn-luxury">من نحن</Link>
-        <Link href="/faq" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2 btn-luxury">الأسئلة الشائعة</Link>
-        <Link href="/order-policy" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2 btn-luxury">سياسة الطلب</Link>
-        <Link href="/exchange-policy" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2 btn-luxury">سياسة الاستبدال</Link>
-        <Link href="/contact" className="rounded-full border border-wahaj-border bg-white/70 px-4 py-2 btn-luxury">تواصل معنا</Link>
-      </div>
-    </motion.section>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════
-   BOTTOM NAVIGATION — Floating Premium Bar
+   BOTTOM NAVIGATION — Floating Glass Bar
    ═══════════════════════════════════════════════════════════ */
 
 function BottomNavigation({
@@ -551,25 +485,46 @@ function BottomNavigation({
   cartCount: number;
   onCart: () => void;
 }) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  function scrollToCollections() {
+    if (pathname === "/") {
+      document.getElementById("collections-section")?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      router.push("/#collections-section");
+    }
+  }
+
   const items = [
     { label: "الرئيسية", href: "/", icon: Home },
-    { label: "المجموعات", href: "/collections/atqam", icon: Gem },
-    { label: "السلة", href: "#", icon: ShoppingBag, action: onCart, count: cartCount },
-    { label: "حسابي", href: "/admin/login", icon: UserRound }
+    { label: "المجموعات", href: "#", icon: Gem, action: scrollToCollections },
+    { label: "السلة", href: "#", icon: ShoppingBag, action: onCart, count: cartCount }
   ];
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-lg px-3 pb-3">
-      <div className="glass grid grid-cols-4 gap-1 rounded-full px-2 py-2 shadow-satin">
-        {items.map((item, index) => {
+    <nav className="fixed bottom-7 left-1/2 z-50 -translate-x-1/2">
+      <div className="flex items-center justify-around gap-3 rounded-full border border-wahaj-border/40 bg-white/70 px-5 py-1.5 shadow-[0_4px_20px_rgba(69,0,6,0.06)] backdrop-blur-xl transition-all duration-300">
+        {items.map((item) => {
           const Icon = item.icon;
+          const isActive = item.href === pathname || (item.href !== "/" && pathname?.startsWith(item.href));
           const content = (
             <>
-              <span className="relative flex h-9 w-9 items-center justify-center rounded-full text-wahaj-rose transition-all duration-300">
-                <Icon className="h-5 w-5" />
+              <span
+                className={`relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 ${
+                  isActive ? "bg-wahaj-rose/10 text-wahaj-rose" : "text-wahaj-ink"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
                 {item.count ? <Counter value={item.count} /> : null}
               </span>
-              <span className="max-w-full truncate text-[10px] font-bold text-wahaj-text/72">{item.label}</span>
+              <span
+                className={`max-w-full truncate transition-colors duration-300 ${
+                  isActive ? "text-[10px] font-bold text-wahaj-rose" : "text-[10px] font-medium text-wahaj-text/60"
+                }`}
+              >
+                {item.label}
+              </span>
             </>
           );
 
@@ -578,9 +533,7 @@ function BottomNavigation({
               <button
                 key={item.label}
                 onClick={item.action}
-                className={`flex min-w-0 flex-col items-center justify-center rounded-full py-1 transition-all duration-300 ${
-                  index === 2 ? "bg-wahaj-rose/12 shadow-glow" : ""
-                }`}
+                className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1 transition-all duration-300 hover:scale-105 active:scale-95"
               >
                 {content}
               </button>
@@ -591,9 +544,7 @@ function BottomNavigation({
             <Link
               key={item.label}
               href={item.href}
-              className={`flex min-w-0 flex-col items-center justify-center rounded-full py-1 transition-all duration-300 ${
-                index === 0 ? "bg-white/60" : ""
-              }`}
+              className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1 transition-all duration-300 hover:scale-105 active:scale-95"
             >
               {content}
             </Link>
@@ -646,191 +597,219 @@ function FloatingWhatsApp({ items }: { items: CartItem[] }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CART SHEET — Premium Slide-in Cart
+   CART SHEET — Luxury Slide-in Cart
    ═══════════════════════════════════════════════════════════ */
 
 type CartSheetProps = {
   open: boolean;
   items: CartItem[];
   total: number;
+  products: ManagedProduct[];
   onClose: () => void;
   onQty: (productId: string, delta: number) => void;
   onRemove: (productId: string) => void;
-  onCheckout: (customerName: string, customerPhone: string, isGift: boolean, giftMessage: string) => void;
+  onCheckout: () => void;
 };
 
-function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }: CartSheetProps) {
-  const posthog = usePostHog();
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [isGift, setIsGift] = useState(false);
-  const [giftMessage, setGiftMessage] = useState("");
-  const [error, setError] = useState("");
+function CartSheet({ open, items, total, products, onClose, onQty, onRemove, onCheckout }: CartSheetProps) {
+  const cartProductIds = useMemo(() => new Set(items.map((i) => i.product.id)), [items]);
 
-  function handleCheckoutSubmit() {
-    if (!customerName.trim() || !customerPhone.trim()) {
-      setError("يرجى كتابة الاسم ورقم الهاتف لإتمام الطلب الفاخر.");
-      return;
-    }
-    setError("");
-    onCheckout(customerName.trim(), customerPhone.trim(), isGift, isGift ? giftMessage.trim() : "");
-  }
+  const suggested = useMemo(() => {
+    return products
+      .filter((p) => p.visible !== false && !cartProductIds.has(p.id))
+      .slice(0, 2);
+  }, [products, cartProductIds]);
+
+  const totalQty = items.reduce((s, i) => s + i.quantity, 0);
 
   return (
     <AnimatePresence>
       {open ? (
-        <motion.div className="fixed inset-0 z-[70] flex justify-end" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <button className="absolute inset-0 bg-wahaj-ink/35 backdrop-blur-md" onClick={onClose} aria-label="إغلاق" />
-          <motion.aside
-            className="glass relative h-full w-[86vw] max-w-md overflow-hidden p-6 shadow-satin flex flex-col justify-between"
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ type: "spring", damping: 26, stiffness: 240 }}
-          >
-            <div className="flex flex-col h-full justify-between">
-              <div>
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">سلة وهاج</p>
-                    <h2 className="font-display text-3xl font-medium leading-tight text-wahaj-ink">طلبك الناعم</h2>
-                  </div>
-                  <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 btn-luxury">
-                    <X className="h-5 w-5" />
-                  </button>
+        <motion.div
+          className="fixed inset-0 z-[70] bg-wahaj-bg"
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 28, stiffness: 250, mass: 0.8 }}
+        >
+          {items.length === 0 ? (
+            /* ── Empty State: flex centering ── */
+            <div className="flex h-full flex-col">
+              <div className="flex shrink-0 items-center justify-between border-b border-wahaj-border/40 bg-white/90 px-4 py-3">
+                <button
+                  onClick={onClose}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-wahaj-soft/60 text-wahaj-ink transition-all duration-200 active:scale-90 hover:bg-wahaj-soft"
+                  aria-label="العودة للتسوق"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-lg font-medium text-wahaj-ink">طلبك الناعم ✨</span>
                 </div>
-
-                <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1 admin-scrollbar">
-                  {items.length === 0 ? (
-                    <div className="rounded-[8px] border border-wahaj-border bg-white/70 p-5 text-center">
-                      <ShoppingBag className="mx-auto h-8 w-8 text-wahaj-rose" />
-                      <p className="mt-3 font-bold">السلة فارغة الآن</p>
-                    </div>
-                  ) : (
-                    items.map((item) => (
-                      <motion.div key={item.product.id} layout initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex gap-3 rounded-[8px] border border-wahaj-border bg-white/78 p-2 luxury-depth">
-                        <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-[8px]">
-                          <Image
-                            src={imageUrl(item.product.images[0], { width: 160, height: 160 })}
-                            alt={item.product.name}
-                            fill
-                            sizes="80px"
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="line-clamp-2 font-bold text-wahaj-ink">{item.product.name}</p>
-                          <p className="text-sm text-wahaj-rose">{formatPrice(item.product.price)}</p>
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <button
-                              onClick={() => onQty(item.product.id, -1)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full border border-wahaj-border btn-luxury"
-                            >
-                              <Minus className="h-4 w-4" />
-                            </button>
-                            <span className="min-w-6 text-center font-bold">{item.quantity}</span>
-                            <button
-                              onClick={() => onQty(item.product.id, 1)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full border border-wahaj-border btn-luxury"
-                            >
-                              +
-                            </button>
-                            <button
-                              onClick={() => onRemove(item.product.id)}
-                              className="mr-auto flex h-8 w-8 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose btn-luxury"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                          <a
-                            href={whatsappUrl(buildSingleProductMessage(item.product, item.quantity))}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={() => {
-                              fetch("/api/analytics", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ type: "whatsapp_click", productId: item.product.id, productName: item.product.name, source: "cart_single" })
-                              }).catch(() => {});
-
-                              posthog?.capture("whatsapp_click", { product_id: item.product.id, product_name: item.product.name, source: "cart_single", $current_url: window.location.href });
-                            }}
-                            className="mt-3 inline-flex rounded-full border border-wahaj-border bg-white/80 px-3 py-1 text-xs font-bold text-wahaj-rose btn-luxury"
-                          >
-                            طلب منتج واحد
-                          </a>
-                        </div>
-                      </motion.div>
-                    ))
-                  )}
-                </div>
+                <div className="w-10" />
               </div>
-
-              <div>
-                {items.length > 0 ? (
-                  <div className="space-y-3 border-t border-wahaj-border/70 pt-4 mb-4">
-                    <p className="text-sm font-bold text-wahaj-ink">تفاصيل الاتصال</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        className="AdminInput"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder="الاسم الكريم"
-                      />
-                      <input
-                        className="AdminInput"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder="رقم الهاتف"
-                        inputMode="tel"
-                      />
-                    </div>
-
-                    <label className="flex items-center gap-2 rounded-[8px] border border-wahaj-border/60 bg-white/50 px-3 py-2 text-xs font-bold cursor-pointer transition hover:bg-white/80">
-                      <input
-                        type="checkbox"
-                        checked={isGift}
-                        onChange={(e) => setIsGift(e.target.checked)}
-                        className="accent-wahaj-rose"
-                      />
-                      <span>إرسال كهدية وتغليف فاخر 🎁</span>
-                    </label>
-
-                    {isGift ? (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="relative"
-                      >
-                        <textarea
-                          className="AdminInput min-h-16 py-2 text-sm"
-                          value={giftMessage}
-                          onChange={(e) => setGiftMessage(e.target.value)}
-                          placeholder="اكتبي رسالة الإهداء هنا..."
-                        />
-                      </motion.div>
-                    ) : null}
-
-                    {error ? <p className="text-xs text-red-600 font-bold">{error}</p> : null}
-                  </div>
-                ) : null}
-
-                <div className="rounded-[8px] bg-wahaj-ink p-4 text-white">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>الإجمالي</span>
-                    <span className="font-thmanyah-text text-xl font-bold">{formatPrice(total)}</span>
-                  </div>
-                  <button
-                    onClick={handleCheckoutSubmit}
-                    disabled={items.length === 0}
-                    className="mt-4 flex min-h-12 w-full items-center justify-center rounded-full bg-white font-bold text-wahaj-rose disabled:cursor-not-allowed disabled:opacity-45 btn-luxury hover:bg-wahaj-soft"
-                  >
-                    إتمـام الطلب الفاخر ✨
-                  </button>
+              <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
+                <div className="mb-5 rounded-full bg-wahaj-soft/60 p-4">
+                  <ShoppingBag className="h-8 w-8 text-wahaj-rose" />
                 </div>
+                <p className="font-display text-xl font-medium text-wahaj-ink">✨ لم تختاري لمستك بعد</p>
+                <p className="mt-2 text-sm leading-6 text-wahaj-text/70">
+                  اكتشفي قطعاً صُممت لتضيئي بها لحظاتك
+                </p>
+                <button
+                  onClick={onClose}
+                  className="mt-6 flex min-h-11 items-center justify-center rounded-full bg-wahaj-ink px-8 text-sm font-bold text-white transition-all duration-300 hover:bg-wahaj-rose"
+                >
+                  استكشفي المجموعة
+                </button>
               </div>
             </div>
-          </motion.aside>
+          ) : (
+            /* ── Non-empty: natural flow with sticky top bar + checkout ── */
+            <div className="h-full overflow-y-auto">
+              <div className="sticky top-0 z-10 border-b border-wahaj-border/40 bg-white/90 px-4 py-3 backdrop-blur-xl">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={onClose}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-wahaj-soft/60 text-wahaj-ink transition-all duration-200 active:scale-90 hover:bg-wahaj-soft"
+                    aria-label="العودة للتسوق"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-lg font-medium text-wahaj-ink">طلبك الناعم ✨</span>
+                    <span className="rounded-full bg-wahaj-rose/10 px-2.5 py-0.5 text-xs font-bold text-wahaj-rose">
+                      {totalQty}
+                    </span>
+                  </div>
+                  <div className="w-10" />
+                </div>
+              </div>
+
+              <div className="px-4 pt-4 pb-4 space-y-3">
+                <p className="font-thmanyah-text text-xs font-medium text-wahaj-text/60">
+                  طلبك الناعم • {totalQty} {totalQty === 1 ? "قطعة مختارة" : "قطع مختارة"} ✨
+                </p>
+
+                <AnimatePresence mode="popLayout">
+                  {items.map((item) => (
+                    <motion.div
+                      key={item.product.id}
+                      layout
+                      initial={{ opacity: 0, x: -30, scale: 0.96 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: 30, scale: 0.96 }}
+                      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                      className="flex gap-4 rounded-2xl border border-wahaj-border/50 bg-white/85 p-3 shadow-[0_2px_12px_rgba(69,0,6,0.06)]"
+                    >
+                      <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-xl">
+                        <Image
+                          src={imageUrl(item.product.images[0], { width: 200, height: 260 })}
+                          alt={item.product.name}
+                          fill
+                          sizes="96px"
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="flex min-w-0 flex-1 flex-col justify-between">
+                        <div>
+                          <p className="line-clamp-2 text-sm font-bold leading-snug text-wahaj-ink">
+                            {item.product.name}
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-wahaj-rose">
+                            {formatPrice(item.product.price)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 rounded-full border border-wahaj-border/60 bg-white/80 p-0.5 shadow-sm">
+                            <button
+                              onClick={() => onQty(item.product.id, -1)}
+                              className="flex h-8 w-8 items-center justify-center rounded-full text-wahaj-text/60 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <motion.span
+                              key={item.quantity}
+                              initial={{ scale: 1.2, opacity: 0.6 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ duration: 0.15 }}
+                              className="min-w-[24px] text-center text-sm font-bold text-wahaj-ink"
+                            >
+                              {item.quantity}
+                            </motion.span>
+                            <button
+                              onClick={() => onQty(item.product.id, 1)}
+                              className="flex h-8 w-8 items-center justify-center rounded-full text-wahaj-text/60 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
+                            >
+                              <span className="text-lg font-bold leading-none">+</span>
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => onRemove(item.product.id)}
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-wahaj-text/30 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+
+                {suggested.length > 0 ? (
+                  <div className="pt-2">
+                    <p className="mb-3 font-thmanyah-text text-xs font-medium text-wahaj-text/50">
+                      قد يعجبك أيضاً
+                    </p>
+                    <div className="flex gap-3">
+                      {suggested.map((p) => {
+                        const imgUrl = p.images?.[0]
+                          ? imageUrl(p.images[0], { width: 160, height: 160 })
+                          : "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=128&q=80";
+                        return (
+                          <Link
+                            key={p.id}
+                            href={`/product/${p.slug}`}
+                            onClick={onClose}
+                            className="flex flex-1 items-center gap-3 rounded-xl border border-wahaj-border/30 bg-white/70 p-2 transition-all duration-200 hover:shadow-md"
+                          >
+                            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg">
+                              <Image
+                                src={imgUrl}
+                                alt={p.name}
+                                fill
+                                sizes="56px"
+                                className="object-cover"
+                              />
+                            </div>
+                            <p className="line-clamp-2 text-xs font-bold leading-snug text-wahaj-ink">
+                              {p.name}
+                            </p>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="sticky bottom-0 z-10 border-t border-wahaj-border/40 bg-white/90 px-4 py-4 backdrop-blur-xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-wahaj-text/70">الإجمالي</span>
+                  <span className="font-thmanyah-text text-xl font-bold text-wahaj-ink">
+                    {formatPrice(total)}
+                  </span>
+                </div>
+                <button
+                  onClick={onCheckout}
+                  className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-wahaj-ink text-base font-bold text-white shadow-lg transition-all duration-300 hover:bg-wahaj-rose active:scale-[0.98]"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  إتمام الطلب الفاخر ✨
+                </button>
+              </div>
+            </div>
+          )}
         </motion.div>
       ) : null}
     </AnimatePresence>
