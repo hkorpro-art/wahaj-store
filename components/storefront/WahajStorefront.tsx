@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { collection, doc, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import {
   ChevronLeft,
   Gem,
@@ -9,7 +9,6 @@ import {
   Menu,
   MessageCircle,
   Minus,
-  Search,
   ShoppingBag,
   Sparkles,
   Star,
@@ -19,20 +18,21 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import {
   adminStorageKeys,
   defaultSiteContent,
   type ManagedProduct,
-  type ManagedStory,
   type SiteContent
 } from "@/lib/admin-local";
 import { type ElementContrasts } from "@/lib/contrast";
 import BrandMark from "@/components/storefront/BrandMark";
 import LifestyleHero from "@/components/storefront/LifestyleHero";
-import { formatPrice, products, stories } from "@/lib/data";
+import CircularCollections from "@/components/storefront/CircularCollections";
+import { formatPrice, products } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
-import { imageUrl, MENU_ICON_IDS, parseStoredImage, type MenuIconId, type MenuIconsRecord } from "@/lib/imagekit";
+import { imageUrl } from "@/lib/imagekit";
 import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
 import { buildCartMessage, buildSingleProductMessage, whatsappUrl } from "@/lib/whatsapp";
 import type { CartItem, Product } from "@/lib/types";
@@ -67,17 +67,14 @@ const staggerItem = {
 const seedManagedProducts = products.map((product) => ({ ...product, visible: true }));
 
 export default function WahajStorefront() {
+  const posthog = usePostHog();
   const [storeProducts, setStoreProducts] = useState<ManagedProduct[]>(seedManagedProducts);
-  const [storeStories, setStoreStories] = useState<ManagedStory[]>(
-    stories.map((story) => ({ ...story, visible: true, target: story.id as ManagedStory["target"] }))
-  );
   const [siteContent, setSiteContent] = useState<SiteContent>(defaultSiteContent);
-  const [activeCategory, setActiveCategory] = useState<LuxuryCategoryId>("new");
   const [query, setQuery] = useState("");
+  const prevQuery = useRef("");
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuIcons, setMenuIcons] = useState<MenuIconsRecord>({});
   const [heroContrasts, setHeroContrasts] = useState<ElementContrasts>({ logo: "dark", menu: "dark", cart: "dark", search: "dark" });
 
   useEffect(() => {
@@ -104,10 +101,7 @@ export default function WahajStorefront() {
         ? onSnapshot(
             collection(db, FIRESTORE_PRODUCTS_COLLECTION),
             (snapshot) => {
-              if (!active) {
-                return;
-              }
-
+              if (!active) return;
               const liveProducts = snapshot.docs
                 .map((doc, index) => {
                   const data = doc.data() as Record<string, unknown>;
@@ -119,12 +113,9 @@ export default function WahajStorefront() {
                 .filter((item) => item.product)
                 .sort((a, b) => a.sortOrder - b.sortOrder)
                 .map((item) => item.product as ManagedProduct);
-
               setStoreProducts(liveProducts);
             },
-            () => {
-              void loadStoreProducts();
-            }
+            () => { void loadStoreProducts(); }
           )
         : null;
 
@@ -132,109 +123,40 @@ export default function WahajStorefront() {
       void loadStoreProducts();
     }
 
-    async function loadMenuIcons() {
-      try {
-        const response = await fetch(`/api/store-menu-icons?refresh=${Date.now()}`, { cache: "no-store" });
-        const payload = (await response.json().catch(() => null)) as { icons?: MenuIconsRecord } | null;
-
-        if (active && response.ok) {
-          setMenuIcons(payload?.icons || {});
-        }
-      } catch {
-        if (active) {
-          setMenuIcons({});
-        }
-      }
-    }
-
-    const unsubscribeMenuIcons =
-      db && isFirebaseClientConfigured
-        ? onSnapshot(
-            doc(db, "store_settings", "menu_icons"),
-            (snapshot) => {
-              if (!active) {
-                return;
-              }
-
-              const data = snapshot.data() as Record<string, unknown> | undefined;
-              const icons: MenuIconsRecord = {};
-
-              for (const id of MENU_ICON_IDS) {
-                const parsed = parseStoredImage(data?.[id]);
-                if (parsed) {
-                  icons[id] = parsed;
-                }
-              }
-
-              setMenuIcons(icons);
-            },
-            () => {
-              void loadMenuIcons();
-            }
-          )
-        : null;
-
-    if (!unsubscribeMenuIcons) {
-      void loadMenuIcons();
-    }
-
     try {
       const savedContent = window.localStorage.getItem(adminStorageKeys.content);
-      const savedStories = window.localStorage.getItem(adminStorageKeys.stories);
-
       if (savedContent) {
         setSiteContent({ ...defaultSiteContent, ...(JSON.parse(savedContent) as SiteContent) });
       }
-
-      if (savedStories) {
-        setStoreStories(JSON.parse(savedStories) as ManagedStory[]);
-      }
     } catch {
-      setStoreStories(stories.map((story) => ({ ...story, visible: true, target: story.id as ManagedStory["target"] })));
       setSiteContent(defaultSiteContent);
     }
 
     return () => {
       active = false;
       unsubscribeProducts?.();
-      unsubscribeMenuIcons?.();
     };
   }, []);
-
-  const displayStories = useMemo(() => {
-    return storeStories.map((story) => {
-      const iconId = (story.target || story.id) as MenuIconId;
-      const icon = menuIcons[iconId];
-
-      if (icon) {
-        return { ...story, image: imageUrl(icon, { width: 128, height: 128 }) };
-      }
-
-      return { ...story, image: imageUrl(story.image, { width: 128, height: 128 }) };
-    });
-  }, [storeStories, menuIcons]);
 
   const filteredProducts = useMemo(() => {
     return storeProducts.filter((product) => {
       const matchesVisibility = product.visible !== false;
-      const matchesCategory =
-        activeCategory === "new"
-          ? product.status.includes("new")
-          : activeCategory === "sets"
-            ? product.category === "sets"
-            : activeCategory === "offers"
-              ? Boolean(product.compareAt)
-              : activeCategory === "trend"
-                ? product.status.includes("trend")
-                : true;
       const matchesQuery =
         query.trim().length === 0 ||
         product.name.includes(query.trim()) ||
         product.tags.some((tag) => tag.includes(query.trim()));
 
-      return matchesVisibility && matchesCategory && matchesQuery;
+      return matchesVisibility && matchesQuery;
     });
-  }, [storeProducts, activeCategory, query]);
+  }, [storeProducts, query]);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed && trimmed !== prevQuery.current) {
+      posthog?.capture("search", { query: trimmed, $current_url: window.location.href });
+    }
+    prevQuery.current = trimmed;
+  }, [query, posthog]);
 
   const cartItems = Object.values(cart);
   const cartTotal = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -304,6 +226,16 @@ export default function WahajStorefront() {
       console.error("Failed to save order to Firestore:", err);
     }
 
+    for (const item of cartItems) {
+      fetch("/api/analytics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "whatsapp_click", productId: item.product.id, productName: item.product.name, source: "cart_checkout" })
+      }).catch(() => {});
+
+      posthog?.capture("whatsapp_click", { product_id: item.product.id, product_name: item.product.name, source: "cart_checkout", $current_url: window.location.href });
+    }
+
     let message = buildCartMessage(cartItems);
     message = message.replace("الاسم:", `الاسم: ${customerName}`);
     if (isGift) {
@@ -315,36 +247,33 @@ export default function WahajStorefront() {
     setCartOpen(false);
   }
 
-  function handleCategorySelect(id: LuxuryCategoryId) {
-    setActiveCategory(id);
-    window.requestAnimationFrame(() => {
-      document.getElementById("products")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
-
   return (
     <main className="min-h-screen overflow-hidden bg-wahaj-bg text-wahaj-text luxury-grain luxury-radial-light">
       <Header
         cartCount={cartItems.length}
-        query={query}
-        setQuery={setQuery}
         heroContrasts={heroContrasts}
         onCart={() => setCartOpen(true)}
         onMenu={() => setMenuOpen(true)}
       />
 
-      <LifestyleHero products={storeProducts} onContrastChange={setHeroContrasts} />
+      <LifestyleHero
+        products={storeProducts}
+        onContrastChange={setHeroContrasts}
+        searchQuery={query}
+        onSearchChange={setQuery}
+      />
 
       <OfferBar offers={siteContent.offerMessages} />
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
-        <CategoryNav activeCategory={activeCategory} onSelect={handleCategorySelect} />
+
+        <CircularCollections />
 
         <motion.section id="products" {...fadeUp} className="lux-section">
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">مختارات وهاج</p>
-              <h2 className="type-section text-wahaj-ink">{luxuryCategories.find((c) => c.id === activeCategory)?.label || "الكل"}</h2>
+              <h2 className="type-section text-wahaj-ink">تسوقي من وهاج</h2>
             </div>
             <div className="flex items-center gap-2">
               <span className="rounded-full border border-wahaj-border bg-white/70 px-3 py-1 text-xs text-wahaj-text">
@@ -367,7 +296,7 @@ export default function WahajStorefront() {
           </motion.div>
           {filteredProducts.length === 0 ? (
             <div className="mt-4 rounded-[8px] border border-dashed border-wahaj-border bg-white/70 p-6 text-center text-sm text-wahaj-text/70">
-              لا توجد منتجات مطابقة حالياً. أضيفي منتجاً في Firestore أو غيّري البحث والتصنيف.
+              لا توجد منتجات مطابقة حالياً. أضيفي منتجاً في Firestore أو غيّري البحث.
             </div>
           ) : null}
         </motion.section>
@@ -403,41 +332,28 @@ export default function WahajStorefront() {
 
 type HeaderProps = {
   cartCount: number;
-  query: string;
-  setQuery: (value: string) => void;
   heroContrasts: ElementContrasts;
   onCart: () => void;
   onMenu: () => void;
 };
 
-function Header({ cartCount, query, setQuery, heroContrasts, onCart, onMenu }: HeaderProps) {
+function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
   const menuIsDark = heroContrasts.menu === "dark";
   const logoIsDark = heroContrasts.logo === "dark";
   const cartIsDark = heroContrasts.cart === "dark";
-  const searchIsDark = heroContrasts.search === "dark";
 
-  /* Menu icon */
   const menuBg = menuIsDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.75)";
   const menuBorder = menuIsDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.08)";
   const menuColor = menuIsDark ? "#FFFFFF" : "#450006";
   const menuHoverBg = menuIsDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)";
 
-  /* Cart icon */
   const cartBg = cartIsDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.75)";
   const cartBorder = cartIsDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.08)";
   const cartColor = cartIsDark ? "#FFFFFF" : "#450006";
   const cartHoverBg = cartIsDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)";
 
-  /* Logo */
   const logoColor = logoIsDark ? "#FFFFFF" : "#450006";
   const logoShadow = logoIsDark ? "drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]" : "";
-
-  /* Search bar */
-  const searchBg = searchIsDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.75)";
-  const searchBorder = searchIsDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.08)";
-  const searchColor = searchIsDark ? "#FFFFFF" : "#450006";
-  const searchPlaceholder = searchIsDark ? "rgba(255,255,255,0.5)" : "rgba(69,0,6,0.5)";
-  const searchFocusBorder = searchIsDark ? "rgba(255,255,255,0.4)" : "rgba(69,0,6,0.3)";
 
   return (
     <header className="absolute inset-x-0 top-0 z-50">
@@ -475,29 +391,8 @@ function Header({ cartCount, query, setQuery, heroContrasts, onCart, onMenu }: H
           {cartCount > 0 ? <Counter value={cartCount} /> : null}
         </button>
       </div>
-
-      <div className="mx-auto max-w-6xl px-4 pb-3 sm:px-6 lg:px-8">
-        <label
-          className="flex h-9 items-center gap-2 rounded-full px-3 backdrop-blur-md transition-all duration-300"
-          style={{
-            backgroundColor: searchBg,
-            border: `1px solid ${searchBorder}`,
-            color: searchColor
-          }}
-        >
-          <Search className="h-3.5 w-3.5 shrink-0" style={{ color: searchColor, opacity: 0.7 }} />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="h-full min-w-0 flex-1 bg-transparent text-xs outline-none"
-            style={{ color: searchColor }}
-            placeholder="ابحثي عن زركون، تاج، طقم..."
-          />
-        </label>
-      </div>
       <style>{`
         .wahaj-brand-wordmark { color: ${logoColor} !important; text-shadow: ${logoIsDark ? "0 2px 10px rgba(0,0,0,0.25)" : "none"} !important; }
-        input::placeholder { color: ${searchPlaceholder} !important; opacity: 1 !important; }
       `}</style>
     </header>
   );
@@ -538,99 +433,7 @@ function OfferBar({ offers }: { offers: string[] }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CATEGORY NAV — Premium Luxury Text Navigation
-   ═══════════════════════════════════════════════════════════ */
 
-const luxuryCategories = [
-  { id: "new", label: "جديد" },
-  { id: "sets", label: "أطقم" },
-  { id: "offers", label: "عروض" },
-  { id: "trend", label: "ترند" },
-  { id: "clients", label: "تصوير عميلات" }
-] as const;
-
-type LuxuryCategoryId = (typeof luxuryCategories)[number]["id"];
-
-function CategoryNav({
-  activeCategory,
-  onSelect
-}: {
-  activeCategory: LuxuryCategoryId;
-  onSelect: (id: LuxuryCategoryId) => void;
-}) {
-  return (
-    <motion.nav
-      id="categories"
-      aria-label="تصنيفات المنتجات"
-      className="mt-6 mb-2"
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: "-40px" }}
-    >
-      <motion.div
-        className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 sm:gap-x-2"
-        variants={{
-          hidden: { opacity: 0 },
-          show: {
-            opacity: 1,
-            transition: { staggerChildren: 0.08, delayChildren: 0.1 }
-          }
-        }}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, margin: "-40px" }}
-      >
-        {luxuryCategories.map((cat) => {
-          const active = activeCategory === cat.id;
-          return (
-            <motion.button
-              key={cat.id}
-              onClick={() => onSelect(cat.id)}
-              className="group relative px-4 py-2 sm:px-5 sm:py-2.5"
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                show: {
-                  opacity: 1,
-                  y: 0,
-                  transition: { duration: 0.7, ease: [0.4, 0, 0.2, 1] }
-                }
-              }}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              <span
-                className={`relative z-10 text-sm sm:text-base font-medium transition-colors duration-500 ${
-                  active
-                    ? "text-wahaj-rose"
-                    : "text-wahaj-text/60 group-hover:text-wahaj-ink"
-                }`}
-              >
-                {cat.label}
-              </span>
-              <motion.span
-                className="absolute bottom-1 left-1/2 h-[1.5px] -translate-x-1/2 bg-wahaj-rose"
-                initial={false}
-                animate={{
-                  width: active ? "60%" : "0%",
-                  opacity: active ? 1 : 0
-                }}
-                transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-              />
-              <span
-                className={`absolute inset-0 rounded-full transition-all duration-500 ${
-                  active
-                    ? "bg-wahaj-rose/8"
-                    : "bg-transparent group-hover:bg-wahaj-ink/4"
-                }`}
-              />
-            </motion.button>
-          );
-        })}
-      </motion.div>
-    </motion.nav>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════
    PRODUCT CARD — Premium Luxury Card
@@ -750,7 +553,7 @@ function BottomNavigation({
 }) {
   const items = [
     { label: "الرئيسية", href: "/", icon: Home },
-    { label: "الأقسام", href: "#categories", icon: Gem },
+    { label: "المجموعات", href: "/collections/atqam", icon: Gem },
     { label: "السلة", href: "#", icon: ShoppingBag, action: onCart, count: cartCount },
     { label: "حسابي", href: "/admin/login", icon: UserRound }
   ];
@@ -806,16 +609,30 @@ function BottomNavigation({
    ═══════════════════════════════════════════════════════════ */
 
 function FloatingWhatsApp({ items }: { items: CartItem[] }) {
+  const posthog = usePostHog();
   const href =
     items.length > 0
       ? whatsappUrl(buildCartMessage(items))
       : whatsappUrl("مرحبًا وهاج ✨\nأرغب بمعرفة أحدث القطع المتوفرة.");
+
+  function handleClick() {
+    for (const item of items) {
+      fetch("/api/analytics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "whatsapp_click", productId: item.product.id, productName: item.product.name, source: "floating_button" })
+      }).catch(() => {});
+
+      posthog?.capture("whatsapp_click", { product_id: item.product.id, product_name: item.product.name, source: "floating_button", $current_url: window.location.href });
+    }
+  }
 
   return (
     <motion.a
       href={href}
       target="_blank"
       rel="noreferrer"
+      onClick={handleClick}
       animate={{ scale: [1, 1.04, 1] }}
       whileHover={{ y: -3, scale: 1.08 }}
       whileTap={{ scale: 0.96 }}
@@ -843,6 +660,7 @@ type CartSheetProps = {
 };
 
 function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }: CartSheetProps) {
+  const posthog = usePostHog();
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [isGift, setIsGift] = useState(false);
@@ -928,6 +746,15 @@ function CartSheet({ open, items, total, onClose, onQty, onRemove, onCheckout }:
                             href={whatsappUrl(buildSingleProductMessage(item.product, item.quantity))}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={() => {
+                              fetch("/api/analytics", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ type: "whatsapp_click", productId: item.product.id, productName: item.product.name, source: "cart_single" })
+                              }).catch(() => {});
+
+                              posthog?.capture("whatsapp_click", { product_id: item.product.id, product_name: item.product.name, source: "cart_single", $current_url: window.location.href });
+                            }}
                             className="mt-3 inline-flex rounded-full border border-wahaj-border bg-white/80 px-3 py-1 text-xs font-bold text-wahaj-rose btn-luxury"
                           >
                             طلب منتج واحد

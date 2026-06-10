@@ -28,7 +28,8 @@ export const productInputSchema = z.object({
   views: z.number().int().min(0).default(0),
   sold: z.number().int().min(0).default(0),
   visible: z.boolean().optional(),
-  discountEndsAt: z.string().optional()
+  discountEndsAt: z.string().optional(),
+  categoryIds: z.array(z.string()).optional()
 });
 
 export const managedProductsInputSchema = z.object({
@@ -92,3 +93,28 @@ export const heroSettingsInputSchema = z.object({
 export const managedHeroSlidesInputSchema = z.object({
   slides: z.array(heroSlideInputSchema)
 });
+
+export const collectionInputSchema = z.object({
+  id: z.string().min(1).max(120),
+  slug: z.string().min(1).max(160),
+  name: z.string().min(2).max(120),
+  image: storedImageSchema,
+  description: z.string().max(900).optional(),
+  sortOrder: z.number().int().min(0),
+  visible: z.boolean(),
+  linkedProducts: z.array(z.string()).default([]),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional()
+});
+
+export const managedCollectionsInputSchema = z.object({
+  collections: z.array(collectionInputSchema)
+});
+
+/** @deprecated Use collectionInputSchema */
+export const categoryInputSchema = collectionInputSchema;
+/** @deprecated Use managedCollectionsInputSchema */
+export const managedCategoriesInputSchema = z.object({
+  categories: z.array(categoryInputSchema)
+});
+

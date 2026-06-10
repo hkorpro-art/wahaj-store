@@ -1,46 +1,16 @@
 import { storeImage } from "./imagekit";
-import type { Category, Coupon, Customer, Order, Product, Story } from "./types";
+import type { Coupon, Customer, Order, Product, Story } from "./types";
 
 export const whatsappNumber = "967781679899";
 
-export const categories: Category[] = [
-  {
-    id: "crowns",
-    name: "تيجان",
-    icon: "Crown",
-    image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=480&q=80"
-  },
-  {
-    id: "earrings",
-    name: "أقراط",
-    icon: "Sparkles",
-    image: "https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?auto=format&fit=crop&w=480&q=80"
-  },
-  {
-    id: "bracelets",
-    name: "أساور",
-    icon: "CircleDot",
-    image: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=480&q=80"
-  },
-  {
-    id: "zircon",
-    name: "زركون",
-    icon: "Gem",
-    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=480&q=80"
-  },
-  {
-    id: "sets",
-    name: "أطقم",
-    icon: "Boxes",
-    image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=480&q=80"
-  },
-  {
-    id: "other",
-    name: "أخرى",
-    icon: "BadgePlus",
-    image: "https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?auto=format&fit=crop&w=480&q=80"
-  }
-];
+export const categories = [
+  { id: "crowns", name: "تيجان", icon: "Crown" },
+  { id: "earrings", name: "أقراط", icon: "Sparkles" },
+  { id: "bracelets", name: "أساور", icon: "CircleDot" },
+  { id: "zircon", name: "زركون", icon: "Gem" },
+  { id: "sets", name: "أطقم", icon: "Boxes" },
+  { id: "other", name: "أخرى", icon: "BadgePlus" }
+] as const;
 
 export const stories: Story[] = [
   {
@@ -377,39 +347,6 @@ export const coupons: Coupon[] = [
     minOrder: 15000
   }
 ];
-
-export const analytics = {
-  kpis: {
-    orders: 246,
-    products: products.length,
-    revenue: 3246000,
-    abandonedCarts: 18,
-    conversion: 6.8
-  },
-  sales: [
-    { day: "السبت", orders: 22, revenue: 315000 },
-    { day: "الأحد", orders: 31, revenue: 428000 },
-    { day: "الاثنين", orders: 28, revenue: 392000 },
-    { day: "الثلاثاء", orders: 44, revenue: 646000 },
-    { day: "الأربعاء", orders: 39, revenue: 588000 },
-    { day: "الخميس", orders: 51, revenue: 741000 },
-    { day: "الجمعة", orders: 47, revenue: 686000 }
-  ],
-  categories: [
-    { name: "أطقم", value: 36 },
-    { name: "زركون", value: 24 },
-    { name: "أقراط", value: 18 },
-    { name: "أساور", value: 14 },
-    { name: "تيجان", value: 8 }
-  ],
-  activity: [
-    { time: "10 ص", visits: 140 },
-    { time: "1 م", visits: 220 },
-    { time: "4 م", visits: 390 },
-    { time: "7 م", visits: 610 },
-    { time: "10 م", visits: 470 }
-  ]
-};
 
 export function formatPrice(value: number) {
   return new Intl.NumberFormat("ar-YE", {

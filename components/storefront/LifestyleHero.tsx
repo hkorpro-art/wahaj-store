@@ -20,6 +20,8 @@ import { detectImageBrightness, type Contrast, type ElementContrasts } from "@/l
 type LifestyleHeroProps = {
   products: ManagedProduct[];
   onContrastChange?: (contrasts: ElementContrasts) => void;
+  searchQuery?: string;
+  onSearchChange?: (value: string) => void;
 };
 
 const fallbackSlides: HeroSlide[] = [
@@ -56,7 +58,7 @@ function resolveDestination(slide: HeroSlide, products: ManagedProduct[]): strin
   return slide.destinationValue || "/";
 }
 
-export default function LifestyleHero({ products, onContrastChange }: LifestyleHeroProps) {
+export default function LifestyleHero({ products, onContrastChange, searchQuery = "", onSearchChange }: LifestyleHeroProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [settings, setSettings] = useState<HeroAnimationSettings>(defaultHeroAnimationSettings);
@@ -204,6 +206,7 @@ export default function LifestyleHero({ products, onContrastChange }: LifestyleH
   const overlayStrong = textIsDark ? "from-black/60 via-black/10 to-transparent" : "from-black/40 via-black/5 to-transparent";
 
   return (
+    <>
     <section
       className="relative w-full overflow-hidden h-[75dvh] sm:h-[100dvh]"
       onMouseEnter={pause}
@@ -358,5 +361,22 @@ export default function LifestyleHero({ products, onContrastChange }: LifestyleH
         style={{ background: "linear-gradient(to bottom, transparent 60%, #F3E1E4)" }}
       />
     </section>
+
+    {/* Glass search bar — bridges hero/content boundary (50/50 overlap) */}
+    <div className="relative z-30 mx-auto -mt-6 mb-5 w-full max-w-lg px-4 sm:px-6">
+      <label className="flex h-12 items-center gap-3 rounded-full border border-white/25 bg-white/18 px-5 shadow-lg backdrop-blur-xl transition-all duration-300 focus-within:border-white/45 focus-within:bg-white/25 focus-within:shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+        <svg className="h-4 w-4 shrink-0 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
+        <input
+          value={searchQuery}
+          onChange={(e) => onSearchChange?.(e.target.value)}
+          className="h-full min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder-white/60"
+          placeholder="ابحثي عن زركون، تاج، طقم..."
+          dir="rtl"
+        />
+      </label>
+    </div>
+    </>
   );
 }

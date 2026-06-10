@@ -36,20 +36,7 @@ import {
   X
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ComponentType, type DragEvent, type ReactNode } from "react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis
-} from "recharts";
+
 import {
   adminStorageKeys,
   createEmptyHeroSlide,
@@ -57,6 +44,7 @@ import {
   defaultSiteContent,
   type HeroAnimationSettings,
   type HeroSlide,
+  type ManagedCollection,
   type ManagedCoupon,
   type ManagedNotification,
   type ManagedProduct,
@@ -64,7 +52,7 @@ import {
   type SiteContent,
   type StoryTarget
 } from "@/lib/admin-local";
-import { analytics, categories, coupons as seedCoupons, formatPrice, orders as seedOrders, products as seedProducts, stories as seedStories } from "@/lib/data";
+import { categories, coupons as seedCoupons, formatPrice, orders as seedOrders, products as seedProducts, stories as seedStories } from "@/lib/data";
 import {
   imageUrl,
   MENU_ICON_IDS,
@@ -79,6 +67,7 @@ import type { Order, OrderStatus, ProductBadge, ProductStatus } from "@/lib/type
 const tabs = [
   { id: "overview", label: "الرئيسية", icon: LayoutDashboard },
   { id: "hero", label: "الهيرو", icon: ImageIcon },
+  { id: "collections", label: "المجموعات", icon: Tags },
   { id: "products", label: "المنتجات", icon: PackagePlus },
   { id: "orders", label: "الطلبات", icon: ShoppingBag },
   { id: "customers", label: "العميلات", icon: UsersRound },
@@ -103,14 +92,6 @@ type CustomerRecord = {
   lastOrder: string;
 };
 
-type SalesPoint = {
-  sort: string;
-  day: string;
-  orders: number;
-  revenue: number;
-};
-
-const chartColors = ["#D89CA4", "#B76E79", "#E0B56A", "#8FAF9A", "#D8A48F"];
 const orderStatuses: OrderStatus[] = ["جديد", "تم التواصل", "مؤكد", "تم التسليم", "ملغي"];
 
 const statusClass: Record<OrderStatus, string> = {
@@ -205,6 +186,19 @@ export default function AdminDashboard() {
   const [productSyncState, setProductSyncState] = useState<ProductSyncState>("loading");
   const [toast, setToast] = useState("جاري التحقق من ربط المنتجات بقاعدة البيانات المشتركة...");
   const [aiProductName, setAiProductName] = useState("");
+  const [adminCollections, setAdminCollections] = useState<ManagedCollection[]>([]);
+
+  async function loadCollections() {
+    try {
+      const response = await fetch(`/api/collections?refresh=${Date.now()}`, { cache: "no-store" });
+      const payload = await response.json().catch(() => null);
+      if (response.ok && Array.isArray(payload?.collections)) {
+        setAdminCollections(payload.collections as ManagedCollection[]);
+      }
+    } catch (err) {
+      console.error("Failed to load collections:", err);
+    }
+  }
 
   async function loadSharedProducts(options?: { silent?: boolean }) {
     try {
@@ -277,6 +271,7 @@ export default function AdminDashboard() {
     setHeroSettings({ ...defaultHeroAnimationSettings, ...readStored(adminStorageKeys.heroSettings, defaultHeroAnimationSettings) });
     setHydrated(true);
 
+    void loadCollections();
     void loadHeroSlides();
   }, []);
 
@@ -367,18 +362,9 @@ export default function AdminDashboard() {
     });
   }, [products, search]);
 
-  const activeProducts = products.filter((product) => product.visible !== false);
-  const lowStock = activeProducts.filter((product) => product.stock <= 8);
-  const topViewed = [...activeProducts].sort((a, b) => b.views - a.views).slice(0, 5);
-  const topSold = [...activeProducts].sort((a, b) => b.sold - a.sold).slice(0, 5);
-  const salesData = useMemo(() => buildSalesData(orders), [orders]);
-  const categoryData = useMemo(() => buildCategoryData(activeProducts), [activeProducts]);
-  const activityData = useMemo(() => buildActivityData(activeProducts), [activeProducts]);
+  const activeProducts = useMemo(() => products.filter((product) => product.visible !== false), [products]);
+  const lowStock = useMemo(() => activeProducts.filter((product) => product.stock <= 8), [activeProducts]);
   const customerRecords = useMemo(() => buildCustomerRecords(orders, vipPhones), [orders, vipPhones]);
-  const totalViews = activeProducts.reduce((sum, product) => sum + product.views, 0);
-  const completedOrders = orders.filter((order) => order.status !== "ملغي");
-  const conversionRate = totalViews > 0 ? Math.min(100, (completedOrders.length / totalViews) * 100) : 0;
-  const abandonedRate = totalViews > 0 ? Math.min(75, Math.round(((totalViews * 0.012) / Math.max(completedOrders.length, 1)) * 10)) : 0;
 
   function showToast(message: string) {
     setToast(message);
@@ -702,12 +688,6 @@ export default function AdminDashboard() {
                 coupons={coupons}
                 notifications={notifications}
                 lowStock={lowStock}
-                topViewed={topViewed}
-                topSold={topSold}
-                salesData={salesData}
-                categoryData={categoryData}
-                conversionRate={conversionRate}
-                abandonedRate={abandonedRate}
                 onQuickAction={setActiveTab}
               />
             ) : null}
@@ -728,6 +708,15 @@ export default function AdminDashboard() {
                   void persistHeroSettings(next);
                   showToast("تم تحديث إعدادات الحركة.");
                 }}
+              />
+            ) : null}
+
+            {activeTab === "collections" ? (
+              <CollectionsManager
+                collections={adminCollections}
+                allProducts={products}
+                onRefresh={loadCollections}
+                showToast={showToast}
               />
             ) : null}
 
@@ -790,13 +779,8 @@ export default function AdminDashboard() {
 
             {activeTab === "analytics" ? (
               <AnalyticsManager
-                topViewed={topViewed}
-                topSold={topSold}
-                salesData={salesData}
-                categoryData={categoryData}
-                activityData={activityData}
-                conversionRate={conversionRate}
-                abandonedRate={abandonedRate}
+                products={products}
+                collections={adminCollections}
               />
             ) : null}
 
@@ -853,12 +837,6 @@ function Overview({
   coupons,
   notifications,
   lowStock,
-  topViewed,
-  topSold,
-  salesData,
-  categoryData,
-  conversionRate,
-  abandonedRate,
   onQuickAction
 }: {
   products: ManagedProduct[];
@@ -866,12 +844,6 @@ function Overview({
   coupons: ManagedCoupon[];
   notifications: ManagedNotification[];
   lowStock: ManagedProduct[];
-  topViewed: ManagedProduct[];
-  topSold: ManagedProduct[];
-  salesData: SalesPoint[];
-  categoryData: Array<{ name: string; value: number }>;
-  conversionRate: number;
-  abandonedRate: number;
   onQuickAction: (tab: TabId) => void;
 }) {
   const revenue = orders.filter((order) => order.status !== "ملغي").reduce((sum, order) => sum + order.total, 0);
@@ -879,13 +851,12 @@ function Overview({
   const cards = [
     { label: "عدد الطلبات", value: orders.length.toLocaleString("ar-YE"), icon: ShoppingBag, tone: "text-wahaj-rose" },
     { label: "المنتجات الظاهرة", value: products.length.toLocaleString("ar-YE"), icon: PackageCheck, tone: "text-wahaj-success" },
-    { label: "الأرباح", value: formatPrice(revenue), icon: CircleDollarSign, tone: "text-wahaj-stars" },
-    { label: "السلات المتروكة", value: `${abandonedRate}%`, icon: AlertTriangle, tone: "text-wahaj-warning" }
+    { label: "الأرباح", value: formatPrice(revenue), icon: CircleDollarSign, tone: "text-wahaj-stars" }
   ];
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => (
           <motion.div
             key={card.label}
@@ -904,52 +875,12 @@ function Overview({
 
       <QuickActions onAction={onQuickAction} />
 
-      <div className="grid gap-5 xl:grid-cols-[1.2fr_.8fr]">
-        <Panel title="حركة المبيعات من الطلبات" icon={TrendingUp}>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={salesData}>
-                <defs>
-                  <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D89CA4" stopOpacity={0.5} />
-                    <stop offset="95%" stopColor="#D89CA4" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="#E8D6D6" strokeDasharray="3 3" />
-                <XAxis dataKey="day" tick={{ fill: "#6B4E4E", fontSize: 12 }} />
-                <YAxis tick={{ fill: "#6B4E4E", fontSize: 12 }} width={44} />
-                <RechartsTooltip />
-                <Area type="monotone" dataKey="revenue" stroke="#B76E79" fill="url(#salesGradient)" strokeWidth={3} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Panel>
-
-        <Panel title="أفضل الأقسام" icon={Tags}>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={categoryData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={96} paddingAngle={4}>
-                  {categoryData.map((entry, index) => (
-                    <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </Panel>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-3">
-        <Ranking title="الأكثر مبيعًا" products={topSold} metric="sold" />
-        <Ranking title="الأكثر مشاهدة" products={topViewed} metric="views" />
+      <div className="grid gap-5 xl:grid-cols-2">
         <Panel title="تنبيهات مهمة" icon={AlertTriangle}>
           <div className="space-y-3">
             <InfoPill label="منتجات منخفضة المخزون" value={lowStock.length.toLocaleString("ar-YE")} tone="warning" />
             <InfoPill label="كوبونات نشطة" value={activeCoupons.toLocaleString("ar-YE")} tone="rose" />
             <InfoPill label="إشعارات محفوظة" value={notifications.length.toLocaleString("ar-YE")} tone="success" />
-            <InfoPill label="معدل التحويل" value={`${conversionRate.toFixed(2)}%`} tone="rose" />
           </div>
         </Panel>
       </div>
@@ -2263,6 +2194,318 @@ function ContentManager({
   );
 }
 
+function CollectionsManager({
+  collections,
+  allProducts,
+  onRefresh,
+  showToast
+}: {
+  collections: ManagedCollection[];
+  allProducts: ManagedProduct[];
+  onRefresh: () => void;
+  showToast: (message: string) => void;
+}) {
+  const [form, setForm] = useState<ManagedCollection | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function saveCollection(collection: ManagedCollection) {
+    try {
+      const response = await fetch("/api/collections", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(collection)
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.message || "فشل الحفظ");
+      showToast(payload?.message || "تم حفظ المجموعة.");
+      onRefresh();
+      setForm(null);
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "فشل حفظ المجموعة.");
+    }
+  }
+
+  async function saveAllCollections(sorted: ManagedCollection[]) {
+    try {
+      const response = await fetch("/api/collections", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ collections: sorted })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.message || "فشل الحفظ");
+      showToast(payload?.message || "تم حفظ المجموعات.");
+      onRefresh();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "فشل حفظ المجموعات.");
+    }
+  }
+
+  async function deleteCollection(id: string) {
+    try {
+      const response = await fetch(`/api/collections/${id}`, { method: "DELETE" });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.message || "فشل الحذف");
+      showToast(payload?.message || "تم حذف المجموعة.");
+      onRefresh();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "فشل حذف المجموعة.");
+    }
+  }
+
+  function moveCollection(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= collections.length) return;
+    const next = [...collections];
+    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    const reordered = next.map((c, i) => ({ ...c, sortOrder: i }));
+    void saveAllCollections(reordered);
+  }
+
+  async function uploadImage(file: File): Promise<StoredImage> {
+    setUploading(true);
+    try {
+      const uploaded = await uploadImageToImageKit(file, "/collections");
+      return uploaded;
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function createEmpty(): ManagedCollection {
+    return {
+      id: `col-${Date.now()}`,
+      name: "",
+      slug: "",
+      image: storeImage("https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=480&q=80"),
+      description: "",
+      sortOrder: collections.length,
+      visible: true,
+      linkedProducts: []
+    };
+  }
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-[1fr_400px]">
+      <Panel title="إدارة المجموعات" icon={Tags}>
+        <div className="space-y-3">
+          {collections.length === 0 ? (
+            <EmptyState text="لا توجد مجموعات بعد. أضفي مجموعة جديدة." />
+          ) : (
+            collections.map((collection, index) => (
+              <div
+                key={collection.id}
+                className="flex items-center gap-3 rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3"
+              >
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-wahaj-border bg-white">
+                  <img
+                    src={imageUrl(collection.image, { width: 112, height: 112 })}
+                    alt={collection.name}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-wahaj-ink truncate">{collection.name || "بدون اسم"}</p>
+                  <p className="text-xs text-wahaj-text/55">/{collection.slug}</p>
+                  <div className="mt-1 flex gap-2">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${collection.visible ? "bg-wahaj-success/20 text-wahaj-ink" : "bg-red-50 text-red-600"}`}>
+                      {collection.visible ? "ظاهرة" : "مخفية"}
+                    </span>
+                    <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-wahaj-text/60">
+                      {collection.linkedProducts?.length || 0} منتجات
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => moveCollection(index, -1)} disabled={index === 0} className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-wahaj-rose disabled:opacity-30">
+                    <ArrowUp className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => moveCollection(index, 1)} disabled={index === collections.length - 1} className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-wahaj-rose disabled:opacity-30">
+                    <ArrowDown className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => setForm(collection)} className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-wahaj-rose">
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => { if (window.confirm(`حذف "${collection.name}"؟`)) deleteCollection(collection.id); }} className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+          <button onClick={() => setForm(createEmpty())} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-dashed border-wahaj-rose bg-wahaj-soft/40 px-4 font-bold text-wahaj-rose">
+            + مجموعة جديدة
+          </button>
+        </div>
+      </Panel>
+
+      {form ? (
+        <CollectionEditor
+          collection={form}
+          allProducts={allProducts}
+          uploading={uploading}
+          onSave={saveCollection}
+          onCancel={() => setForm(null)}
+          onUploadImage={uploadImage}
+          onChange={setForm}
+        />
+      ) : (
+        <Panel title="محرر المجموعات" icon={Tags}>
+          <p className="text-sm text-wahaj-text/60">اختاري مجموعة للتعديل أو أضفي مجموعة جديدة.</p>
+        </Panel>
+      )}
+    </div>
+  );
+}
+
+function CollectionEditor({
+  collection,
+  allProducts,
+  uploading,
+  onSave,
+  onCancel,
+  onUploadImage,
+  onChange
+}: {
+  collection: ManagedCollection;
+  allProducts: ManagedProduct[];
+  uploading: boolean;
+  onSave: (c: ManagedCollection) => void;
+  onCancel: () => void;
+  onUploadImage: (file: File) => Promise<StoredImage>;
+  onChange: (c: ManagedCollection) => void;
+}) {
+  const [productSearch, setProductSearch] = useState("");
+
+  const linkedSet = new Set(collection.linkedProducts || []);
+  const linkedCount = linkedSet.size;
+
+  const filteredProducts = useMemo(() => {
+    const term = productSearch.trim().toLowerCase();
+    if (!term) return allProducts;
+    return allProducts.filter(
+      (p) => p.name.toLowerCase().includes(term) || p.tags.some((t) => t.toLowerCase().includes(term))
+    );
+  }, [allProducts, productSearch]);
+
+  function toggleProduct(productId: string) {
+    const next = new Set(linkedSet);
+    if (next.has(productId)) {
+      next.delete(productId);
+    } else {
+      next.add(productId);
+    }
+    onChange({ ...collection, linkedProducts: Array.from(next) });
+  }
+
+  return (
+    <Panel title={collection.id.startsWith("col-") ? "مجموعة جديدة" : `تعديل: ${collection.name}`} icon={Pencil}>
+      <div className="flex max-h-[80vh] flex-col gap-3 overflow-y-auto admin-scrollbar">
+        <div>
+          <label className="mb-1 block text-xs font-bold text-wahaj-text/64">صورة المجموعة</label>
+          <div className="flex items-center gap-3">
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-wahaj-border bg-white">
+              <img src={imageUrl(collection.image, { width: 160, height: 160 })} alt="" className="h-full w-full object-cover" />
+            </div>
+            <label className="flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-wahaj-border bg-white px-4 text-sm font-bold text-wahaj-rose">
+              {uploading ? "جاري الرفع..." : "رفع صورة"}
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/avif" className="hidden" disabled={uploading}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const img = await onUploadImage(file);
+                    onChange({ ...collection, image: img });
+                  }
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+          </div>
+        </div>
+
+        <input className="AdminInput" value={collection.name} onChange={(e) => onChange({ ...collection, name: e.target.value, slug: e.target.value ? createSlug(e.target.value) : collection.slug })} placeholder="اسم المجموعة" />
+        <input className="AdminInput" value={collection.slug} onChange={(e) => onChange({ ...collection, slug: e.target.value })} placeholder="الرابط (slug)" />
+        <textarea className="AdminInput min-h-20 py-3" value={collection.description || ""} onChange={(e) => onChange({ ...collection, description: e.target.value })} placeholder="الوصف (اختياري)" />
+
+        <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
+          ظاهرة في المتجر
+          <input type="checkbox" checked={collection.visible} onChange={(e) => onChange({ ...collection, visible: e.target.checked })} />
+        </label>
+
+        {/* Visual product selector */}
+        <div className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-bold text-wahaj-ink">المنتجات المرتبطة</p>
+            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-wahaj-rose">{linkedCount} منتج</span>
+          </div>
+
+          <div className="relative mb-2">
+            <input
+              className="AdminInput h-9 pr-8 text-xs"
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              placeholder="ابحثي عن منتج..."
+            />
+            <svg className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-wahaj-text/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+            </svg>
+          </div>
+
+          <div className="max-h-64 space-y-1 overflow-y-auto admin-scrollbar">
+            {filteredProducts.length === 0 ? (
+              <p className="py-3 text-center text-xs text-wahaj-text/50">لا توجد منتجات مطابقة.</p>
+            ) : (
+              filteredProducts.map((product) => {
+                const selected = linkedSet.has(product.id);
+                return (
+                  <button
+                    key={product.id}
+                    type="button"
+                    onClick={() => toggleProduct(product.id)}
+                    className={`flex w-full items-center gap-3 rounded-[6px] px-2 py-2 text-right transition-all ${
+                      selected ? "bg-wahaj-soft/60 border border-wahaj-rose/25" : "bg-white border border-transparent hover:border-wahaj-border"
+                    }`}
+                  >
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-[6px] bg-wahaj-card">
+                      <img
+                        src={imageUrl(product.images[0], { width: 80, height: 80 })}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 text-right">
+                      <p className={`truncate text-sm font-bold ${selected ? "text-wahaj-rose" : "text-wahaj-ink"}`}>{product.name}</p>
+                      <p className="text-[10px] text-wahaj-text/50">{product.tags.slice(0, 2).join("، ")}</p>
+                    </div>
+                    <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-all ${
+                      selected ? "border-wahaj-rose bg-wahaj-rose" : "border-wahaj-border bg-white"
+                    }`}>
+                      {selected ? (
+                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                        </svg>
+                      ) : null}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={() => onSave(collection)} className="min-h-11 flex-1 rounded-full bg-wahaj-rose px-4 font-bold text-white">
+            حفظ المجموعة
+          </button>
+          <button onClick={onCancel} className="min-h-11 rounded-full border border-wahaj-border bg-white px-4 font-bold text-wahaj-rose">
+            إلغاء
+          </button>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
 function NotificationsManager({
   notifications,
   onCreate,
@@ -2373,95 +2616,220 @@ function NotificationsManager({
 }
 
 function AnalyticsManager({
-  topViewed,
-  topSold,
-  salesData,
-  categoryData,
-  activityData,
-  conversionRate,
-  abandonedRate
+  products,
+  collections
 }: {
-  topViewed: ManagedProduct[];
-  topSold: ManagedProduct[];
-  salesData: SalesPoint[];
-  categoryData: Array<{ name: string; value: number }>;
-  activityData: Array<{ time: string; visits: number }>;
-  conversionRate: number;
-  abandonedRate: number;
+  products: ManagedProduct[];
+  collections: ManagedCollection[];
 }) {
+  const [analyticsData, setAnalyticsData] = useState<{
+    productViews: Record<string, { count: number; name: string }>;
+    whatsappClicks: Record<string, { count: number; name: string }>;
+    collectionVisits: Record<string, { count: number; name: string }>;
+    whatsappTotal: number;
+    whatsappDaily: Record<string, number>;
+  }>({
+    productViews: {},
+    whatsappClicks: {},
+    collectionVisits: {},
+    whatsappTotal: 0,
+    whatsappDaily: {}
+  });
+
+  useEffect(() => {
+    fetch("/api/analytics")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data === "object") setAnalyticsData(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const totalProductViews = useMemo(
+    () => Object.values(analyticsData.productViews).reduce((s, v) => s + v.count, 0),
+    [analyticsData.productViews]
+  );
+
+  const topViewedProducts = useMemo(
+    () =>
+      Object.entries(analyticsData.productViews)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 5),
+    [analyticsData.productViews]
+  );
+
+  const topWhatsAppProducts = useMemo(
+    () =>
+      Object.entries(analyticsData.whatsappClicks)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 5),
+    [analyticsData.whatsappClicks]
+  );
+
+  const topVisitedCollections = useMemo(
+    () =>
+      Object.entries(analyticsData.collectionVisits)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 5),
+    [analyticsData.collectionVisits]
+  );
+
+  const dailyClicks = useMemo(
+    () =>
+      Object.entries(analyticsData.whatsappDaily)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-7),
+    [analyticsData.whatsappDaily]
+  );
+
+  const conversionData = useMemo(() => {
+    const activeProducts = products.filter((p) => p.visible !== false);
+    return activeProducts
+      .map((p) => {
+        const views = analyticsData.productViews[p.id]?.count || 0;
+        const clicks = analyticsData.whatsappClicks[p.id]?.count || 0;
+        return { productId: p.id, productName: p.name, views, whatsappClicks: clicks, conversionRate: views > 0 ? (clicks / views) * 100 : 0 };
+      })
+      .filter((item) => item.views > 0 || item.whatsappClicks > 0)
+      .sort((a, b) => b.views - a.views);
+  }, [products, analyticsData]);
+
+  const lowEngagement = useMemo(() => {
+    return products
+      .filter((p) => p.visible !== false)
+      .map((p) => {
+        const views = analyticsData.productViews[p.id]?.count || 0;
+        const clicks = analyticsData.whatsappClicks[p.id]?.count || 0;
+        return { productId: p.id, productName: p.name, views, whatsappClicks: clicks, engagement: views + clicks };
+      })
+      .filter((item) => item.engagement === 0)
+      .slice(0, 10);
+  }, [products, analyticsData]);
+
+  const visibleProducts = products.filter((p) => p.visible !== false);
+
   return (
     <div className="space-y-5">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <SummaryCard icon={PackagePlus} label="إجمالي المنتجات" value={visibleProducts.length} />
+        <SummaryCard icon={Eye} label="مشاهدات المنتجات" value={totalProductViews} />
+        <SummaryCard icon={MessageCircle} label="نقرات واتساب" value={analyticsData.whatsappTotal} />
+        <SummaryCard icon={Tags} label="إجمالي المجموعات" value={collections.length} />
+      </div>
+
       <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="أوقات النشاط" icon={Eye}>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={activityData}>
-                <CartesianGrid stroke="#E8D6D6" strokeDasharray="3 3" />
-                <XAxis dataKey="time" tick={{ fill: "#6B4E4E", fontSize: 12 }} />
-                <YAxis tick={{ fill: "#6B4E4E", fontSize: 12 }} width={44} />
-                <RechartsTooltip />
-                <Bar dataKey="visits" fill="#B76E79" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Most viewed products */}
+        <Panel title="الأكثر مشاهدة" icon={Eye}>
+          {topViewedProducts.length > 0 ? (
+            <RankedList items={topViewedProducts.map(([id, v]) => ({ id, label: v.name, value: v.count, unit: "مشاهدة" }))} />
+          ) : (
+            <EmptyState text="لا توجد مشاهدات مسجلة بعد." />
+          )}
         </Panel>
 
-        <Panel title="معدل التحويل" icon={TrendingUp}>
-          <div className="grid h-72 place-items-center">
-            <div className="text-center">
-              <p className="font-thmanyah-text text-6xl font-bold text-wahaj-rose">{conversionRate.toFixed(2)}%</p>
-              <p className="mt-3 text-wahaj-text/70">طلبات واتساب مقارنة بمشاهدات المنتجات المسجلة</p>
-              <div className="mx-auto mt-6 h-3 w-64 overflow-hidden rounded-full bg-wahaj-card">
-                <div className="h-full rounded-full bg-wahaj-rose" style={{ width: `${Math.min(100, conversionRate * 12)}%` }} />
-              </div>
-              <p className="mt-3 text-sm text-wahaj-text/60">السلات المتروكة تقديريًا: {abandonedRate}%</p>
-            </div>
-          </div>
+        {/* Most clicked on WhatsApp */}
+        <Panel title="الأكثر نقراً على واتساب" icon={MessageCircle}>
+          {topWhatsAppProducts.length > 0 ? (
+            <RankedList items={topWhatsAppProducts.map(([id, v]) => ({ id, label: v.name, value: v.count, unit: "نقرة" }))} />
+          ) : (
+            <EmptyState text="لا توجد نقرات واتساب مسجلة بعد." />
+          )}
         </Panel>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="المبيعات اليومية" icon={CircleDollarSign}>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={salesData}>
-                <CartesianGrid stroke="#E8D6D6" strokeDasharray="3 3" />
-                <XAxis dataKey="day" tick={{ fill: "#6B4E4E", fontSize: 12 }} />
-                <YAxis tick={{ fill: "#6B4E4E", fontSize: 12 }} width={44} />
-                <RechartsTooltip />
-                <Area type="monotone" dataKey="orders" stroke="#8FAF9A" fill="#8FAF9A33" strokeWidth={3} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Most visited collections */}
+        <Panel title="المجموعات الأكثر زيارة" icon={Tags}>
+          {topVisitedCollections.length > 0 ? (
+            <RankedList items={topVisitedCollections.map(([id, v]) => ({ id, label: v.name, value: v.count, unit: "زيارة" }))} />
+          ) : (
+            <EmptyState text="لا توجد زيارات للمجموعات مسجلة بعد." />
+          )}
         </Panel>
 
-        <Panel title="أفضل الأقسام" icon={Tags}>
-          <div className="space-y-3">
-            {categoryData.map((item, index) => (
-              <div key={item.name} className="rounded-[8px] bg-wahaj-card p-3">
-                <div className="flex items-center justify-between text-sm font-bold">
-                  <span>{item.name}</span>
-                  <span className="text-wahaj-rose">{item.value.toLocaleString("ar-YE")}</span>
+        {/* Daily WhatsApp clicks */}
+        <Panel title="نقرات واتساب اليومية" icon={TrendingUp}>
+          {dailyClicks.length > 0 ? (
+            <div className="space-y-2">
+              {dailyClicks.map(([date, count]) => (
+                <div key={date} className="flex items-center justify-between rounded-[8px] bg-wahaj-card px-3 py-2 text-sm">
+                  <span className="text-wahaj-text/70">{date}</span>
+                  <span className="font-bold text-wahaj-rose">{count} نقرة</span>
                 </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${Math.min(100, item.value)}%`,
-                      backgroundColor: chartColors[index % chartColors.length]
-                    }}
-                  />
+              ))}
+            </div>
+          ) : (
+            <EmptyState text="لا توجد نقرات مسجلة اليوم." />
+          )}
+        </Panel>
+      </div>
+
+      {/* Conversion indicators */}
+      <Panel title="مؤشرات التحويل (مشاهدات → واتساب)" icon={TrendingUp}>
+        {conversionData.length > 0 ? (
+          <div className="space-y-2">
+            {conversionData.slice(0, 8).map((item) => (
+              <div key={item.productId} className="flex items-center gap-3 rounded-[8px] bg-wahaj-card px-3 py-2 text-sm">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-wahaj-ink">{item.productName}</p>
+                  <p className="text-xs text-wahaj-text/55">{item.views} مشاهدة · {item.whatsappClicks} واتساب</p>
                 </div>
+                <span className="shrink-0 font-bold text-wahaj-rose">{item.conversionRate.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState text="لا توجد بيانات تحويل كافية بعد." />
+        )}
+      </Panel>
+
+      {/* Products needing attention */}
+      {lowEngagement.length > 0 ? (
+        <Panel title="منتجات تحتاج اهتمام" icon={AlertTriangle}>
+          <div className="space-y-2">
+            {lowEngagement.map((item) => (
+              <div key={item.productId} className="flex items-center gap-3 rounded-[8px] border border-dashed border-wahaj-border bg-wahaj-bg/60 px-3 py-2 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-wahaj-warning" />
+                <span className="flex-1 font-bold text-wahaj-ink">{item.productName}</span>
+                <span className="shrink-0 text-xs text-wahaj-text/60">لا توجد مشاهدات أو نقرات</span>
               </div>
             ))}
           </div>
         </Panel>
-      </div>
+      ) : null}
+    </div>
+  );
+}
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Ranking title="أكثر المنتجات مشاهدة" products={topViewed} metric="views" />
-        <Ranking title="الأكثر مبيعًا" products={topSold} metric="sold" />
+function SummaryCard({ icon: Icon, label, value }: { icon: ComponentType<{ className?: string }>; label: string; value: number }) {
+  return (
+    <div className="rounded-[8px] border border-wahaj-border bg-white p-4 shadow-soft">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-wahaj-soft text-wahaj-rose">
+          <Icon className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-xs text-wahaj-text/64">{label}</p>
+          <p className="font-thmanyah-text text-2xl font-bold text-wahaj-ink">{value.toLocaleString("ar-YE")}</p>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function RankedList({ items }: { items: { id: string; label: string; value: number; unit: string }[] }) {
+  return (
+    <div className="space-y-2">
+      {items.map((item, index) => (
+        <div key={item.id} className="flex items-center gap-3 rounded-[8px] bg-wahaj-card px-3 py-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white font-bold text-wahaj-rose">{index + 1}</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-wahaj-ink">{item.label}</p>
+          </div>
+          <span className="shrink-0 font-bold text-wahaj-rose">{item.value.toLocaleString("ar-YE")} {item.unit}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -2847,11 +3215,11 @@ function SlideEditorForm({
   const [uploading, setUploading] = useState(false);
 
   const destinationCategories = [
-    { id: "new", label: "جديد" },
-    { id: "sets", label: "أطقم" },
-    { id: "offers", label: "عروض" },
-    { id: "trend", label: "ترند" },
-    { id: "clients", label: "تصوير عميلات" }
+    { id: "atqam", label: "أطقم" },
+    { id: "uqud", label: "عقود" },
+    { id: "asawir", label: "أساور" },
+    { id: "aqrat", label: "أقراط" },
+    { id: "khawatim", label: "خواتم" }
   ];
 
   const hasValidDestination = draft.destinationType === "url"
@@ -2865,7 +3233,7 @@ function SlideEditorForm({
     }
     if (draft.destinationType === "category") {
       const c = destinationCategories.find((c) => c.id === draft.destinationValue);
-      return c ? `تصنيف → ${c.label}` : "لم يُختار تصنيف";
+      return c ? `مجموعة → ${c.label}` : "لم تُختار مجموعة";
     }
     return draft.destinationValue ? `رابط → ${draft.destinationValue}` : "لم يُحدد رابط";
   }
@@ -3058,8 +3426,8 @@ function SlidePreview({
       return p ? `منتج → ${p.name}` : "لم يُختار منتج";
     }
     if (slide.destinationType === "category") {
-      const cats: Record<string, string> = { new: "جديد", sets: "أطقم", offers: "عروض", trend: "ترند", clients: "تصوير عميلات" };
-      return cats[slide.destinationValue] ? `تصنيف → ${cats[slide.destinationValue]}` : "لم يُختار تصنيف";
+      const cats: Record<string, string> = { atqam: "أطقم", uqud: "عقود", asawir: "أساور", aqrat: "أقراط", khawatim: "خواتم" };
+      return cats[slide.destinationValue] ? `مجموعة → ${cats[slide.destinationValue]}` : "لم تُختار مجموعة";
     }
     return slide.destinationValue ? `رابط → ${slide.destinationValue}` : "لم يُحدد رابط";
   }
@@ -3107,28 +3475,6 @@ function SlidePreview({
           <InfoRow label="التشغيل التلقائي" value={settings.autoPlay ? "مفعّل" : "معطّل"} />
           <InfoRow label="تأثير الطفو" value={settings.floatingEffect ? "مفعّل" : "معطّل"} />
         </div>
-      </div>
-    </Panel>
-  );
-}
-
-function Ranking({ title, products, metric }: { title: string; products: ManagedProduct[]; metric: "views" | "sold" }) {
-  return (
-    <Panel title={title} icon={metric === "views" ? Eye : TrendingUp}>
-      <div className="space-y-3">
-        {products.map((product, index) => (
-          <div key={product.id} className="flex items-center gap-3 rounded-[8px] bg-wahaj-card px-3 py-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white font-bold text-wahaj-rose">
-              {index + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-wahaj-ink">{product.name}</p>
-              <p className="text-xs text-wahaj-text/55">{metric === "views" ? "مشاهدة" : "مبيع"}</p>
-            </div>
-            <span className="font-bold text-wahaj-rose">{product[metric].toLocaleString("ar-YE")}</span>
-          </div>
-        ))}
-        {products.length === 0 ? <EmptyState text="لا توجد بيانات كافية بعد." /> : null}
       </div>
     </Panel>
   );
@@ -3285,41 +3631,4 @@ function buildCustomerRecords(orders: Order[], vipPhones: string[]): CustomerRec
   return Array.from(records.values()).sort((a, b) => b.total - a.total);
 }
 
-function buildSalesData(orders: Order[]): SalesPoint[] {
-  const map = new Map<string, SalesPoint>();
 
-  for (const order of orders.filter((item) => item.status !== "ملغي")) {
-    const date = order.createdAt || "غير محدد";
-    const parsed = new Date(`${date}T00:00:00`);
-    const day = Number.isNaN(parsed.getTime())
-      ? date
-      : new Intl.DateTimeFormat("ar-YE", { weekday: "short", day: "numeric" }).format(parsed);
-    const current = map.get(date) || { sort: date, day, orders: 0, revenue: 0 };
-    current.orders += 1;
-    current.revenue += order.total;
-    map.set(date, current);
-  }
-
-  const values = Array.from(map.values()).sort((a, b) => a.sort.localeCompare(b.sort)).slice(-7);
-  return values.length > 0 ? values : analytics.sales.map((item) => ({ ...item, sort: item.day }));
-}
-
-function buildCategoryData(products: ManagedProduct[]) {
-  return categories
-    .map((category) => {
-      const categoryProducts = products.filter((product) => product.category === category.id);
-      const value = categoryProducts.reduce((sum, product) => sum + product.sold, 0) || categoryProducts.length;
-      return { name: category.name, value };
-    })
-    .filter((item) => item.value > 0);
-}
-
-function buildActivityData(products: ManagedProduct[]) {
-  const totalViews = products.reduce((sum, product) => sum + product.views, 0);
-  const ratios = [0.12, 0.18, 0.26, 0.27, 0.17];
-
-  return analytics.activity.map((item, index) => ({
-    time: item.time,
-    visits: Math.round(totalViews * ratios[index])
-  }));
-}

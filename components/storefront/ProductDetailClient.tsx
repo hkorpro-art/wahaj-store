@@ -6,6 +6,7 @@ import { ArrowRight, ChevronDown, Heart, Maximize2, Minus, Share2, ShoppingBag, 
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { usePostHog } from "posthog-js/react";
 import type { ManagedProduct } from "@/lib/admin-local";
 import { formatPrice } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
@@ -67,6 +68,7 @@ const colorMap: Record<string, string> = {
 };
 
 export default function ProductDetailClient({ slug, initialProduct, initialSimilarProducts }: ProductDetailClientProps) {
+  const posthog = usePostHog();
   const [product, setProduct] = useState<ManagedProduct | null>(
     initialProduct
       ? {
@@ -152,7 +154,19 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     setSelectedImage(productCoverUrl(product.images, { width: 1200 }));
     setColor(product.colors[0] ?? "");
     setSize(product.sizes[0] ?? "");
-  }, [product]);
+
+    fetch("/api/analytics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "product_view", productId: product.id, productName: product.name })
+    }).catch(() => {});
+
+    posthog?.capture("product_view", {
+      product_id: product.id,
+      product_name: product.name,
+      $current_url: window.location.href,
+    });
+  }, [product, posthog]);
 
   function addTouch() {
     setAdded(true);
@@ -162,7 +176,20 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
   function handleDirectCheckout(e: React.MouseEvent) {
     e.preventDefault();
     if (!product) return;
-    
+
+    fetch("/api/analytics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "whatsapp_click", productId: product.id, productName: product.name, source: "product_detail" })
+    }).catch(() => {});
+
+    posthog?.capture("whatsapp_click", {
+      product_id: product.id,
+      product_name: product.name,
+      source: "product_detail",
+      $current_url: window.location.href,
+    });
+
     const link = window.location.href;
     let message = `مرحباً وهاج ✨\nأرغب بطلب القطعة التالية:\n\nالمنتج: ${product.name}\n`;
     if (color) message += `اللون: ${color}\n`;

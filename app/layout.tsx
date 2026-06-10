@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
 import PremiumSplashLoader from "@/components/storefront/PremiumSplashLoader";
+import { PHProvider } from "@/lib/posthog";
+import PostHogPageView from "@/components/PostHogPageView";
 import "./globals.css";
 
 const thmanyahDisplay = localFont({
@@ -78,8 +80,11 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body
         className={`${thmanyahDisplay.variable} ${thmanyahText.variable} font-thmanyah-text font-normal antialiased`}
       >
-        <PremiumSplashLoader />
-        <div className="wahaj-app-shell">{children}</div>
+        <PHProvider>
+          <PremiumSplashLoader />
+          <PostHogPageView />
+          <div className="wahaj-app-shell">{children}</div>
+        </PHProvider>
       </body>
     </html>
   );

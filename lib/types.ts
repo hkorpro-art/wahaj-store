@@ -31,14 +31,24 @@ export type Product = {
   sold: number;
   showScarcity?: boolean;
   scarcityText?: string;
+  categoryIds?: string[];
 };
 
-export type Category = {
+export type Collection = {
   id: string;
   name: string;
-  icon: string;
-  image: string;
+  slug: string;
+  image: StoredImage;
+  description?: string;
+  sortOrder: number;
+  visible: boolean;
+  linkedProducts: string[];
+  createdAt?: string;
+  updatedAt?: string;
 };
+
+/** @deprecated Use Collection instead */
+export type Category = Collection;
 
 export type Story = {
   id: string;

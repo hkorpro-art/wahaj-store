@@ -20,6 +20,7 @@
     "jose": "^5.10.0",
     "lucide-react": "^0.487.0",
     "next": "^16.2.6",
+    "posthog-js": "^1.384.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.1",
