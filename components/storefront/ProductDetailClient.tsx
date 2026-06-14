@@ -5,15 +5,16 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { ArrowRight, ChevronDown, Heart, Maximize2, Minus, Share2, ShoppingBag, Sparkles, Star, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 import { useCart } from "@/lib/cart-context";
 import type { ManagedProduct } from "@/lib/admin-local";
 import { formatPrice } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
+import TrustStrip from "@/components/storefront/TrustStrip";
 import { imageUrl, productCoverUrl, resolveImageSrc } from "@/lib/imagekit";
 import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
-import { buildSingleProductMessage, whatsappUrl } from "@/lib/whatsapp";
+import { whatsappUrl } from "@/lib/whatsapp";
 
 type ProductDetailClientProps = {
   slug: string;
@@ -90,11 +91,6 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
   const [inspired, setInspired] = useState(false);
   const [added, setAdded] = useState(false);
   const [careOpen, setCareOpen] = useState(false);
-
-  const checkoutUrl = useMemo(
-    () => (product ? whatsappUrl(buildSingleProductMessage(product, quantity, { color, size })) : "#"),
-    [product, quantity, color, size]
-  );
 
   useEffect(() => {
     if (!db || !isFirebaseClientConfigured) {
@@ -364,6 +360,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
               <p className="mt-1 font-thmanyah-text text-sm text-wahaj-rose/80">{product.scarcityText}</p>
             ) : null}
             <p className="mt-4 leading-8 text-wahaj-text/78">{product.description}</p>
+            <TrustStrip />
             <p className="mt-3 rounded-[8px] bg-white/70 p-3 text-sm leading-7 text-wahaj-text/74">
               {product.material}
             </p>
@@ -376,7 +373,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
                 <button
                   key={option}
                   onClick={() => setColor(option)}
-                  className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-bold ${
+                  className={`flex min-h-11 items-center gap-2 rounded-full border px-3 py-2 text-sm font-bold ${
                     color === option ? "border-wahaj-rose bg-wahaj-soft text-wahaj-rose" : "border-wahaj-border"
                   }`}
                 >
@@ -397,7 +394,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
                 <button
                   key={option}
                   onClick={() => setSize(option)}
-                  className={`min-h-10 rounded-full border px-4 text-sm font-bold ${
+                  className={`min-h-11 rounded-full border px-4 text-sm font-bold ${
                     size === option ? "border-wahaj-rose bg-wahaj-rose text-white" : "border-wahaj-border bg-white/70"
                   }`}
                 >
@@ -413,14 +410,14 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-wahaj-border"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-wahaj-border"
                 >
                   <Minus className="h-4 w-4" />
                 </button>
                 <span className="min-w-8 text-center font-thmanyah-text text-xl font-medium">{quantity}</span>
                 <button
                   onClick={() => setQuantity((value) => value + 1)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-wahaj-border"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-wahaj-border"
                 >
                   +
                 </button>

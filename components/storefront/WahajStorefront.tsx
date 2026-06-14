@@ -36,7 +36,7 @@ import { formatPrice, products } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl } from "@/lib/imagekit";
 import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
-import { buildCartMessage, buildSingleProductMessage, whatsappUrl } from "@/lib/whatsapp";
+import { buildCartMessage, whatsappUrl } from "@/lib/whatsapp";
 import type { CartItem, Product } from "@/lib/types";
 
 const fadeUp = {
@@ -217,6 +217,10 @@ export default function WahajStorefront() {
       <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
 
         <div id="collections-section">
+          <div className="mb-4">
+            <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">مجموعات وهاج</p>
+            <h2 className="type-section text-wahaj-ink">اختاري بحسب مجموعتك</h2>
+          </div>
           <CircularCollections />
         </div>
 
@@ -328,7 +332,7 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
         <button
           aria-label="القائمة"
           onClick={onMenu}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full backdrop-blur-md transition-all duration-300"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full backdrop-blur-md transition-all duration-300"
           style={{ backgroundColor: menuBg, color: menuColor, border: `1px solid ${menuBorder}` }}
           onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = menuHoverBg; }}
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = menuBg; }}
@@ -349,7 +353,7 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
         <button
           aria-label="السلة"
           onClick={onCart}
-          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full backdrop-blur-md transition-all duration-300"
+          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full backdrop-blur-md transition-all duration-300"
           style={{ backgroundColor: cartBg, color: cartColor, border: `1px solid ${cartBorder}` }}
           onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = cartHoverBg; }}
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = cartBg; }}
@@ -463,7 +467,7 @@ function ProductCard({ product, priority, onCart }: ProductCardProps) {
         </div>
         <motion.button
           onClick={() => onCart(product)}
-          className="mt-2.5 flex min-h-9 w-full items-center justify-center gap-1.5 rounded-full bg-wahaj-ink px-3 text-xs font-bold text-white transition-all duration-300 hover:bg-wahaj-rose active:scale-[0.97]"
+          className="mt-2.5 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-wahaj-ink px-3 text-xs font-bold text-white transition-all duration-300 hover:bg-wahaj-rose active:scale-[0.97]"
           whileTap={{ scale: 0.97 }}
         >
           <ShoppingBag className="h-3.5 w-3.5" />
@@ -511,7 +515,7 @@ function BottomNavigation({
           const content = (
             <>
               <span
-                className={`relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 ${
+                className={`relative flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 ${
                   isActive ? "bg-wahaj-rose/10 text-wahaj-rose" : "text-wahaj-ink"
                 }`}
               >
@@ -638,7 +642,7 @@ function CartSheet({ open, items, total, products, onClose, onQty, onRemove, onC
               <div className="flex shrink-0 items-center justify-between border-b border-wahaj-border/40 bg-white/90 px-4 py-3">
                 <button
                   onClick={onClose}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-wahaj-soft/60 text-wahaj-ink transition-all duration-200 active:scale-90 hover:bg-wahaj-soft"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-wahaj-soft/60 text-wahaj-ink transition-all duration-200 active:scale-90 hover:bg-wahaj-soft"
                   aria-label="العودة للتسوق"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -671,7 +675,7 @@ function CartSheet({ open, items, total, products, onClose, onQty, onRemove, onC
                 <div className="flex items-center justify-between">
                   <button
                     onClick={onClose}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-wahaj-soft/60 text-wahaj-ink transition-all duration-200 active:scale-90 hover:bg-wahaj-soft"
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-wahaj-soft/60 text-wahaj-ink transition-all duration-200 active:scale-90 hover:bg-wahaj-soft"
                     aria-label="العودة للتسوق"
                   >
                     <ChevronRight className="h-5 w-5" />
@@ -700,7 +704,7 @@ function CartSheet({ open, items, total, products, onClose, onQty, onRemove, onC
                       animate={{ opacity: 1, x: 0, scale: 1 }}
                       exit={{ opacity: 0, x: 30, scale: 0.96 }}
                       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                      className="flex gap-4 rounded-2xl border border-wahaj-border/50 bg-white/85 p-3 shadow-[0_2px_12px_rgba(69,0,6,0.06)]"
+                      className="flex gap-4 rounded-2xl border border-wahaj-border/50 bg-white/85 p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]"
                     >
                       <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-xl">
                         <Image
@@ -724,7 +728,7 @@ function CartSheet({ open, items, total, products, onClose, onQty, onRemove, onC
                           <div className="flex items-center gap-1 rounded-full border border-wahaj-border/60 bg-white/80 p-0.5 shadow-sm">
                             <button
                               onClick={() => onQty(item.product.id, -1)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full text-wahaj-text/60 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
+                              className="flex h-10 w-10 items-center justify-center rounded-full text-wahaj-text/60 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
                             >
                               <Minus className="h-3.5 w-3.5" />
                             </button>
@@ -739,14 +743,14 @@ function CartSheet({ open, items, total, products, onClose, onQty, onRemove, onC
                             </motion.span>
                             <button
                               onClick={() => onQty(item.product.id, 1)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full text-wahaj-text/60 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
+                              className="flex h-10 w-10 items-center justify-center rounded-full text-wahaj-text/60 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
                             >
                               <span className="text-lg font-bold leading-none">+</span>
                             </button>
                           </div>
                           <button
                             onClick={() => onRemove(item.product.id)}
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-wahaj-text/30 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
+                            className="flex h-10 w-10 items-center justify-center rounded-full text-wahaj-text/30 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -844,7 +848,7 @@ function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           >
             <div className="flex items-center justify-between">
               <BrandMark size="md" className="items-start text-right" />
-              <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 btn-luxury">
+              <button onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-full bg-white/80 btn-luxury">
                 <X className="h-5 w-5" />
               </button>
             </div>
