@@ -25,9 +25,28 @@ export async function generateMetadata(props: Props) {
     };
   }
 
+  const ogImage = category.image
+    ? imageUrl(category.image, { width: 1200, height: 630 })
+    : undefined;
+
   return {
     title: `${category.name} | متجر وهاج للزركون الفاخر`,
-    description: category.description || `تصفحي تشكيلة ${category.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`
+    description: category.description || `تصفحي تشكيلة ${category.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`,
+    openGraph: {
+      title: `${category.name} | WAHAJ`,
+      description: category.description || `تصفحي تشكيلة ${category.name} من وهاج.`,
+      url: `https://wahaj.store/category/${category.slug}`,
+      images: ogImage ? [{ url: ogImage, width: 1200, height: 630 }] : []
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${category.name} | WAHAJ`,
+      description: category.description || `تصفحي تشكيلة ${category.name} من وهاج.`,
+      images: ogImage ? [ogImage] : []
+    },
+    alternates: {
+      canonical: `https://wahaj.store/category/${category.slug}`
+    }
   };
 }
 

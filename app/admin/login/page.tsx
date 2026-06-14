@@ -3,7 +3,11 @@ import { Suspense } from "react";
 import AdminLogin from "@/components/admin/AdminLogin";
 
 export const metadata: Metadata = {
-  title: "دخول لوحة وهاج"
+  title: "دخول لوحة وهاج",
+  robots: {
+    index: false,
+    follow: false
+  }
 };
 
 export default function AdminLoginPage() {

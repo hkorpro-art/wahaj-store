@@ -2,7 +2,22 @@ import type { Metadata } from "next";
 import InfoPage from "@/components/storefront/InfoPage";
 
 export const metadata: Metadata = {
-  title: "الأسئلة الشائعة | وهاج"
+  title: "الأسئلة الشائعة | وهاج",
+  description:
+    "إجابات مختصرة وواضحة حول الطلب، التوفر، المقاسات، وطريقة التواصل في متجر وهاج للإكسسوارات الفاخرة.",
+  openGraph: {
+    title: "الأسئلة الشائعة | وهاج",
+    description: "إجابات مختصرة وواضحة حول الطلب، التوفر، المقاسات، وطريقة التواصل.",
+    url: "https://wahaj.store/faq"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "الأسئلة الشائعة | وهاج",
+    description: "إجابات مختصرة وواضحة حول الطلب، التوفر، المقاسات، وطريقة التواصل."
+  },
+  alternates: {
+    canonical: "https://wahaj.store/faq"
+  }
 };
 
 export default function FaqPage() {

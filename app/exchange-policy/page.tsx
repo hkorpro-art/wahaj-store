@@ -2,7 +2,22 @@ import type { Metadata } from "next";
 import InfoPage from "@/components/storefront/InfoPage";
 
 export const metadata: Metadata = {
-  title: "سياسة الاستبدال | وهاج"
+  title: "سياسة الاستبدال | وهاج",
+  description:
+    "سياسة استبدال وهاج: مراجعة كل طلب قبل التسليم، تعديل القطعة أو اللون أو الكمية، وشروط استبدال القطع الخاصة.",
+  openGraph: {
+    title: "سياسة الاستبدال | وهاج",
+    description: "سياسة استبدال وهاج: مراجعة قبل التسليم وشروط استبدال القطع.",
+    url: "https://wahaj.store/exchange-policy"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "سياسة الاستبدال | وهاج",
+    description: "سياسة استبدال وهاج: مراجعة قبل التسليم وشروط استبدال القطع."
+  },
+  alternates: {
+    canonical: "https://wahaj.store/exchange-policy"
+  }
 };
 
 export default function ExchangePolicyPage() {

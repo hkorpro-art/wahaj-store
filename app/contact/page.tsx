@@ -2,7 +2,22 @@ import type { Metadata } from "next";
 import InfoPage from "@/components/storefront/InfoPage";
 
 export const metadata: Metadata = {
-  title: "تواصل معنا | وهاج"
+  title: "تواصل معنا | وهاج",
+  description:
+    "تواصلي مع فريق وهاج عبر واتساب لمساعدتك في اختيار القطعة، تأكيد المقاس، أو تجهيز طلب هدية.",
+  openGraph: {
+    title: "تواصل معنا | وهاج",
+    description: "تواصلي مع فريق وهاج لمساعدتك في اختيار القطعة المثالية.",
+    url: "https://wahaj.store/contact"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "تواصل معنا | وهاج",
+    description: "تواصلي مع فريق وهاج لمساعدتك في اختيار القطعة المثالية."
+  },
+  alternates: {
+    canonical: "https://wahaj.store/contact"
+  }
 };
 
 export default function ContactPage() {

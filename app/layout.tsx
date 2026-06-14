@@ -50,21 +50,41 @@ const thmanyahText = localFont({
   fallback: ["Arial", "sans-serif"]
 });
 
+import JsonLd from "@/components/JsonLd";
+
+const siteUrl = "https://wahaj.store";
+const ogImage = "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&h=630&q=85";
+
 export const metadata: Metadata = {
-  title: "وهاج | WAHAJ - إكسسوارات نسائية فاخرة",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "وهاج | WAHAJ - إكسسوارات نسائية فاخرة",
+    template: "%s | وهاج"
+  },
   description:
     "متجر وهاج لإكسسوارات نسائية فاخرة بتصميم عربي RTL وتجربة iPhone ناعمة، مع طلب مباشر عبر واتساب.",
   keywords: ["وهاج", "WAHAJ", "زركون", "إكسسوارات نسائية", "تيجان", "أقراط", "أساور"],
   openGraph: {
     title: "وهاج | WAHAJ",
     description: "لمسات فاخرة تصنع الفرق.",
+    url: siteUrl,
     siteName: "WAHAJ",
     locale: "ar_YE",
-    type: "website"
+    type: "website",
+    images: [{ url: ogImage, width: 1200, height: 630 }]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "وهاج | WAHAJ",
+    description: "لمسات فاخرة تصنع الفرق.",
+    images: [ogImage]
   },
   robots: {
     index: true,
     follow: true
+  },
+  alternates: {
+    canonical: siteUrl
   }
 };
 
@@ -85,7 +105,41 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           <PHProvider>
             <PremiumSplashLoader />
             <PostHogPageView />
-            <div className="wahaj-app-shell">{children}</div>
+            <JsonLd
+            data={{
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "WAHAJ",
+              alternateName: "وهاج",
+              url: siteUrl,
+              logo: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=512&q=85",
+              description: "إكسسوارات نسائية فاخرة - لمسات فاخرة تصنع الفرق.",
+              contactPoint: {
+                "@type": "ContactPoint",
+                telephone: "+967-781-679-899",
+                contactType: "customer service",
+                availableLanguage: "Arabic"
+              }
+            }}
+          />
+          <JsonLd
+            data={{
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "WAHAJ",
+              alternateName: "وهاج",
+              url: siteUrl,
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: `${siteUrl}/?q={search_term_string}`
+                },
+                "query-input": "required name=search_term_string"
+              }
+            }}
+          />
+          <div className="wahaj-app-shell">{children}</div>
           </PHProvider>
         </CartProvider>
       </body>

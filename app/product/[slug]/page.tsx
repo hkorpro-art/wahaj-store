@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import ProductDetailClient from "@/components/storefront/ProductDetailClient";
+import JsonLd from "@/components/JsonLd";
 import { products } from "@/lib/data";
-import { productCoverUrl } from "@/lib/imagekit";
+import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { getManagedProducts } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
@@ -30,13 +31,27 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     };
   }
 
+  const ogImage = productCoverUrl(product.images, { width: 1200 });
+
   return {
     title: `${product.name} | وهاج`,
     description: product.description,
     openGraph: {
       title: `${product.name} | WAHAJ`,
       description: product.description,
-      images: [productCoverUrl(product.images, { width: 1200 })].filter(Boolean)
+      url: `https://wahaj.store/product/${product.slug}`,
+      images: ogImage
+        ? [{ url: ogImage, width: 1200, height: 1500 }]
+        : []
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} | WAHAJ`,
+      description: product.description,
+      images: ogImage ? [ogImage] : []
+    },
+    alternates: {
+      canonical: `https://wahaj.store/product/${product.slug}`
     }
   };
 }
@@ -63,5 +78,35 @@ export default async function ProductPage({ params }: ProductPageProps) {
     ? managedProducts.filter((item) => item.visible !== false && item.category === initialProduct.category && item.id !== initialProduct.id).slice(0, 4)
     : [];
 
-  return <ProductDetailClient slug={slug} initialProduct={initialProduct} initialSimilarProducts={initialSimilarProducts} />;
+  return (
+    <>
+      {initialProduct ? (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: initialProduct.name,
+            description: initialProduct.description,
+            image: initialProduct.images.map((img) =>
+              imageUrl(img, { width: 1200 })
+            ).filter(Boolean),
+            offers: {
+              "@type": "Offer",
+              price: initialProduct.price,
+              priceCurrency: "YER",
+              availability: initialProduct.inventoryStatus === "نفد"
+                ? "https://schema.org/OutOfStock"
+                : initialProduct.inventoryStatus === "منخفض"
+                  ? "https://schema.org/LimitedAvailability"
+                  : "https://schema.org/InStock",
+              url: `https://wahaj.store/product/${initialProduct.slug}`
+            },
+            ...(initialProduct.colors.length > 0 ? { color: initialProduct.colors.join(", ") } : {}),
+            ...(initialProduct.material ? { material: initialProduct.material } : {})
+          }}
+        />
+      ) : null}
+      <ProductDetailClient slug={slug} initialProduct={initialProduct} initialSimilarProducts={initialSimilarProducts} />
+    </>
+  );
 }

@@ -2,7 +2,22 @@ import type { Metadata } from "next";
 import InfoPage from "@/components/storefront/InfoPage";
 
 export const metadata: Metadata = {
-  title: "من نحن | وهاج"
+  title: "من نحن | وهاج",
+  description:
+    "وهاج براند إكسسوارات نسائية يختار القطع الهادئة ذات الحضور الواضح، مع تجربة طلب بسيطة وسريعة عبر واتساب.",
+  openGraph: {
+    title: "من نحن | وهاج",
+    description: "وهاج براند إكسسوارات نسائية فاخرة - لمسات فاخرة تصنع الفرق.",
+    url: "https://wahaj.store/about"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "من نحن | وهاج",
+    description: "وهاج براند إكسسوارات نسائية فاخرة - لمسات فاخرة تصنع الفرق."
+  },
+  alternates: {
+    canonical: "https://wahaj.store/about"
+  }
 };
 
 export default function AboutPage() {

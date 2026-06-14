@@ -7,6 +7,7 @@ import { getManagedProducts } from "@/lib/products";
 import { formatPrice } from "@/lib/data";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { TrackCollectionVisit } from "@/components/storefront/TrackVisit";
+import JsonLd from "@/components/JsonLd";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +27,28 @@ export async function generateMetadata(props: Props) {
     };
   }
 
+  const ogImage = collection.image
+    ? imageUrl(collection.image, { width: 1200, height: 630 })
+    : undefined;
+
   return {
     title: `${collection.name} | متجر وهاج للزركون الفاخر`,
-    description: collection.description || `تصفحي تشكيلة ${collection.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`
+    description: collection.description || `تصفحي تشكيلة ${collection.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`,
+    openGraph: {
+      title: `${collection.name} | WAHAJ`,
+      description: collection.description || `تصفحي تشكيلة ${collection.name} من وهاج.`,
+      url: `https://wahaj.store/collections/${collection.slug}`,
+      images: ogImage ? [{ url: ogImage, width: 1200, height: 630 }] : []
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${collection.name} | WAHAJ`,
+      description: collection.description || `تصفحي تشكيلة ${collection.name} من وهاج.`,
+      images: ogImage ? [ogImage] : []
+    },
+    alternates: {
+      canonical: `https://wahaj.store/collections/${collection.slug}`
+    }
   };
 }
 
@@ -62,8 +82,31 @@ export default async function CollectionPage(props: Props) {
 
   const allProducts = [...collectionProducts, ...linkedProducts];
 
+  const collectionImage = collection.image
+    ? imageUrl(collection.image, { width: 1200 })
+    : null;
+
   return (
-    <main className="min-h-screen bg-wahaj-bg pb-28 text-wahaj-text luxury-grain">
+    <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: collection.name,
+          description: collection.description || `تصفحي تشكيلة ${collection.name} من وهاج.`,
+          url: `https://wahaj.store/collections/${collection.slug}`,
+          ...(collectionImage ? { image: collectionImage } : {}),
+          mainEntity: {
+            "@type": "ItemList",
+            itemListElement: allProducts.map((product, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              url: `https://wahaj.store/product/${product.slug}`
+            }))
+          }
+        }}
+      />
+      <main className="min-h-screen bg-wahaj-bg pb-28 text-wahaj-text luxury-grain">
       <TrackCollectionVisit collectionId={collection.id} collectionName={collection.name} />
       <div className="relative overflow-hidden border-b border-wahaj-border bg-white/40 pb-12 pt-8 backdrop-blur-sm">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -144,5 +187,6 @@ export default async function CollectionPage(props: Props) {
         )}
       </div>
     </main>
+    </>
   );
 }
