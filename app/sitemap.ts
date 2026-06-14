@@ -2,9 +2,10 @@ import type { MetadataRoute } from "next";
 import { seedManagedProducts } from "@/lib/products";
 import { seedCollections } from "@/lib/collections";
 import { categories } from "@/lib/data";
+import { SITE_URL } from "@/lib/site-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://wahaj.store";
+  const baseUrl = SITE_URL;
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, changeFrequency: "weekly", priority: 1 },

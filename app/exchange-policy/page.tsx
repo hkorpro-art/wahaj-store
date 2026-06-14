@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/site-config";
 import InfoPage from "@/components/storefront/InfoPage";
 
 export const metadata: Metadata = {
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "سياسة الاستبدال | وهاج",
     description: "سياسة استبدال وهاج: مراجعة قبل التسليم وشروط استبدال القطع.",
-    url: "https://wahaj.store/exchange-policy"
+    url: `${SITE_URL}/exchange-policy`
   },
   twitter: {
     card: "summary_large_image",
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
     description: "سياسة استبدال وهاج: مراجعة قبل التسليم وشروط استبدال القطع."
   },
   alternates: {
-    canonical: "https://wahaj.store/exchange-policy"
+    canonical: `${SITE_URL}/exchange-policy`
   }
 };
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/site-config";
 import ProductDetailClient from "@/components/storefront/ProductDetailClient";
 import JsonLd from "@/components/JsonLd";
 import { products } from "@/lib/data";
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     openGraph: {
       title: `${product.name} | WAHAJ`,
       description: product.description,
-      url: `https://wahaj.store/product/${product.slug}`,
+      url: `${SITE_URL}/product/${product.slug}`,
       images: ogImage
         ? [{ url: ogImage, width: 1200, height: 1500 }]
         : []
@@ -51,7 +52,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       images: ogImage ? [ogImage] : []
     },
     alternates: {
-      canonical: `https://wahaj.store/product/${product.slug}`
+      canonical: `${SITE_URL}/product/${product.slug}`
     }
   };
 }
@@ -99,7 +100,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 : initialProduct.inventoryStatus === "منخفض"
                   ? "https://schema.org/LimitedAvailability"
                   : "https://schema.org/InStock",
-              url: `https://wahaj.store/product/${initialProduct.slug}`
+              url: `${SITE_URL}/product/${initialProduct.slug}`
             },
             ...(initialProduct.colors.length > 0 ? { color: initialProduct.colors.join(", ") } : {}),
             ...(initialProduct.material ? { material: initialProduct.material } : {})

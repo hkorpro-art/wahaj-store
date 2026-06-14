@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/site-config";
 import InfoPage from "@/components/storefront/InfoPage";
 
 export const metadata: Metadata = {
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "الأسئلة الشائعة | وهاج",
     description: "إجابات مختصرة وواضحة حول الطلب، التوفر، المقاسات، وطريقة التواصل.",
-    url: "https://wahaj.store/faq"
+    url: `${SITE_URL}/faq`
   },
   twitter: {
     card: "summary_large_image",
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
     description: "إجابات مختصرة وواضحة حول الطلب، التوفر، المقاسات، وطريقة التواصل."
   },
   alternates: {
-    canonical: "https://wahaj.store/faq"
+    canonical: `${SITE_URL}/faq`
   }
 };
 

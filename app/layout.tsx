@@ -51,8 +51,9 @@ const thmanyahText = localFont({
 });
 
 import JsonLd from "@/components/JsonLd";
+import { SITE_URL } from "@/lib/site-config";
 
-const siteUrl = "https://wahaj.store";
+const siteUrl = SITE_URL;
 const ogImage = "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&h=630&q=85";
 
 export const metadata: Metadata = {

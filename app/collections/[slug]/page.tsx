@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
+import { SITE_URL } from "@/lib/site-config";
 import { getManagedCollections } from "@/lib/collection-management";
 import { getManagedProducts } from "@/lib/products";
 import { formatPrice } from "@/lib/data";
@@ -37,7 +38,7 @@ export async function generateMetadata(props: Props) {
     openGraph: {
       title: `${collection.name} | WAHAJ`,
       description: collection.description || `تصفحي تشكيلة ${collection.name} من وهاج.`,
-      url: `https://wahaj.store/collections/${collection.slug}`,
+      url: `${SITE_URL}/collections/${collection.slug}`,
       images: ogImage ? [{ url: ogImage, width: 1200, height: 630 }] : []
     },
     twitter: {
@@ -47,7 +48,7 @@ export async function generateMetadata(props: Props) {
       images: ogImage ? [ogImage] : []
     },
     alternates: {
-      canonical: `https://wahaj.store/collections/${collection.slug}`
+      canonical: `${SITE_URL}/collections/${collection.slug}`
     }
   };
 }
@@ -94,14 +95,14 @@ export default async function CollectionPage(props: Props) {
           "@type": "CollectionPage",
           name: collection.name,
           description: collection.description || `تصفحي تشكيلة ${collection.name} من وهاج.`,
-          url: `https://wahaj.store/collections/${collection.slug}`,
+          url: `${SITE_URL}/collections/${collection.slug}`,
           ...(collectionImage ? { image: collectionImage } : {}),
           mainEntity: {
             "@type": "ItemList",
             itemListElement: allProducts.map((product, index) => ({
               "@type": "ListItem",
               position: index + 1,
-              url: `https://wahaj.store/product/${product.slug}`
+              url: `${SITE_URL}/product/${product.slug}`
             }))
           }
         }}

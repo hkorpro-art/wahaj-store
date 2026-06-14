@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
+import { SITE_URL } from "@/lib/site-config";
 import { getManagedCategories } from "@/lib/category-management";
 import { getManagedProducts } from "@/lib/products";
 import { formatPrice } from "@/lib/data";
@@ -35,7 +36,7 @@ export async function generateMetadata(props: Props) {
     openGraph: {
       title: `${category.name} | WAHAJ`,
       description: category.description || `تصفحي تشكيلة ${category.name} من وهاج.`,
-      url: `https://wahaj.store/category/${category.slug}`,
+      url: `${SITE_URL}/category/${category.slug}`,
       images: ogImage ? [{ url: ogImage, width: 1200, height: 630 }] : []
     },
     twitter: {
@@ -45,7 +46,7 @@ export async function generateMetadata(props: Props) {
       images: ogImage ? [ogImage] : []
     },
     alternates: {
-      canonical: `https://wahaj.store/category/${category.slug}`
+      canonical: `${SITE_URL}/category/${category.slug}`
     }
   };
 }

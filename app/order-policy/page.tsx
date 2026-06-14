@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/site-config";
 import InfoPage from "@/components/storefront/InfoPage";
 
 export const metadata: Metadata = {
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "سياسة الطلب | وهاج",
     description: "سياسة طلب وهاج: الطلب عبر واتساب مع تأكيد التوفر والتفاصيل قبل تجهيز القطعة.",
-    url: "https://wahaj.store/order-policy"
+    url: `${SITE_URL}/order-policy`
   },
   twitter: {
     card: "summary_large_image",
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
     description: "سياسة طلب وهاج: الطلب عبر واتساب مع تأكيد التوفر والتفاصيل قبل تجهيز القطعة."
   },
   alternates: {
-    canonical: "https://wahaj.store/order-policy"
+    canonical: `${SITE_URL}/order-policy`
   }
 };
 
