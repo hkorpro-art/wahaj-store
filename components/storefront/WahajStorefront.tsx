@@ -326,7 +326,9 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
   const cartHoverBg = cartIsDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)";
 
   const logoColor = logoIsDark ? "#FFFFFF" : "#450006";
-  const logoShadow = logoIsDark ? "drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]" : "";
+  const logoBg = logoIsDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.75)";
+  const logoBorder = logoIsDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.08)";
+  const logoHoverBg = logoIsDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)";
 
   return (
     <header className="absolute inset-x-0 top-0 z-50">
@@ -343,9 +345,15 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
         </button>
 
         <div className="flex flex-1 items-center justify-center">
-          <Link href="/" className={`px-4 py-1 ${logoShadow}`}>
+          <Link
+            href="/"
+            className="rounded-xl px-4 py-1 shadow-sm backdrop-blur-md transition-all duration-300"
+            style={{ backgroundColor: logoBg, border: `1px solid ${logoBorder}` }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = logoHoverBg; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = logoBg; }}
+          >
             <BrandMark
-              size="md"
+              size="lg"
               showSubtitle={false}
               className="items-center text-center"
             />
