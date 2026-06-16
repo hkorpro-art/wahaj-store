@@ -10,7 +10,7 @@ import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { TrackCollectionVisit } from "@/components/storefront/TrackVisit";
 import JsonLd from "@/components/JsonLd";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -33,17 +33,18 @@ export async function generateMetadata(props: Props) {
     : undefined;
 
   return {
-    title: `${collection.name} | متجر وهاج للزركون الفاخر`,
+    title: collection.name,
     description: collection.description || `تصفحي تشكيلة ${collection.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`,
     openGraph: {
-      title: `${collection.name} | WAHAJ`,
+      title: `${collection.name} | وهاج`,
       description: collection.description || `تصفحي تشكيلة ${collection.name} من وهاج.`,
       url: `${SITE_URL}/collections/${collection.slug}`,
+      type: "website",
       images: ogImage ? [{ url: ogImage, width: 1200, height: 630 }] : []
     },
     twitter: {
       card: "summary_large_image",
-      title: `${collection.name} | WAHAJ`,
+      title: `${collection.name} | وهاج`,
       description: collection.description || `تصفحي تشكيلة ${collection.name} من وهاج.`,
       images: ogImage ? [ogImage] : []
     },
@@ -89,6 +90,16 @@ export default async function CollectionPage(props: Props) {
 
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "الرئيسية", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: collection.name, item: `${SITE_URL}/collections/${collection.slug}` }
+          ]
+        }}
+      />
       <JsonLd
         data={{
           "@context": "https://schema.org",

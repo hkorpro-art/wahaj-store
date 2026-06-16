@@ -6,7 +6,7 @@ import { products } from "@/lib/data";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { getManagedProducts } from "@/lib/products";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type ProductPageProps = {
   params: Promise<{
@@ -35,19 +35,20 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const ogImage = productCoverUrl(product.images, { width: 1200 });
 
   return {
-    title: `${product.name} | وهاج`,
+    title: product.name,
     description: product.description,
     openGraph: {
-      title: `${product.name} | WAHAJ`,
+      title: `${product.name} | وهاج`,
       description: product.description,
       url: `${SITE_URL}/product/${product.slug}`,
+      type: "website",
       images: ogImage
         ? [{ url: ogImage, width: 1200, height: 1500 }]
         : []
     },
     twitter: {
       card: "summary_large_image",
-      title: `${product.name} | WAHAJ`,
+      title: `${product.name} | وهاج`,
       description: product.description,
       images: ogImage ? [ogImage] : []
     },
@@ -81,6 +82,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "الرئيسية", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: initialProduct?.name || "المنتج", item: `${SITE_URL}/product/${slug}` }
+          ]
+        }}
+      />
       {initialProduct ? (
         <JsonLd
           data={{
@@ -91,6 +102,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
             image: initialProduct.images.map((img) =>
               imageUrl(img, { width: 1200 })
             ).filter(Boolean),
+            brand: {
+              "@type": "Brand",
+              name: "WAHAJ"
+            },
             offers: {
               "@type": "Offer",
               price: initialProduct.price,
@@ -102,6 +117,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   : "https://schema.org/InStock",
               url: `${SITE_URL}/product/${initialProduct.slug}`
             },
+            ...(initialProduct.rating > 0 && initialProduct.reviews > 0
+              ? {
+                  aggregateRating: {
+                    "@type": "AggregateRating",
+                    ratingValue: initialProduct.rating,
+                    reviewCount: initialProduct.reviews
+                  }
+                }
+              : {}),
             ...(initialProduct.colors.length > 0 ? { color: initialProduct.colors.join(", ") } : {}),
             ...(initialProduct.material ? { material: initialProduct.material } : {})
           }}

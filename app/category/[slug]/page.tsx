@@ -7,8 +7,9 @@ import { getManagedCategories } from "@/lib/category-management";
 import { getManagedProducts } from "@/lib/products";
 import { formatPrice } from "@/lib/data";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
+import JsonLd from "@/components/JsonLd";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -31,17 +32,18 @@ export async function generateMetadata(props: Props) {
     : undefined;
 
   return {
-    title: `${category.name} | متجر وهاج للزركون الفاخر`,
+    title: category.name,
     description: category.description || `تصفحي تشكيلة ${category.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`,
     openGraph: {
-      title: `${category.name} | WAHAJ`,
+      title: `${category.name} | وهاج`,
       description: category.description || `تصفحي تشكيلة ${category.name} من وهاج.`,
       url: `${SITE_URL}/category/${category.slug}`,
+      type: "website",
       images: ogImage ? [{ url: ogImage, width: 1200, height: 630 }] : []
     },
     twitter: {
       card: "summary_large_image",
-      title: `${category.name} | WAHAJ`,
+      title: `${category.name} | وهاج`,
       description: category.description || `تصفحي تشكيلة ${category.name} من وهاج.`,
       images: ogImage ? [ogImage] : []
     },
@@ -73,8 +75,41 @@ export default async function CategoryPage(props: Props) {
       product.categoryIds.includes(category.id)
   );
 
+  const categoryImage = category.image
+    ? imageUrl(category.image, { width: 1200 })
+    : null;
+
   return (
-    <main className="min-h-screen bg-wahaj-bg pb-28 text-wahaj-text luxury-grain">
+    <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "الرئيسية", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: category.name, item: `${SITE_URL}/category/${category.slug}` }
+          ]
+        }}
+      />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: category.name,
+          description: category.description || `تصفحي تشكيلة ${category.name} من وهاج.`,
+          url: `${SITE_URL}/category/${category.slug}`,
+          ...(categoryImage ? { image: categoryImage } : {}),
+          mainEntity: {
+            "@type": "ItemList",
+            itemListElement: categoryProducts.map((product, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              url: `${SITE_URL}/product/${product.slug}`
+            }))
+          }
+        }}
+      />
+      <main className="min-h-screen bg-wahaj-bg pb-28 text-wahaj-text luxury-grain">
       {/* Premium Category Header */}
       <div className="relative overflow-hidden border-b border-wahaj-border bg-white/40 pb-12 pt-8 backdrop-blur-sm">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -159,5 +194,6 @@ export default async function CategoryPage(props: Props) {
         )}
       </div>
     </main>
+    </>
   );
 }
