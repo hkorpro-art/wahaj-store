@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
-import PremiumSplashLoader from "@/components/storefront/PremiumSplashLoader";
+import WahajLoader from "@/components/storefront/WahajLoader";
 import Footer from "@/components/storefront/Footer";
 import { CartProvider } from "@/lib/cart-context";
 import { PHProvider } from "@/lib/posthog";
@@ -99,13 +99,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="ar" dir="rtl" data-splash="active" suppressHydrationWarning>
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body
         className={`${thmanyahDisplay.variable} ${thmanyahText.variable} font-thmanyah-text font-normal antialiased`}
       >
         <CartProvider>
           <PHProvider>
-            <PremiumSplashLoader />
             <PostHogPageView />
             <JsonLd
             data={{
@@ -141,10 +140,12 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
               }
             }}
           />
-          <div className="wahaj-app-shell">
-            {children}
-            <Footer />
-          </div>
+          <WahajLoader>
+            <div className="wahaj-app-shell">
+              {children}
+              <Footer />
+            </div>
+          </WahajLoader>
           </PHProvider>
         </CartProvider>
       </body>

@@ -33,8 +33,7 @@ html {
   background: var(--wahaj-bg);
 }
 
-html.wahaj-splash-active,
-html[data-splash="active"] {
+html:has(.wahaj-splash-overlay) {
   overflow: hidden;
 }
 
@@ -176,37 +175,101 @@ img {
   display: grid;
   place-items: center;
   pointer-events: all;
+  background: linear-gradient(180deg, #faf7f2 0%, #f5f0e8 100%);
 }
 
-.wahaj-splash-backdrop {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(201, 169, 98, 0.16), transparent 52%),
-    linear-gradient(180deg, #f3e1e4 0%, #ede6dc 100%);
-}
-
-.wahaj-splash-brand-wrap {
+.wahaj-splash-content {
   position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.5rem;
+  padding: 2rem;
+  overflow: hidden;
 }
 
+/* Light sweep — one delicate pass across the logo */
+.wahaj-splash-sweep {
+  position: absolute;
+  inset: -24px -24px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255,255,255,0) 20%,
+    rgba(255,255,255,0.55) 48%,
+    rgba(255,255,255,0.75) 52%,
+    rgba(255,255,255,0) 80%,
+    transparent 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  animation: wahajSweep 0.55s ease-out 0.15s forwards;
+}
+
+@keyframes wahajSweep {
+  0%   { opacity: 0; transform: translateX(-100%); }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(100%); }
+}
+
+/* Gemstone sparkle — single, subtle burst */
+.wahaj-splash-sparkle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: -6px;
+  right: -10px;
+  background: linear-gradient(135deg, #ffffff, #f7d6d6);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  box-shadow: 0 0 10px rgba(247,214,214,0.5);
+  opacity: 0;
+  pointer-events: none;
+  animation: wahajSparkle 0.5s ease-out 0.5s forwards;
+}
+
+@keyframes wahajSparkle {
+  0%   { opacity: 0; transform: scale(0) rotate(-20deg); }
+  35%  { opacity: 1; transform: scale(1.15) rotate(0deg);  }
+  65%  { opacity: 0.7; transform: scale(0.85) rotate(3deg); }
+  100% { opacity: 0; transform: scale(0.2) rotate(8deg);   }
+}
+
+/* Premium glow — soft radiance behind the logo */
 .wahaj-splash-glow {
   position: absolute;
-  inset: auto;
   top: 50%;
   left: 50%;
-  width: min(72vw, 280px);
-  height: min(72vw, 280px);
-  transform: translate(-50%, -54%);
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(201, 169, 98, 0.34) 0%, rgba(201, 169, 98, 0.08) 42%, transparent 72%);
-  filter: blur(8px);
+  width: min(70vw, 260px);
+  height: min(70vw, 260px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(247,214,214,0.22) 0%, rgba(247,214,214,0.06) 40%, transparent 70%);
+  opacity: 0;
   pointer-events: none;
+  animation: wahajGlowIn 0.55s ease-out 0.35s forwards;
+}
+
+@keyframes wahajGlowIn {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1);   }
+}
+
+/* Transition variant — shorter duration for page changes */
+.wahaj-splash-overlay[data-variant="transition"] .wahaj-splash-sweep {
+  animation-duration: 0.35s;
+  animation-delay: 0.1s;
+}
+
+.wahaj-splash-overlay[data-variant="transition"] .wahaj-splash-sparkle {
+  animation: none;
+  display: none;
+}
+
+.wahaj-splash-overlay[data-variant="transition"] .wahaj-splash-glow {
+  animation-duration: 0.35s;
+  animation-delay: 0.15s;
+  width: min(50vw, 180px);
+  height: min(50vw, 180px);
 }
 
 .satin-surface {
