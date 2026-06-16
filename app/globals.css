@@ -33,7 +33,7 @@ html {
   background: var(--wahaj-bg);
 }
 
-html:has(.wahaj-splash-overlay) {
+html[data-splash="active"] {
   overflow: hidden;
 }
 

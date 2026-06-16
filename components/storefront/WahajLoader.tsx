@@ -25,13 +25,25 @@ export default function WahajLoader({ children }: { children: React.ReactNode })
       setShowOverlay(false);
       return;
     }
+    document.documentElement.dataset.splash = "active";
     const timer = setTimeout(() => {
       window.sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
       setPhase("done");
       setShowOverlay(false);
     }, FULL_SPLASH_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      delete document.documentElement.dataset.splash;
+    };
   }, []);
+
+  useEffect(() => {
+    if (showOverlay) {
+      document.documentElement.dataset.splash = "active";
+    } else {
+      delete document.documentElement.dataset.splash;
+    }
+  }, [showOverlay]);
 
   useEffect(() => {
     if (phase === "done" && prevPath.current !== pathname) {
@@ -50,7 +62,7 @@ export default function WahajLoader({ children }: { children: React.ReactNode })
 
   return (
     <>
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {showOverlay ? (
           <motion.div
             key={overlayKey}
