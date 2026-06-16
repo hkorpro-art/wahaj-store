@@ -34,7 +34,6 @@ import LifestyleHero from "@/components/storefront/LifestyleHero";
 import CircularCollections from "@/components/storefront/CircularCollections";
 import { seedCollections } from "@/lib/collections";
 import { seedCategories } from "@/lib/categories";
-import CircularCategoryNav from "@/components/storefront/CircularCategoryNav";
 import { formatPrice, products } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl } from "@/lib/imagekit";
@@ -226,8 +225,6 @@ export default function WahajStorefront() {
           </div>
           <CircularCollections />
         </div>
-
-        <CircularCategoryNav />
 
         <motion.section id="products" {...fadeUp} className="lux-section">
           <div className="mb-4 flex items-end justify-between gap-4">
