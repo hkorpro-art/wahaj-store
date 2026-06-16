@@ -55,12 +55,15 @@ body {
 
 .wahaj-app-shell {
   min-height: 100vh;
+}
+
+html[data-splash="active"] .wahaj-app-shell {
   opacity: 0;
   transform: translate3d(0, 14px, 0);
   will-change: opacity, transform;
 }
 
-html[data-splash="ready"] .wahaj-app-shell {
+html:not([data-splash="active"]) .wahaj-app-shell {
   opacity: 1;
   transform: translate3d(0, 0, 0);
   transition:
