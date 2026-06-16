@@ -205,7 +205,7 @@ img {
   );
   opacity: 0;
   pointer-events: none;
-  animation: wahajSweep 0.55s ease-out 0.15s forwards;
+  animation: wahajSweep 0.45s ease-out 0.45s forwards;
 }
 
 @keyframes wahajSweep {
@@ -227,7 +227,7 @@ img {
   box-shadow: 0 0 10px rgba(247,214,214,0.5);
   opacity: 0;
   pointer-events: none;
-  animation: wahajSparkle 0.5s ease-out 0.5s forwards;
+  animation: wahajSparkle 0.2s ease-out 0.8s forwards;
 }
 
 @keyframes wahajSparkle {
@@ -249,7 +249,7 @@ img {
   background: radial-gradient(circle, rgba(247,214,214,0.22) 0%, rgba(247,214,214,0.06) 40%, transparent 70%);
   opacity: 0;
   pointer-events: none;
-  animation: wahajGlowIn 0.55s ease-out 0.35s forwards;
+  animation: wahajGlowIn 0.5s ease-out 0.3s forwards;
 }
 
 @keyframes wahajGlowIn {
@@ -259,7 +259,7 @@ img {
 
 /* Transition variant — shorter duration for page changes */
 .wahaj-splash-overlay[data-variant="transition"] .wahaj-splash-sweep {
-  animation-duration: 0.35s;
+  animation-duration: 0.3s;
   animation-delay: 0.1s;
 }
 
@@ -269,7 +269,7 @@ img {
 }
 
 .wahaj-splash-overlay[data-variant="transition"] .wahaj-splash-glow {
-  animation-duration: 0.35s;
+  animation-duration: 0.3s;
   animation-delay: 0.15s;
   width: min(50vw, 180px);
   height: min(50vw, 180px);
