@@ -32,6 +32,9 @@ import { type ElementContrasts } from "@/lib/contrast";
 import BrandMark from "@/components/storefront/BrandMark";
 import LifestyleHero from "@/components/storefront/LifestyleHero";
 import CircularCollections from "@/components/storefront/CircularCollections";
+import { seedCollections } from "@/lib/collections";
+import { seedCategories } from "@/lib/categories";
+import CircularCategoryNav from "@/components/storefront/CircularCategoryNav";
 import { formatPrice, products } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl } from "@/lib/imagekit";
@@ -223,6 +226,8 @@ export default function WahajStorefront() {
           </div>
           <CircularCollections />
         </div>
+
+        <CircularCategoryNav />
 
         <motion.section id="products" {...fadeUp} className="lux-section">
           <div className="mb-4 flex items-end justify-between gap-4">
@@ -825,7 +830,7 @@ function CartSheet({ open, items, total, products, onClose, onQty, onRemove, onC
    ═══════════════════════════════════════════════════════════ */
 
 function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const links = [
+  const infoLinks = [
     ["من نحن", "/about"],
     ["الأسئلة الشائعة", "/faq"],
     ["سياسة الطلب", "/order-policy"],
@@ -834,13 +839,16 @@ function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
     ["لوحة التحكم", "/admin"]
   ];
 
+  const visibleCollections = seedCollections.filter((c) => c.visible);
+  const visibleCategories = seedCategories.filter((c) => c.visible);
+
   return (
     <AnimatePresence>
       {open ? (
         <motion.div className="fixed inset-0 z-[75]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <button className="absolute inset-0 bg-wahaj-ink/25 backdrop-blur-sm" onClick={onClose} aria-label="إغلاق" />
           <motion.aside
-            className="glass absolute bottom-0 right-0 top-0 w-[86vw] max-w-sm p-5"
+            className="glass absolute bottom-0 right-0 top-0 w-[86vw] max-w-sm p-5 overflow-y-auto"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -852,8 +860,48 @@ function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="mt-7 space-y-2">
-              {links.map(([label, href]) => (
+
+            {visibleCollections.length > 0 ? (
+              <>
+                <p className="mt-7 mb-2 text-xs font-bold text-wahaj-rose/80">المجموعات</p>
+                <div className="space-y-2">
+                  {visibleCollections.map((c) => (
+                    <Link
+                      key={c.id}
+                      href={`/collections/${c.slug}`}
+                      onClick={onClose}
+                      className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white/70 px-4 py-3 font-bold btn-luxury"
+                    >
+                      {c.name}
+                      <ChevronLeft className="h-4 w-4 text-wahaj-rose" />
+                    </Link>
+                  ))}
+                </div>
+              </>
+            ) : null}
+
+            {visibleCategories.length > 0 ? (
+              <>
+                <p className="mt-5 mb-2 text-xs font-bold text-wahaj-rose/80">التصنيفات</p>
+                <div className="space-y-2">
+                  {visibleCategories.map((c) => (
+                    <Link
+                      key={c.id}
+                      href={`/category/${c.slug}`}
+                      onClick={onClose}
+                      className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white/70 px-4 py-3 font-bold btn-luxury"
+                    >
+                      {c.name}
+                      <ChevronLeft className="h-4 w-4 text-wahaj-rose" />
+                    </Link>
+                  ))}
+                </div>
+              </>
+            ) : null}
+
+            <p className="mt-5 mb-2 text-xs font-bold text-wahaj-rose/80">وهاج</p>
+            <div className="space-y-2">
+              {infoLinks.map(([label, href]) => (
                 <Link
                   key={href}
                   href={href}

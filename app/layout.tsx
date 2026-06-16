@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
 import PremiumSplashLoader from "@/components/storefront/PremiumSplashLoader";
+import Footer from "@/components/storefront/Footer";
 import { CartProvider } from "@/lib/cart-context";
 import { PHProvider } from "@/lib/posthog";
 import PostHogPageView from "@/components/PostHogPageView";
@@ -140,7 +141,10 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
               }
             }}
           />
-          <div className="wahaj-app-shell">{children}</div>
+          <div className="wahaj-app-shell">
+            {children}
+            <Footer />
+          </div>
           </PHProvider>
         </CartProvider>
       </body>

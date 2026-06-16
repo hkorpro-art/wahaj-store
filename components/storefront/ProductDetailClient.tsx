@@ -20,6 +20,7 @@ type ProductDetailClientProps = {
   slug: string;
   initialProduct: ManagedProduct | null;
   initialSimilarProducts: ManagedProduct[];
+  parentCategory?: { name: string; slug: string };
 };
 
 function normalizeSlug(value: string) {
@@ -69,7 +70,7 @@ const colorMap: Record<string, string> = {
   لؤلؤي: "#F7EFEA"
 };
 
-export default function ProductDetailClient({ slug, initialProduct, initialSimilarProducts }: ProductDetailClientProps) {
+export default function ProductDetailClient({ slug, initialProduct, initialSimilarProducts, parentCategory }: ProductDetailClientProps) {
   const posthog = usePostHog();
   const [product, setProduct] = useState<ManagedProduct | null>(
     initialProduct
@@ -264,6 +265,14 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             <ArrowRight className="h-5 w-5" />
           </Link>
           <div className="min-w-0 text-center">
+            {parentCategory ? (
+              <nav className="mb-0.5 flex items-center justify-center gap-1 text-xs text-wahaj-text/60" dir="rtl">
+                <Link href="/" className="hover:text-wahaj-rose transition">الرئيسية</Link>
+                <ChevronDown className="h-3 w-3 -rotate-90 text-wahaj-text/40" />
+                <Link href={`/category/${parentCategory.slug}`} className="hover:text-wahaj-rose transition">{parentCategory.name}</Link>
+                <ChevronDown className="h-3 w-3 -rotate-90 text-wahaj-text/40" />
+              </nav>
+            ) : null}
             <p className="truncate font-thmanyah-text text-lg font-medium text-wahaj-ink">{product.name}</p>
             <p className="text-xs text-wahaj-rose">WAHAJ Detail</p>
           </div>

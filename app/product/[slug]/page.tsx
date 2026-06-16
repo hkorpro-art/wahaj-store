@@ -5,6 +5,19 @@ import JsonLd from "@/components/JsonLd";
 import { products } from "@/lib/data";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { getManagedProducts } from "@/lib/products";
+import { seedCategories } from "@/lib/categories";
+import type { Collection } from "@/lib/types";
+
+const legacyCategoryToId: Record<string, string> = {
+  sets: "atqam",
+  earrings: "aqrat",
+  bracelets: "asawir"
+};
+
+function findProductCategory(product: { category: string; categoryIds?: string[] }): Collection | undefined {
+  const id = product.categoryIds?.[0] ?? legacyCategoryToId[product.category];
+  return id ? seedCategories.find((c) => c.id === id && c.visible) : undefined;
+}
 
 export const revalidate = 300;
 
@@ -80,16 +93,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
     ? managedProducts.filter((item) => item.visible !== false && item.category === initialProduct.category && item.id !== initialProduct.id).slice(0, 4)
     : [];
 
+  const productCategory = initialProduct ? findProductCategory(initialProduct) : undefined;
+
+  const breadcrumbItems = productCategory
+    ? [
+        { "@type": "ListItem" as const, position: 1, name: "الرئيسية", item: SITE_URL },
+        { "@type": "ListItem" as const, position: 2, name: productCategory.name, item: `${SITE_URL}/category/${productCategory.slug}` },
+        { "@type": "ListItem" as const, position: 3, name: initialProduct?.name || "المنتج", item: `${SITE_URL}/product/${slug}` }
+      ]
+    : [
+        { "@type": "ListItem" as const, position: 1, name: "الرئيسية", item: SITE_URL },
+        { "@type": "ListItem" as const, position: 2, name: initialProduct?.name || "المنتج", item: `${SITE_URL}/product/${slug}` }
+      ];
+
   return (
     <>
       <JsonLd
         data={{
           "@context": "https://schema.org",
           "@type": "BreadcrumbList",
-          itemListElement: [
-            { "@type": "ListItem", position: 1, name: "الرئيسية", item: SITE_URL },
-            { "@type": "ListItem", position: 2, name: initialProduct?.name || "المنتج", item: `${SITE_URL}/product/${slug}` }
-          ]
+          itemListElement: breadcrumbItems
         }}
       />
       {initialProduct ? (
@@ -131,7 +154,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
           }}
         />
       ) : null}
-      <ProductDetailClient slug={slug} initialProduct={initialProduct} initialSimilarProducts={initialSimilarProducts} />
+      <ProductDetailClient
+        slug={slug}
+        initialProduct={initialProduct}
+        initialSimilarProducts={initialSimilarProducts}
+        parentCategory={productCategory ? { name: productCategory.name, slug: productCategory.slug } : undefined}
+      />
     </>
   );
 }
