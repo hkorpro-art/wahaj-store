@@ -4,6 +4,8 @@ import { seedCollections } from "@/lib/collections";
 import { seedCategories } from "@/lib/categories";
 import { SITE_URL } from "@/lib/site-config";
 
+export const revalidate = 86400;
+
 const now = new Date();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
