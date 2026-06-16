@@ -11,7 +11,7 @@ type BrandMarkProps = {
 const sizeClasses: Record<NonNullable<BrandMarkProps["size"]>, string> = {
   sm: "text-[1.35rem]",
   md: "text-[1.65rem]",
-  lg: "text-[2.35rem]",
+  lg: "text-[clamp(2rem,1.5rem+2vw,3rem)]",
   splash: "text-[clamp(2.4rem,9vw,3.4rem)]"
 };
 

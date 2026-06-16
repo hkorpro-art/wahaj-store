@@ -325,10 +325,9 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
   const cartColor = cartIsDark ? "#FFFFFF" : "#450006";
   const cartHoverBg = cartIsDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)";
 
-  const logoColor = logoIsDark ? "#FFFFFF" : "#450006";
-  const logoBg = logoIsDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.75)";
-  const logoBorder = logoIsDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.08)";
-  const logoHoverBg = logoIsDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)";
+  const logoGradient = logoIsDark
+    ? "background:linear-gradient(180deg,#fffaf5 0%,#f7d6d6 50%,#c89b9b 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;text-shadow:0 1px 1px rgba(255,255,255,.3),0 4px 14px rgba(200,155,155,.15);"
+    : "color:#450006;text-shadow:none;";
 
   return (
     <header className="absolute inset-x-0 top-0 z-50">
@@ -345,17 +344,11 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
         </button>
 
         <div className="flex flex-1 items-center justify-center">
-          <Link
-            href="/"
-            className="rounded-xl px-4 py-1 shadow-sm backdrop-blur-md transition-all duration-300"
-            style={{ backgroundColor: logoBg, border: `1px solid ${logoBorder}` }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = logoHoverBg; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = logoBg; }}
-          >
+          <Link href="/">
             <BrandMark
               size="lg"
               showSubtitle={false}
-              className="items-center text-center"
+              className="items-center text-center px-3"
             />
           </Link>
         </div>
@@ -373,7 +366,7 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
         </button>
       </div>
       <style>{`
-        .wahaj-brand-wordmark { color: ${logoColor} !important; text-shadow: ${logoIsDark ? "0 2px 10px rgba(0,0,0,0.25)" : "none"} !important; }
+        .wahaj-brand-wordmark { font-weight:700; letter-spacing:0.02em; ${logoGradient} }
       `}</style>
     </header>
   );
