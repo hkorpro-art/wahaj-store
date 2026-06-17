@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site-config";
 import ProductDetailClient from "@/components/storefront/ProductDetailClient";
 import JsonLd from "@/components/JsonLd";
-import { products } from "@/lib/data";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { getManagedProducts } from "@/lib/products";
 import { seedCategories } from "@/lib/categories";
@@ -26,12 +25,6 @@ type ProductPageProps = {
     slug: string;
   }>;
 };
-
-export function generateStaticParams() {
-  return products.map((product) => ({
-    slug: product.slug
-  }));
-}
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
