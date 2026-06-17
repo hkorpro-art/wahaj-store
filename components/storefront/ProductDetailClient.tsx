@@ -2,16 +2,15 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { collection, onSnapshot } from "firebase/firestore";
-import { ArrowRight, ChevronDown, Heart, Maximize2, Minus, Share2, ShoppingBag, Sparkles, Star, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, Gem, Minus, Plus, RefreshCw, Share2, ShoppingBag, Sparkles, Star, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 import { useCart } from "@/lib/cart-context";
 import type { ManagedProduct } from "@/lib/admin-local";
-import { formatPrice } from "@/lib/data";
+import type { TrustMessage } from "@/lib/types";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
-import TrustStrip from "@/components/storefront/TrustStrip";
 import { imageUrl, productCoverUrl, resolveImageSrc } from "@/lib/imagekit";
 import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
 import { whatsappUrl } from "@/lib/whatsapp";
@@ -70,7 +69,29 @@ const colorMap: Record<string, string> = {
   لؤلؤي: "#F7EFEA"
 };
 
-export default function ProductDetailClient({ slug, initialProduct, initialSimilarProducts, parentCategory }: ProductDetailClientProps) {
+const defaultTrustMessages: TrustMessage[] = [
+  { icon: "✨", text: "لمعة تدوم", visible: true },
+  { icon: "💎", text: "مقاوم للبهتان", visible: true },
+  { icon: "🎁", text: "تغليف فاخر", visible: true },
+  { icon: "🛡️", text: "جودة مختارة", visible: true }
+];
+
+const accordionConfig = [
+  { id: "details", title: "تفاصيل القطعة", Icon: Sparkles },
+  { id: "care", title: "العناية بالقطعة", Icon: Gem },
+  { id: "shipping", title: "الشحن والتوصيل", Icon: Truck },
+  { id: "returns", title: "الاستبدال والاسترجاع", Icon: RefreshCw }
+];
+
+function isVideoUrl(url: string) {
+  return /\.(mp4|webm|mov|avi)$/i.test(url) || url.includes("video");
+}
+
+function formatPriceLatin(value: number) {
+  return `${new Intl.NumberFormat("en-US").format(value)} YER`;
+}
+
+export default function ProductDetailClient({ slug, initialProduct, initialSimilarProducts }: ProductDetailClientProps) {
   const posthog = usePostHog();
   const [product, setProduct] = useState<ManagedProduct | null>(
     initialProduct
@@ -82,16 +103,22 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
   );
   const [similarProducts, setSimilarProducts] = useState<ManagedProduct[]>(initialSimilarProducts);
   const [liveResolved, setLiveResolved] = useState(!isFirebaseClientConfigured || !db);
-  const [selectedImage, setSelectedImage] = useState(
-    initialProduct ? productCoverUrl(initialProduct.images, { width: 1200 }) : ""
-  );
-  const [fullscreen, setFullscreen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [color, setColor] = useState(initialProduct?.colors[0] ?? "");
   const [size, setSize] = useState(initialProduct?.sizes[0] ?? "");
   const [quantity, setQuantity] = useState(1);
-  const [inspired, setInspired] = useState(false);
   const [added, setAdded] = useState(false);
-  const [careOpen, setCareOpen] = useState(false);
+  const [trustIndex, setTrustIndex] = useState(0);
+  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const handler = (event: MediaQueryListEvent) => setReducedMotion(event.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => {
     if (!db || !isFirebaseClientConfigured) {
@@ -130,7 +157,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           nextProduct
             ? liveProducts
                 .filter((item) => item.category === nextProduct.category && item.id !== nextProduct.id)
-                .slice(0, 4)
+                .slice(0, 3)
                 .map((item) => ({ ...item, images: normalizeProductImages(item.images) }))
             : []
         );
@@ -149,9 +176,9 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       return;
     }
 
-    setSelectedImage(productCoverUrl(product.images, { width: 1200 }));
     setColor(product.colors[0] ?? "");
     setSize(product.sizes[0] ?? "");
+    setSelectedImageIndex(0);
 
     fetch("/api/analytics", {
       method: "POST",
@@ -166,7 +193,27 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     });
   }, [product, posthog]);
 
-  const { addToCart } = useCart();
+  const trustMessages: TrustMessage[] = product?.trustMessages && product.trustMessages.length > 0
+    ? product.trustMessages.filter((m) => m.visible !== false)
+    : defaultTrustMessages;
+
+  useEffect(() => {
+    if (trustMessages.length <= 1 || reducedMotion) return;
+    const timer = setInterval(() => {
+      setTrustIndex((i) => (i + 1) % trustMessages.length);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [trustMessages.length, reducedMotion]);
+
+  useEffect(() => {
+    if (!product || product.images.length <= 1 || reducedMotion) return;
+    const timer = setInterval(() => {
+      setSelectedImageIndex((i) => (i + 1) % product.images.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [product, reducedMotion]);
+
+  const { addToCart, cartCount } = useCart();
 
   function addTouch() {
     if (!product) return;
@@ -211,11 +258,12 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           url: window.location.href
         });
       } catch (err) {
-        console.log("Share failed", err);
+        if (err instanceof Error && err.name !== "AbortError") {
+          await navigator.clipboard.writeText(window.location.href);
+        }
       }
     } else {
       await navigator.clipboard.writeText(window.location.href);
-      alert("تم نسخ الرابط!");
     }
   }
 
@@ -239,9 +287,6 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
         <div className="mx-auto max-w-xl rounded-[8px] border border-wahaj-border bg-white/75 p-6 text-center shadow-soft">
           <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">WAHAJ Live</p>
           <h1 className="mt-3 font-thmanyah-display text-3xl font-medium text-wahaj-ink">المنتج غير متوفر حالياً</h1>
-          <p className="mt-3 text-sm leading-7 text-wahaj-text/72">
-            إذا كان المنتج قد أُزيل من Firestore فستختفي صفحته مباشرة من العرض الحي.
-          </p>
           <Link
             href="/"
             className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-wahaj-ink px-5 text-sm font-bold text-white"
@@ -253,325 +298,393 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     );
   }
 
+  const badgeIcons = product.badgeIcons && product.badgeIcons.length > 0
+    ? product.badgeIcons
+    : ["✨"];
+
+  const whatsappText = product.whatsappCtaText || "✨ احجزي قطعتك الفاخرة";
+  const showColors = product.showColors !== false;
+  const showSizes = product.showSizes !== false;
+  const showQuantity = product.showQuantity !== false;
+
+  const hasAnyOption = (showColors && product.colors.length > 0) || (showSizes && product.sizes.length > 0) || showQuantity;
+
   return (
-    <main className="min-h-screen bg-wahaj-bg pb-28 text-wahaj-text">
-      <header className="sticky top-0 z-40 border-b border-wahaj-border/70 bg-wahaj-bg/76 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+    <main className="min-h-screen bg-wahaj-bg text-wahaj-text">
+      {/* ─── HEADER: Back + Name + Cart ─── */}
+      <header className="sticky top-0 z-40 border-b border-wahaj-border/50 bg-wahaj-bg/80 backdrop-blur-lg">
+        <div className="mx-auto flex max-w-lg items-center px-4 py-3">
           <Link
             href="/"
-            className="glass flex h-11 w-11 items-center justify-center rounded-full text-wahaj-rose"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-wahaj-ink/60 transition hover:bg-wahaj-soft/40 hover:text-wahaj-ink"
             aria-label="العودة"
           >
-            <ArrowRight className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5" />
           </Link>
-          <div className="min-w-0 text-center">
-            {parentCategory ? (
-              <nav className="mb-0.5 flex items-center justify-center gap-1 text-xs text-wahaj-text/60" dir="rtl">
-                <Link href="/" className="hover:text-wahaj-rose transition">الرئيسية</Link>
-                <ChevronDown className="h-3 w-3 -rotate-90 text-wahaj-text/40" />
-                <Link href={`/category/${parentCategory.slug}`} className="hover:text-wahaj-rose transition">{parentCategory.name}</Link>
-                <ChevronDown className="h-3 w-3 -rotate-90 text-wahaj-text/40" />
-              </nav>
-            ) : null}
-            <p className="truncate font-thmanyah-text text-lg font-medium text-wahaj-ink">{product.name}</p>
-            <p className="text-xs text-wahaj-rose">WAHAJ Detail</p>
+          <div className="min-w-0 flex-1 truncate text-center">
+            <span className="block truncate px-2 font-thmanyah-text text-base font-bold text-wahaj-ink">
+              {product?.name || "المنتج"}
+            </span>
           </div>
-          <button
-            onClick={() => setInspired((value) => !value)}
-            className={`glass flex h-11 w-11 items-center justify-center rounded-full ${
-              inspired ? "bg-wahaj-rose text-white" : "text-wahaj-rose"
-            }`}
-            aria-label="احفظي للإلهام"
+          <Link
+            href="/"
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-wahaj-ink/60 transition hover:bg-wahaj-soft/40 hover:text-wahaj-ink"
+            aria-label="السلة"
           >
-            <Heart className="h-5 w-5" fill={inspired ? "currentColor" : "none"} />
-          </button>
+            <ShoppingBag className="h-5 w-5" />
+            {cartCount > 0 ? (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-wahaj-rose px-1 text-[10px] font-bold text-white">
+                {cartCount > 9 ? "9+" : cartCount}
+              </span>
+            ) : null}
+          </Link>
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-6xl gap-5 px-4 pt-4 md:grid-cols-[1.06fr_.94fr] md:px-6 lg:px-8">
-        <section>
-          <motion.div
-            layout
-            className="relative aspect-[4/5] overflow-hidden rounded-[8px] border border-wahaj-border bg-wahaj-card shadow-satin md:aspect-[1/1]"
-          >
-            <Image
-              src={selectedImage || coverImage}
-              alt={product.name}
-              fill
-              priority
-              sizes="(min-width: 768px) 52vw, 100vw"
-              className="object-cover transition duration-700 hover:scale-110"
-            />
-            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-wahaj-ink/38 to-transparent" />
-            <button
-              onClick={() => setFullscreen(true)}
-              className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/78 text-wahaj-rose backdrop-blur-xl"
-              aria-label="عرض كامل"
+      {/* ─── PRODUCT HERO ─── */}
+      <section className="relative">
+        <div
+          className="relative w-full overflow-hidden bg-wahaj-card"
+          style={{ height: "55vh", minHeight: "420px", maxHeight: "660px" }}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={selectedImageIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reducedMotion ? 0 : 0.5, ease: "easeInOut" }}
+              className="absolute inset-0"
             >
-              <Maximize2 className="h-5 w-5" />
-            </button>
-            <div className="absolute bottom-4 right-4 flex gap-1">
-              {product.badges.map((badge) => (
-                <span key={badge} className="rounded-full bg-white/82 px-3 py-1 text-xs font-bold text-wahaj-rose">
-                  {badge}
-                </span>
-              ))}
-            </div>
-          </motion.div>
+              {isVideoUrl(galleryImages[selectedImageIndex]?.url || "") ? (
+                <video
+                  src={galleryImages[selectedImageIndex]?.url}
+                  className="h-full w-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                />
+              ) : (
+                <Image
+                  src={imageUrl(galleryImages[selectedImageIndex], { width: 1200 }) || galleryImages[selectedImageIndex]?.url || ""}
+                  alt={product.name}
+                  fill
+                  priority
+                  sizes="100vw"
+                  className="object-cover"
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-wahaj-ink/6 to-transparent" />
+        </div>
 
-          <div className="mt-3 flex gap-3 overflow-x-auto pb-1 hide-scrollbar">
+        {/* Thumbnails */}
+        {galleryImages.length > 1 ? (
+          <div className="flex justify-center gap-2 overflow-x-auto px-4 pb-1 pt-3 hide-scrollbar">
             {galleryImages.map((image, index) => {
-              const thumbSrc = imageUrl(image, { width: 160, height: 160 }) || image?.url || "";
-              const fullSrc = imageUrl(image, { width: 1200 }) || image?.url || "";
-              const isSelected = selectedImage === thumbSrc || selectedImage === fullSrc;
+              const thumbSrc = imageUrl(image, { width: 80, height: 80 }) || image?.url || "";
+              const isSelected = index === selectedImageIndex;
+              const isVideo = isVideoUrl(image?.url || "");
 
-              if (!thumbSrc) {
-                return null;
-              }
+              if (!thumbSrc) return null;
 
               return (
                 <button
                   key={`${image?.url || "image"}-${index}`}
-                  onClick={() => setSelectedImage(fullSrc)}
-                  className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-[8px] border ${
-                    isSelected ? "border-wahaj-rose shadow-glow" : "border-wahaj-border"
+                  onClick={() => setSelectedImageIndex(index)}
+                  className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-[6px] border transition-all duration-300 ${
+                    isSelected
+                      ? "border-wahaj-rose ring-1 ring-wahaj-rose/30 scale-105"
+                      : "border-wahaj-border/60 opacity-60 hover:opacity-100"
                   }`}
                 >
-                  <Image src={thumbSrc} alt={product.name} fill sizes="80px" className="object-cover" />
+                  {isVideo ? (
+                    <div className="relative h-full w-full">
+                      <Image src={thumbSrc} alt={product.name} fill sizes="56px" className="object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <span className="text-white text-xs">▶</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <Image src={thumbSrc} alt={product.name} fill sizes="56px" className="object-cover" />
+                  )}
                 </button>
               );
             })}
           </div>
-        </section>
-
-        <section className="space-y-4">
-          <div className="satin-surface rounded-[8px] border border-wahaj-border p-4 shadow-soft md:p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">قطعة مختارة</p>
-                <h1 className="mt-1 font-thmanyah-display text-3xl font-medium leading-tight text-wahaj-ink sm:text-4xl">
-                  {product.name}
-                </h1>
-              </div>
-              <div className="flex items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-wahaj-stars">
-                <Star className="h-4 w-4" fill="currentColor" />
-                <span className="text-sm font-bold">{product.rating}</span>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-end gap-3">
-              <p className="type-product-price text-3xl font-medium text-brand-burgundy">{formatPrice(product.price)}</p>
-              {product.compareAt ? (
-                <p className="pb-1 text-sm text-wahaj-text/45 line-through">{formatPrice(product.compareAt)}</p>
-              ) : null}
-            </div>
-            {product.showScarcity && product.scarcityText ? (
-              <p className="mt-1 font-thmanyah-text text-sm text-wahaj-rose/80">{product.scarcityText}</p>
-            ) : null}
-            <p className="mt-4 leading-8 text-wahaj-text/78">{product.description}</p>
-            <TrustStrip />
-            <p className="mt-3 rounded-[8px] bg-white/70 p-3 text-sm leading-7 text-wahaj-text/74">
-              {product.material}
-            </p>
-          </div>
-
-          <div className="rounded-[8px] border border-wahaj-border bg-white/76 p-4 shadow-soft">
-            <p className="mb-3 font-bold text-wahaj-ink">اختاري اللون</p>
-            <div className="flex flex-wrap gap-2">
-              {product.colors.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setColor(option)}
-                  className={`flex min-h-11 items-center gap-2 rounded-full border px-3 py-2 text-sm font-bold ${
-                    color === option ? "border-wahaj-rose bg-wahaj-soft text-wahaj-rose" : "border-wahaj-border"
-                  }`}
-                >
-                  <span
-                    className="h-5 w-5 rounded-full border border-white shadow-soft"
-                    style={{ background: colorMap[option] || "#F3D6D9" }}
-                  />
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[8px] border border-wahaj-border bg-white/76 p-4 shadow-soft">
-            <p className="mb-3 font-bold text-wahaj-ink">اختاري المقاس</p>
-            <div className="flex flex-wrap gap-2">
-              {product.sizes.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setSize(option)}
-                  className={`min-h-11 rounded-full border px-4 text-sm font-bold ${
-                    size === option ? "border-wahaj-rose bg-wahaj-rose text-white" : "border-wahaj-border bg-white/70"
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[8px] border border-wahaj-border bg-white/76 p-4 shadow-soft">
-            <div className="flex items-center justify-between gap-4">
-              <p className="font-bold text-wahaj-ink">الكمية</p>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-wahaj-border"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <span className="min-w-8 text-center font-thmanyah-text text-xl font-medium">{quantity}</span>
-                <button
-                  onClick={() => setQuantity((value) => value + 1)}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-wahaj-border"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              onClick={addTouch}
-              className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-wahaj-ink px-5 py-3 font-bold text-white shadow-soft"
-            >
-              <ShoppingBag className="h-5 w-5" />
-              {added ? "تمت إضافة لمستك" : "أضيفي لمستك ✨"}
-            </button>
-            <div className="flex gap-2">
-              <button
-                onClick={handleDirectCheckout}
-                className="flex-1 flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-wahaj-rose px-5 py-3 font-bold text-white shadow-glow"
-              >
-                <Sparkles className="h-5 w-5" />
-                اطلبي الان ✨
-              </button>
-              <button
-                onClick={handleShare}
-                className="flex min-h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-wahaj-rose bg-wahaj-soft text-wahaj-rose transition hover:bg-wahaj-rose hover:text-white"
-                aria-label="مشاركة القطعة"
-              >
-                <Share2 className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-4 rounded-[8px] border border-wahaj-border bg-white/76 shadow-soft">
-            <button
-              onClick={() => setCareOpen((o) => !o)}
-              className="flex w-full items-center justify-between p-4 font-bold text-wahaj-ink"
-            >
-              <span>تفاصيل القطعة والعناية بها</span>
-              <ChevronDown className={`h-5 w-5 text-wahaj-rose transition-transform duration-300 ${careOpen ? "rotate-180" : ""}`} />
-            </button>
-            <AnimatePresence>
-              {careOpen ? (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="border-t border-wahaj-border/50 p-4 pt-2 text-sm leading-7 text-wahaj-text/80">
-                    <p>للحفاظ على بريق الزركون ولمعة القطعة الفاخرة لأطول فترة ممكنة:</p>
-                    <ul className="mt-2 list-inside list-disc space-y-1">
-                      <li>تجنبي تعريض القطعة للعطور أو المواد الكيميائية مباشرة.</li>
-                      <li>احفظيها في علبتها الأصلية بعيداً عن الرطوبة.</li>
-                      <li>نظفي القطعة بلطف باستخدام المنديل المرفق بعد كل استخدام.</li>
-                    </ul>
-                  </div>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-          </div>
-        </section>
-      </div>
-
-      <section className="mx-auto mt-8 max-w-6xl px-4 md:px-6 lg:px-8">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">تقييمات وهاج</p>
-            <h2 className="type-section text-wahaj-ink">لمعة وصلت لعميلاتنا</h2>
-          </div>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {["التغليف راق جدًا واللمعة مثل الصورة.", "وصلت بسرعة، قطعة ناعمة وتناسب كل شيء.", "تفاصيل الزركون فاخرة وهادئة."].map(
-            (review) => (
-              <div key={review} className="rounded-[8px] border border-wahaj-border bg-white/76 p-4 shadow-soft">
-                <div className="flex text-wahaj-stars">
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <Star key={index} className="h-4 w-4" fill="currentColor" />
-                  ))}
-                </div>
-                <p className="mt-3 text-sm leading-7 text-wahaj-text/78">{review}</p>
-              </div>
-            )
-          )}
-        </div>
+        ) : null}
       </section>
 
-      {similarProducts.length > 0 ? (
-        <section className="mx-auto mt-8 max-w-6xl px-4 md:px-6 lg:px-8">
-          <div className="mb-4">
-            <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">قد تناسبك</p>
-            <h2 className="type-section text-wahaj-ink">منتجات مشابهة</h2>
+      {/* ─── CONTENT ─── */}
+      <div className="mx-auto max-w-lg px-4 pb-8">
+
+        {/* ─── PRODUCT INFO ─── */}
+        <section className="mt-7">
+          {/* Name + Price row */}
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="min-w-0 flex-1 font-thmanyah-display text-3xl font-bold leading-tight text-wahaj-ink">
+              {product.name}
+            </h1>
+            <div className="shrink-0 text-left">
+              <p className="font-thmanyah-display text-2xl font-semibold leading-none text-[#5A222A]">
+                {formatPriceLatin(product.price)}
+              </p>
+              {product.compareAt ? (
+                <p className="mt-1 text-sm font-medium leading-none text-[#A15C64]/60 line-through">
+                  {formatPriceLatin(product.compareAt)}
+                </p>
+              ) : null}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {similarProducts.map((item) => (
-              <Link
-                key={item.id}
-                href={`/product/${item.slug}`}
-                className="overflow-hidden rounded-[8px] border border-wahaj-border bg-white/76 shadow-soft"
-              >
-                <div className="relative aspect-[4/5]">
-                  <Image
-                    src={productCoverUrl(item.images, { width: 440, height: 550 }) || "/favicon.ico"}
-                    alt={item.name}
-                    fill
-                    sizes="220px"
-                    className="object-cover"
-                  />
+
+          {/* Badge + Rating row */}
+          <div className="mt-4 flex items-center gap-3">
+            {product.badges.length > 0 ? (
+              <span className="inline-flex items-center gap-1.5 text-sm font-bold text-wahaj-rose">
+                <span className="text-base">{badgeIcons[0] || "✨"}</span>
+                <span>{product.badges[0]}</span>
+              </span>
+            ) : null}
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-wahaj-stars/70">
+              <Star className="h-3.5 w-3.5" fill="currentColor" />
+              <span>{product.rating}</span>
+            </span>
+          </div>
+
+          {/* Description */}
+          <p className="mt-3 leading-7 text-wahaj-text/78 line-clamp-2 text-base">
+            {product.description}
+          </p>
+        </section>
+
+        {/* ─── TRUST BAR ─── */}
+        {trustMessages.length > 0 ? (
+          <section className="mt-5 flex flex-col items-center justify-center">
+              <div className="flex items-center gap-2 min-h-[1.75rem]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={trustIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reducedMotion ? 0 : 0.3, ease: "easeInOut" }}
+                    className="flex items-center gap-2"
+                  >
+                    <span className="text-lg">{trustMessages[trustIndex]?.icon}</span>
+                    <span className="text-sm font-bold text-wahaj-ink">
+                      {trustMessages[trustIndex]?.text}
+                    </span>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+              {trustMessages.length > 1 ? (
+                <div className="mt-2 flex items-center gap-1.5">
+                  {trustMessages.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setTrustIndex(i)}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        i === trustIndex ? "w-4 bg-wahaj-rose" : "w-1.5 bg-wahaj-border/60"
+                      }`}
+                      aria-label={`الرسالة ${i + 1}`}
+                    />
+                  ))}
                 </div>
-                <div className="p-3">
-                  <p className="line-clamp-2 min-h-10 text-sm font-bold text-wahaj-ink">{item.name}</p>
-                  <p className="type-product-price mt-2 font-medium text-brand-burgundy">{formatPrice(item.price)}</p>
+              ) : null}
+          </section>
+        ) : null}
+
+        {/* ─── OPTIONS ─── */}
+        {hasAnyOption ? (
+          <section className="mt-5 divide-y divide-wahaj-border/40">
+
+            {showColors && product.colors.length > 0 ? (
+              <div className="py-3.5">
+                <p className="mb-2.5 text-sm font-bold text-wahaj-ink">اختاري اللون</p>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => setColor(option)}
+                      className={`flex min-h-10 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold transition-all duration-200 ${
+                        color === option
+                          ? "border-wahaj-rose bg-wahaj-rose/8 text-wahaj-rose"
+                          : "border-wahaj-border/60 text-wahaj-text hover:border-wahaj-rose/40"
+                      }`}
+                    >
+                      <span
+                        className="h-4 w-4 rounded-full border border-white/70 shadow-sm"
+                        style={{ background: colorMap[option] || "#F3D6D9" }}
+                      />
+                      {option}
+                    </button>
+                  ))}
                 </div>
-              </Link>
-            ))}
+              </div>
+            ) : null}
+
+            {showSizes && product.sizes.length > 0 ? (
+              <div className="py-3.5">
+                <p className="mb-2.5 text-sm font-bold text-wahaj-ink">اختاري المقاس</p>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => setSize(option)}
+                      className={`min-h-10 rounded-full border px-4 py-1.5 text-sm font-bold transition-all duration-200 ${
+                        size === option
+                          ? "border-wahaj-rose bg-wahaj-rose text-white"
+                          : "border-wahaj-border/60 bg-white/70 text-wahaj-text hover:border-wahaj-rose/40"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {showQuantity ? (
+              <div className="py-3.5">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm font-bold text-wahaj-ink">الكمية</p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-wahaj-border/60 transition hover:bg-wahaj-soft"
+                      aria-label="تقليل الكمية"
+                    >
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="min-w-8 text-center font-thmanyah-text text-lg font-medium">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity((value) => value + 1)}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-wahaj-border/60 transition hover:bg-wahaj-soft"
+                      aria-label="زيادة الكمية"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+          </section>
+        ) : null}
+
+        {/* ─── PURCHASE ACTIONS ─── */}
+        <section className="mt-6 space-y-3">
+          <button
+            onClick={handleDirectCheckout}
+            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-wahaj-rose px-4 font-bold text-white shadow-glow transition-transform active:scale-[0.98]"
+          >
+            <Sparkles className="h-5 w-5 shrink-0" />
+            <span className="truncate">{whatsappText}</span>
+          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={addTouch}
+              className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-wahaj-ink px-4 font-bold text-white shadow-sm transition-transform active:scale-[0.98]"
+            >
+              <ShoppingBag className="h-5 w-5 shrink-0" />
+              {added ? "تمت ✓" : "أضيفي للسلة"}
+            </button>
+            <button
+              onClick={handleShare}
+              className="flex min-h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-wahaj-rose/50 bg-wahaj-soft/60 text-wahaj-rose transition hover:bg-wahaj-rose hover:text-white"
+              aria-label="مشاركة القطعة"
+            >
+              <Share2 className="h-5 w-5" />
+            </button>
           </div>
         </section>
-      ) : null}
 
-      <AnimatePresence>
-        {fullscreen ? (
-          <motion.div
-            className="fixed inset-0 z-[80] flex items-center justify-center bg-wahaj-ink/88 p-4 backdrop-blur-xl"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <button
-              onClick={() => setFullscreen(false)}
-              className="absolute left-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/84 text-wahaj-rose"
-              aria-label="إغلاق"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <motion.div
-              className="relative h-[86vh] w-full max-w-3xl overflow-hidden rounded-[8px] bg-wahaj-card"
-              initial={{ scale: 0.94 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.96 }}
-            >
-              <Image src={selectedImage || coverImage} alt={product.name} fill sizes="90vw" className="object-contain" />
-            </motion.div>
-          </motion.div>
+        {/* ─── ACCORDION ─── */}
+        <section className="mt-4 space-y-2">
+          {accordionConfig.map(({ id, title, Icon }) => {
+            const contentMap: Record<string, string> = {
+              details: product.accordionDetails || "قطعة وهاج فاخرة بتفاصيل أنثوية ناعمة.",
+              care: product.accordionCare || "للحفاظ على بريق الزركون: تجنبي تعريض القطعة للعطور والمواد الكيميائية. احفظيها في العلبة الأصلية بعيداً عن الرطوبة. نظفي بلطف بالمنديل المرفق بعد كل استخدام.",
+              shipping: product.accordionShipping || "الشحن عبر البريد الممتاز خلال 3-5 أيام عمل. تغليف فاخر ومجاني لجميع الطلبات. الشحن متوفر لجميع المحافظات اليمنية.",
+              returns: product.accordionReturns || "يمكن استبدال القطعة خلال 7 أيام من الاستلام بشرط أن تكون بحالتها الأصلية مع العبوة. الاستبدال متاح مرة واحدة فقط."
+            };
+            const content = contentMap[id];
+            const isOpen = openAccordion === id;
+
+            return (
+              <div key={id} className="border-b border-wahaj-border/30">
+                <button
+                  onClick={() => setOpenAccordion(isOpen ? null : id)}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-base font-bold text-wahaj-ink transition-colors hover:bg-wahaj-soft/30"
+                  aria-expanded={isOpen}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Icon className="h-4 w-4 text-wahaj-rose/70" />
+                    <span>{title}</span>
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-wahaj-rose/60 transition-transform duration-300 ${
+                      isOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen ? (
+                    <motion.div
+                      key="content"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: reducedMotion ? 0 : 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="border-t border-wahaj-border/30 px-4 py-3.5 text-sm leading-7 text-wahaj-text/80">
+                        {content}
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </section>
+
+        {/* ─── RELATED PRODUCTS ─── */}
+        {similarProducts.length > 0 ? (
+          <section className="mt-8">
+            <div className="mb-4">
+              <h2 className="font-thmanyah-display text-xl font-medium text-wahaj-ink">قد يعجبك أيضاً</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {similarProducts.slice(0, 3).map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/product/${item.slug}`}
+                  className="group overflow-hidden rounded-[8px] border border-wahaj-border/60 bg-white/70 shadow-sm transition-shadow hover:shadow-glow"
+                >
+                  <div className="relative aspect-[4/5] overflow-hidden">
+                    <Image
+                      src={productCoverUrl(item.images, { width: 440, height: 550 }) || "/favicon.ico"}
+                      alt={item.name}
+                      fill
+                      sizes="(max-width: 640px) 50vw, 33vw"
+                      className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                  </div>
+                  <div className="p-3">
+                    <p className="line-clamp-2 min-h-10 text-sm font-bold text-wahaj-ink">{item.name}</p>
+                    <p className="mt-1 font-thmanyah-text text-sm font-medium text-brand-burgundy">{formatPriceLatin(item.price)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
         ) : null}
-      </AnimatePresence>
+      </div>
+
+
     </main>
   );
 }
