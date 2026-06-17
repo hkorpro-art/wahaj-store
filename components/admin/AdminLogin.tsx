@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { LockKeyhole, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -13,6 +13,14 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/verify")
+      .then((res) => {
+        if (res.ok) router.replace(next);
+      })
+      .catch(() => {});
+  }, [router, next]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
