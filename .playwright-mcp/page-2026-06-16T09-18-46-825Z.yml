@@ -1,0 +1,18 @@
+- generic [active] [ref=e1]:
+  - main [ref=e3]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e11]:
+        - paragraph [ref=e12]: وهاج Admin
+        - paragraph [ref=e13]: دخول آمن لإدارة المتجر والطلبات والمحتوى.
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: البريد
+          - textbox "البريد" [ref=e17]: admin@wahaj.local
+        - generic [ref=e18]:
+          - generic [ref=e19]: كلمة المرور
+          - textbox "كلمة المرور" [ref=e20]
+      - button "دخول اللوحة" [ref=e21] [cursor=pointer]:
+        - img [ref=e22]
+        - text: دخول اللوحة
+  - alert [ref=e24]

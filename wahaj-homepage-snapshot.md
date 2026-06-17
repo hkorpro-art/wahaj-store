@@ -1,0 +1,372 @@
+- generic [active] [ref=e1] [box=0,0,947,3147]:
+  - generic [ref=e7] [box=0,0,947,3147]:
+    - heading "وهاج | WAHAJ - إكسسوارات نسائية فاخرة" [level=1] [ref=e8] [box=947,-1,1,1]
+    - main [ref=e9] [box=0,0,947,2624]:
+      - generic [ref=e11] [box=0,0,947,68]:
+        - button "القائمة" [ref=e12] [cursor=pointer] [box=879,12,44,44]:
+          - img [ref=e13] [box=892,25,18,18]
+        - link "وهاج" [ref=e15] [cursor=pointer] [box=433,13,81,42]:
+          - /url: /
+          - generic [ref=e17] [box=449,17,49,34]: وهاج
+        - button "السلة" [ref=e18] [cursor=pointer] [box=24,12,44,44]:
+          - img [ref=e19] [box=37,25,18,18]
+      - generic [ref=e343] [box=0,0,947,392]:
+        - img "تألقي" [ref=e345] [cursor=pointer] [box=1018,29,805,333]
+        - generic [ref=e347] [cursor=pointer] [box=0,0,947,392]:
+          - img "افخم زركون" [ref=e348] [box=0,0,947,392]
+          - generic [ref=e352] [box=371,158,512,154]:
+            - heading "افخم زركون" [level=2] [ref=e353] [box=371,158,512,48]
+            - paragraph [ref=e354] [box=371,218,512,24]: تألقي في كل مناسبة
+            - link "اطلبي الان" [ref=e355] [box=764,266,119,46]
+        - generic [ref=e356] [box=404,332,140,36]:
+          - button "السابق" [ref=e357] [cursor=pointer] [box=508,332,36,36]:
+            - img [ref=e358] [box=519,343,14,14]
+          - generic [ref=e360] [box=452,346,44,8]:
+            - button "تألقي" [ref=e361] [cursor=pointer] [box=488,346,8,8]
+            - button "افخم زركون" [ref=e362] [cursor=pointer] [box=452,346,28,8]
+          - button "التالي" [ref=e363] [cursor=pointer] [box=404,332,36,36]:
+            - img [ref=e364] [box=415,343,14,14]
+      - generic [ref=e367] [box=242,368,464,48]:
+        - img [ref=e368] [box=669,384,16,16]
+        - textbox [ref=e370] [box=262,369,395,47]:
+          - /placeholder: ابحثي عن زركون، تاج، طقم...
+      - generic [ref=e28] [box=-435,436,1846,35]:
+        - generic [ref=e29] [box=1260,444,151,19]:
+          - img [ref=e30] [box=1399,448,12,12]
+          - text: خصم 10% على القطع الجديدة
+        - generic [ref=e32] [box=1139,444,96,19]:
+          - img [ref=e33] [box=1224,448,12,12]
+          - text: كوبون WAHAJ10
+        - generic [ref=e35] [box=967,444,149,19]:
+          - img [ref=e36] [box=1103,448,12,12]
+          - text: "وصل حديثًا: أطقم زركون ناعمة"
+        - generic [ref=e38] [box=811,444,131,19]:
+          - img [ref=e39] [box=931,448,12,12]
+          - text: تغليف هدية فاخر لكل طلب
+        - generic [ref=e41] [box=637,444,151,19]:
+          - img [ref=e42] [box=775,448,12,12]
+          - text: خصم 10% على القطع الجديدة
+        - generic [ref=e44] [box=516,444,96,19]:
+          - img [ref=e45] [box=601,448,12,12]
+          - text: كوبون WAHAJ10
+        - generic [ref=e47] [box=343,444,149,19]:
+          - img [ref=e48] [box=480,448,12,12]
+          - text: "وصل حديثًا: أطقم زركون ناعمة"
+        - generic [ref=e50] [box=188,444,131,19]:
+          - img [ref=e51] [box=307,448,12,12]
+          - text: تغليف هدية فاخر لكل طلب
+        - generic [ref=e53] [box=13,444,151,19]:
+          - img [ref=e54] [box=152,448,12,12]
+          - text: خصم 10% على القطع الجديدة
+        - generic [ref=e56] [box=-107,444,96,19]:
+          - img [ref=e57] [box=-23,448,12,12]
+          - text: كوبون WAHAJ10
+        - generic [ref=e59] [box=-280,444,149,19]:
+          - img [ref=e60] [box=-143,448,12,12]
+          - text: "وصل حديثًا: أطقم زركون ناعمة"
+        - generic [ref=e62] [box=-435,444,131,19]:
+          - img [ref=e63] [box=-316,448,12,12]
+          - text: تغليف هدية فاخر لكل طلب
+      - generic [ref=e65] [box=0,472,947,2152]:
+        - generic [ref=e66] [box=24,496,899,260]:
+          - generic [ref=e67] [box=24,496,899,79]:
+            - paragraph [ref=e68] [box=24,496,899,20]: مجموعات وهاج
+            - heading "اختاري بحسب مجموعتك" [level=2] [ref=e69] [box=24,516,899,59]
+          - generic [ref=e71] [box=24,607,899,133]:
+            - link "أطقم أطقم" [ref=e371] [cursor=pointer] [box=-568,615,80,102]:
+              - /url: /collections/atqam
+              - img "أطقم" [ref=e374] [box=-565,619,73,73]
+              - generic [ref=e375] [box=-540,703,24,14]: أطقم
+            - link "زركون زركون" [ref=e376] [cursor=pointer] [box=-468,615,80,102]:
+              - /url: /collections/زركون
+              - img "زركون" [ref=e379] [box=-465,619,73,73]
+              - generic [ref=e380] [box=-441,703,25,14]: زركون
+            - link "عقود عقود" [ref=e381] [cursor=pointer] [box=-368,615,80,102]:
+              - /url: /collections/uqud
+              - img "عقود" [ref=e384] [box=-365,619,73,73]
+              - generic [ref=e385] [box=-340,703,23,14]: عقود
+            - link "أساور أساور" [ref=e386] [cursor=pointer] [box=-268,615,80,102]:
+              - /url: /collections/asawir
+              - img "أساور" [ref=e389] [box=-265,619,73,73]
+              - generic [ref=e390] [box=-239,703,23,14]: أساور
+            - link "أقراط أقراط" [ref=e391] [cursor=pointer] [box=-168,615,80,102]:
+              - /url: /collections/aqrat
+              - img "أقراط" [ref=e394] [box=-165,619,73,73]
+              - generic [ref=e395] [box=-141,703,25,14]: أقراط
+            - link "خواتم خواتم" [ref=e396] [cursor=pointer] [box=-68,615,80,102]:
+              - /url: /collections/khawatim
+              - img "خواتم" [ref=e399] [box=-65,619,73,73]
+              - generic [ref=e400] [box=-42,703,27,14]: خواتم
+            - link "أطقم أطقم" [ref=e401] [cursor=pointer] [box=32,615,80,102]:
+              - /url: /collections/atqam
+              - img "أطقم" [ref=e404] [box=35,619,73,73]
+              - generic [ref=e405] [box=60,703,24,14]: أطقم
+            - link "زركون زركون" [ref=e406] [cursor=pointer] [box=132,615,80,102]:
+              - /url: /collections/زركون
+              - img "زركون" [ref=e409] [box=135,619,73,73]
+              - generic [ref=e410] [box=159,703,25,14]: زركون
+            - link "عقود عقود" [ref=e411] [cursor=pointer] [box=232,615,80,102]:
+              - /url: /collections/uqud
+              - img "عقود" [ref=e414] [box=235,619,73,73]
+              - generic [ref=e415] [box=260,703,23,14]: عقود
+            - link "أساور أساور" [ref=e416] [cursor=pointer] [box=332,615,80,102]:
+              - /url: /collections/asawir
+              - img "أساور" [ref=e419] [box=335,619,73,73]
+              - generic [ref=e420] [box=361,703,23,14]: أساور
+            - link "أقراط أقراط" [ref=e421] [cursor=pointer] [box=432,615,80,102]:
+              - /url: /collections/aqrat
+              - img "أقراط" [ref=e424] [box=435,619,73,73]
+              - generic [ref=e425] [box=459,703,25,14]: أقراط
+            - link "خواتم خواتم" [ref=e426] [cursor=pointer] [box=532,615,80,102]:
+              - /url: /collections/khawatim
+              - img "خواتم" [ref=e429] [box=535,619,73,73]
+              - generic [ref=e430] [box=558,703,27,14]: خواتم
+            - link "أطقم أطقم" [ref=e431] [cursor=pointer] [box=632,615,80,102]:
+              - /url: /collections/atqam
+              - img "أطقم" [ref=e434] [box=635,619,73,73]
+              - generic [ref=e435] [box=660,703,24,14]: أطقم
+            - link "زركون زركون" [ref=e436] [cursor=pointer] [box=732,615,80,102]:
+              - /url: /collections/زركون
+              - img "زركون" [ref=e439] [box=735,619,73,73]
+              - generic [ref=e440] [box=759,703,25,14]: زركون
+            - link "عقود عقود" [ref=e441] [cursor=pointer] [box=832,615,80,102]:
+              - /url: /collections/uqud
+              - img "عقود" [ref=e444] [box=835,619,73,73]
+              - generic [ref=e445] [box=860,703,23,14]: عقود
+            - link "أساور أساور" [ref=e446] [cursor=pointer] [box=932,615,80,102]:
+              - /url: /collections/asawir
+              - img "أساور" [ref=e449] [box=935,619,73,73]
+              - generic [ref=e450] [box=961,703,23,14]: أساور
+            - link "أقراط أقراط" [ref=e451] [cursor=pointer] [box=1032,615,80,102]:
+              - /url: /collections/aqrat
+              - img "أقراط" [ref=e454] [box=1035,619,73,73]
+              - generic [ref=e455] [box=1059,703,25,14]: أقراط
+            - link "خواتم خواتم" [ref=e456] [cursor=pointer] [box=1132,615,80,102]:
+              - /url: /collections/khawatim
+              - img "خواتم" [ref=e459] [box=1135,619,73,73]
+              - generic [ref=e460] [box=1158,703,27,14]: خواتم
+        - generic [ref=e90] [box=24,800,899,1731]:
+          - generic [ref=e91] [box=24,800,899,80]:
+            - generic [ref=e92] [box=621,800,302,80]:
+              - paragraph [ref=e93] [box=621,800,302,20]: مختارات وهاج
+              - heading "تسوقي من وهاج" [level=2] [ref=e94] [box=621,820,302,60]
+            - generic [ref=e96] [box=24,855,61,25]: 7 قطعة
+          - generic [ref=e97] [box=24,896,899,1635]:
+            - article [ref=e461] [box=631,896,292,537]:
+              - generic [ref=e462] [box=632,897,291,388]:
+                - link "زركون دوائر" [ref=e463] [cursor=pointer] [box=632,897,291,388]:
+                  - /url: /product/زركون-دوائر
+                  - img "زركون دوائر" [ref=e464] [box=632,897,291,388]
+                - generic [ref=e467] [box=855,905,60,21]: الأكثر مبيعًا
+              - generic [ref=e468] [box=632,1284,291,148]:
+                - link "زركون دوائر" [ref=e469] [cursor=pointer] [box=644,1296,267,19]:
+                  - /url: /product/زركون-دوائر
+                  - heading "زركون دوائر" [level=3] [ref=e470] [box=644,1296,267,19]
+                - generic [ref=e471] [box=644,1322,267,19]:
+                  - img [ref=e472] [box=897,1324,14,14]
+                  - generic [ref=e474] [box=886,1322,7,19]: "5"
+                  - generic [ref=e475] [box=870,1322,12,19]: (0)
+                - generic [ref=e476] [box=644,1347,267,20]:
+                  - paragraph [ref=e477] [box=851,1347,60,20]: ‏٢٢٬٠٠٠ ر.ي.‏
+                  - paragraph [ref=e478] [box=798,1348,45,19]: ‏٢٥٬٠٠٠ ر.ي.‏
+                - button "أضيفي للسلة" [ref=e479] [cursor=pointer] [box=644,1377,267,44]:
+                  - img [ref=e480] [box=805,1392,14,14]
+                  - text: أضيفي للسلة
+            - article [ref=e483] [box=328,896,292,537]:
+              - generic [ref=e484] [box=328,897,291,388]:
+                - link "زركون العروسة" [ref=e485] [cursor=pointer] [box=328,897,291,388]:
+                  - /url: /product/زركون-العروسة
+                  - img "زركون العروسة" [ref=e486] [box=328,897,291,388]
+                - generic [ref=e489] [box=566,905,45,21]: محدود
+              - generic [ref=e490] [box=328,1284,291,148]:
+                - link "زركون العروسة" [ref=e491] [cursor=pointer] [box=340,1296,267,19]:
+                  - /url: /product/زركون-العروسة
+                  - heading "زركون العروسة" [level=3] [ref=e492] [box=340,1296,267,19]
+                - generic [ref=e493] [box=340,1322,267,19]:
+                  - img [ref=e494] [box=593,1324,14,14]
+                  - generic [ref=e496] [box=582,1322,7,19]: "5"
+                  - generic [ref=e497] [box=566,1322,12,19]: (0)
+                - generic [ref=e498] [box=340,1347,267,20]:
+                  - paragraph [ref=e499] [box=551,1347,56,20]: ‏١٩٬٠٠٠ ر.ي.‏
+                  - paragraph [ref=e500] [box=498,1348,45,19]: ‏٢٢٬٠٠٠ ر.ي.‏
+                - button "أضيفي للسلة" [ref=e501] [cursor=pointer] [box=340,1377,267,44]:
+                  - img [ref=e502] [box=501,1392,14,14]
+                  - text: أضيفي للسلة
+            - article [ref=e505] [box=24,896,292,537]:
+              - generic [ref=e506] [box=25,897,291,388]:
+                - link "زركون" [ref=e507] [cursor=pointer] [box=25,897,291,388]:
+                  - /url: /product/زركون
+                  - img "زركون" [ref=e508] [box=25,897,291,388]
+                - generic [ref=e511] [box=270,905,37,21]: جديد
+              - generic [ref=e512] [box=25,1284,291,148]:
+                - link "زركون" [ref=e513] [cursor=pointer] [box=37,1296,267,19]:
+                  - /url: /product/زركون
+                  - heading "زركون" [level=3] [ref=e514] [box=37,1296,267,19]
+                - generic [ref=e515] [box=37,1322,267,19]:
+                  - img [ref=e516] [box=289,1324,14,14]
+                  - generic [ref=e518] [box=279,1322,7,19]: "5"
+                  - generic [ref=e519] [box=262,1322,12,19]: (0)
+                - generic [ref=e520] [box=37,1347,267,20]:
+                  - paragraph [ref=e521] [box=244,1347,59,20]: ‏١٩٬٩٠٠ ر.ي.‏
+                  - paragraph [ref=e522] [box=195,1348,42,19]: ‏٢٠٬٠٠٠ ر.ي.‏
+                - button "أضيفي للسلة" [ref=e523] [cursor=pointer] [box=37,1377,267,44]:
+                  - img [ref=e524] [box=197,1392,14,14]
+                  - text: أضيفي للسلة
+            - article [ref=e98] [box=631,1445,292,537]:
+              - generic [ref=e99] [box=632,1446,291,388]:
+                - link "طقم لونا زركون روز" [ref=e100] [cursor=pointer] [box=632,1446,291,388]:
+                  - /url: /product/luna-zircon-set
+                  - img "طقم لونا زركون روز" [ref=e101] [box=632,1446,291,388]
+                - generic [ref=e103] [box=843,1454,72,21]:
+                  - generic [ref=e104] [box=878,1454,37,21]: جديد
+                  - generic [ref=e105] [box=843,1454,31,21]: ترند
+              - generic [ref=e106] [box=632,1834,291,148]:
+                - link "طقم لونا زركون روز" [ref=e107] [cursor=pointer] [box=644,1846,267,19]:
+                  - /url: /product/luna-zircon-set
+                  - heading "طقم لونا زركون روز" [level=3] [ref=e108] [box=644,1846,267,19]
+                - generic [ref=e109] [box=644,1871,267,19]:
+                  - img [ref=e110] [box=897,1873,14,14]
+                  - generic [ref=e112] [box=875,1871,18,19]: "4.9"
+                  - generic [ref=e113] [box=848,1871,23,19]: (128)
+                - generic [ref=e114] [box=644,1896,267,20]:
+                  - paragraph [ref=e115] [box=871,1896,40,20]: ‏١٨ ر.ي.‏
+                  - paragraph [ref=e116] [box=818,1897,45,19]: ‏٢٢٬٠٠٠ ر.ي.‏
+                - button "أضيفي للسلة" [ref=e117] [cursor=pointer] [box=644,1926,267,44]:
+                  - img [ref=e118] [box=805,1941,14,14]
+                  - text: أضيفي للسلة
+            - article [ref=e166] [box=328,1445,292,537]:
+              - generic [ref=e167] [box=328,1446,291,388]:
+                - link "سوار رؤى المرن" [ref=e168] [cursor=pointer] [box=328,1446,291,388]:
+                  - /url: /product/roya-bracelet
+                  - img "سوار رؤى المرن" [ref=e169] [box=328,1446,291,388]
+                - generic [ref=e172] [box=551,1454,60,21]: الأكثر مبيعًا
+              - generic [ref=e173] [box=328,1834,291,148]:
+                - link "سوار رؤى المرن" [ref=e174] [cursor=pointer] [box=340,1846,267,19]:
+                  - /url: /product/roya-bracelet
+                  - heading "سوار رؤى المرن" [level=3] [ref=e175] [box=340,1846,267,19]
+                - generic [ref=e176] [box=340,1871,267,19]:
+                  - img [ref=e177] [box=593,1873,14,14]
+                  - generic [ref=e179] [box=571,1871,18,19]: "4.9"
+                  - generic [ref=e180] [box=544,1871,23,19]: (102)
+                - paragraph [ref=e182] [box=550,1896,57,20]: ‏٨٬٢٠٠ ر.ي.‏
+                - button "أضيفي للسلة" [ref=e183] [cursor=pointer] [box=340,1926,267,44]:
+                  - img [ref=e184] [box=501,1941,14,14]
+                  - text: أضيفي للسلة
+            - article [ref=e209] [box=24,1445,292,537]:
+              - generic [ref=e210] [box=25,1446,291,388]:
+                - link "سلسال تالا لؤلؤ" [ref=e211] [cursor=pointer] [box=25,1446,291,388]:
+                  - /url: /product/tala-pearl-chain
+                  - img "سلسال تالا لؤلؤ" [ref=e212] [box=25,1446,291,388]
+                - generic [ref=e215] [box=274,1454,33,21]: مميز
+              - generic [ref=e216] [box=25,1834,291,148]:
+                - link "سلسال تالا لؤلؤ" [ref=e217] [cursor=pointer] [box=37,1846,267,19]:
+                  - /url: /product/tala-pearl-chain
+                  - heading "سلسال تالا لؤلؤ" [level=3] [ref=e218] [box=37,1846,267,19]
+                - generic [ref=e219] [box=37,1871,267,19]:
+                  - img [ref=e220] [box=289,1873,14,14]
+                  - generic [ref=e222] [box=267,1871,18,19]: "4.6"
+                  - generic [ref=e223] [box=245,1871,18,19]: (54)
+                - paragraph [ref=e225] [box=247,1896,56,20]: ‏٧٬٤٠٠ ر.ي.‏
+                - button "أضيفي للسلة" [ref=e226] [cursor=pointer] [box=37,1926,267,44]:
+                  - img [ref=e227] [box=197,1941,14,14]
+                  - text: أضيفي للسلة
+            - article [ref=e230] [box=631,1995,292,537]:
+              - generic [ref=e231] [box=632,1995,291,388]:
+                - link "طقم ليال المسائي" [ref=e232] [cursor=pointer] [box=632,1995,291,388]:
+                  - /url: /product/layal-evening-set
+                  - img "طقم ليال المسائي" [ref=e233] [box=632,1995,291,388]
+                - generic [ref=e235] [box=833,2003,82,21]:
+                  - generic [ref=e236] [box=870,2003,45,21]: محدود
+                  - generic [ref=e237] [box=833,2003,33,21]: مميز
+              - generic [ref=e238] [box=632,2383,291,148]:
+                - link "طقم ليال المسائي" [ref=e239] [cursor=pointer] [box=644,2395,267,19]:
+                  - /url: /product/layal-evening-set
+                  - heading "طقم ليال المسائي" [level=3] [ref=e240] [box=644,2395,267,19]
+                - generic [ref=e241] [box=644,2420,267,19]:
+                  - img [ref=e242] [box=897,2423,14,14]
+                  - generic [ref=e244] [box=886,2420,7,19]: "5"
+                  - generic [ref=e245] [box=864,2420,18,19]: (35)
+                - generic [ref=e246] [box=644,2445,267,20]:
+                  - paragraph [ref=e247] [box=852,2445,59,20]: ‏٢١٬٥٠٠ ر.ي.‏
+                  - paragraph [ref=e248] [box=797,2446,47,19]: ‏٢٤٬٨٠٠ ر.ي.‏
+                - button "أضيفي للسلة" [ref=e249] [cursor=pointer] [box=644,2475,267,44]:
+                  - img [ref=e250] [box=805,2490,14,14]
+                  - text: أضيفي للسلة
+      - navigation [ref=e274] [box=342,3039,263,80]:
+        - generic [ref=e275] [box=342,3039,263,80]:
+          - link "الرئيسية" [ref=e276] [cursor=pointer] [box=521,3046,64,67]:
+            - /url: /
+            - img [ref=e278] [box=545,3062,16,16]
+            - generic [ref=e281] [box=537,3092,32,17]: الرئيسية
+          - button "المجموعات" [ref=e282] [cursor=pointer] [box=439,3046,70,67]:
+            - img [ref=e284] [box=466,3062,16,16]
+            - generic [ref=e287] [box=451,3092,46,17]: المجموعات
+          - button "السلة" [ref=e288] [cursor=pointer] [box=363,3046,64,67]:
+            - img [ref=e290] [box=387,3062,16,16]
+            - generic [ref=e293] [box=384,3092,22,17]: السلة
+      - link "واتساب وهاج" [ref=e294] [cursor=pointer] [box=16,3027,24,24]:
+        - /url: https://wa.me/967781679899?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%20%D9%88%D9%87%D8%A7%D8%AC%20%E2%9C%A8%0A%D8%A3%D8%B1%D8%BA%D8%A8%20%D8%A8%D9%85%D8%B9%D8%B1%D9%81%D8%A9%20%D8%A3%D8%AD%D8%AF%D8%AB%20%D8%A7%D9%84%D9%82%D8%B7%D8%B9%20%D8%A7%D9%84%D9%85%D8%AA%D9%88%D9%81%D8%B1%D8%A9.
+        - img [ref=e295] [box=16,3027,24,24]
+    - contentinfo [ref=e297] [box=0,2624,947,524]:
+      - generic [ref=e299] [box=24,2664,899,443]:
+        - generic [ref=e300] [box=490,2664,434,206]:
+          - heading "وهاج" [level=3] [ref=e301] [box=490,2664,434,22]
+          - list [ref=e302] [box=490,2698,434,172]:
+            - listitem [ref=e303] [box=490,2698,434,28]:
+              - link "من نحن" [ref=e304] [cursor=pointer] [box=878,2703,46,17]:
+                - /url: /about
+            - listitem [ref=e305] [box=490,2734,434,28]:
+              - link "الأسئلة الشائعة" [ref=e306] [cursor=pointer] [box=839,2739,84,17]:
+                - /url: /faq
+            - listitem [ref=e307] [box=490,2770,434,28]:
+              - link "سياسة الطلب" [ref=e308] [cursor=pointer] [box=847,2775,76,17]:
+                - /url: /order-policy
+            - listitem [ref=e309] [box=490,2806,434,28]:
+              - link "سياسة الاستبدال" [ref=e310] [cursor=pointer] [box=829,2811,94,17]:
+                - /url: /exchange-policy
+            - listitem [ref=e311] [box=490,2842,434,28]:
+              - link "تواصل معنا" [ref=e312] [cursor=pointer] [box=860,2847,64,17]:
+                - /url: /contact
+        - generic [ref=e313] [box=24,2664,434,206]:
+          - heading "المجموعات" [level=3] [ref=e314] [box=24,2664,434,22]
+          - list [ref=e315] [box=24,2698,434,172]:
+            - listitem [ref=e316] [box=24,2698,434,28]:
+              - link "أطقم" [ref=e317] [cursor=pointer] [box=427,2703,30,17]:
+                - /url: /collections/atqam
+            - listitem [ref=e318] [box=24,2734,434,28]:
+              - link "عقود" [ref=e319] [cursor=pointer] [box=429,2739,28,17]:
+                - /url: /collections/uqud
+            - listitem [ref=e320] [box=24,2770,434,28]:
+              - link "أساور" [ref=e321] [cursor=pointer] [box=430,2775,28,17]:
+                - /url: /collections/asawir
+            - listitem [ref=e322] [box=24,2806,434,28]:
+              - link "أقراط" [ref=e323] [cursor=pointer] [box=428,2811,30,17]:
+                - /url: /collections/aqrat
+            - listitem [ref=e324] [box=24,2842,434,28]:
+              - link "خواتم" [ref=e325] [cursor=pointer] [box=425,2847,33,17]:
+                - /url: /collections/khawatim
+        - generic [ref=e326] [box=490,2902,434,206]:
+          - heading "التصنيفات" [level=3] [ref=e327] [box=490,2902,434,22]
+          - list [ref=e328] [box=490,2935,434,172]:
+            - listitem [ref=e329] [box=490,2935,434,28]:
+              - link "أطقم" [ref=e330] [cursor=pointer] [box=893,2941,30,17]:
+                - /url: /category/atqam
+            - listitem [ref=e331] [box=490,2971,434,28]:
+              - link "عقود" [ref=e332] [cursor=pointer] [box=895,2977,28,17]:
+                - /url: /category/uqud
+            - listitem [ref=e333] [box=490,3007,434,28]:
+              - link "أساور" [ref=e334] [cursor=pointer] [box=895,3013,28,17]:
+                - /url: /category/asawir
+            - listitem [ref=e335] [box=490,3043,434,28]:
+              - link "أقراط" [ref=e336] [cursor=pointer] [box=893,3049,30,17]:
+                - /url: /category/aqrat
+            - listitem [ref=e337] [box=490,3079,434,28]:
+              - link "خواتم" [ref=e338] [cursor=pointer] [box=890,3085,33,17]:
+                - /url: /category/khawatim
+        - generic [ref=e339] [box=24,2902,434,206]:
+          - heading "نبذة" [level=3] [ref=e340] [box=24,2902,434,22]
+          - paragraph [ref=e341] [box=24,2935,434,56]: وهاج متجر إكسسوارات نسائية فاخرة. نقدم تشكيلة منتقاة من الزركون الناعم والتصاميم العصرية بجودة عالية.
+          - paragraph [ref=e342] [box=24,3007,434,16]: © 2026WAHAJ — كل الحقوق محفوظة.
+  - button "Open Next.js Dev Tools" [ref=e532] [cursor=pointer] [box=22,338,32,32]:
+    - img [ref=e533] [box=22,334,40,40]
+  - alert [ref=e536] [box=947,3146,1,1]

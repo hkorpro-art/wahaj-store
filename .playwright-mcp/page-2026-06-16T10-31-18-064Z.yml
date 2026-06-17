@@ -1,0 +1,22 @@
+- generic [active] [ref=e1]:
+  - status "جاري تحميل متجر وهاج" [ref=e2]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: وهاج
+      - generic [ref=e7]: Modern Gulf Luxury
+  - main [ref=e9]:
+    - generic [ref=e11]:
+      - img [ref=e13]
+      - generic [ref=e17]:
+        - paragraph [ref=e18]: وهاج Admin
+        - paragraph [ref=e19]: دخول آمن لإدارة المتجر والطلبات والمحتوى.
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: البريد
+          - textbox "البريد" [ref=e23]: admin@wahaj.local
+        - generic [ref=e24]:
+          - generic [ref=e25]: كلمة المرور
+          - textbox "كلمة المرور" [ref=e26]
+      - button "دخول اللوحة" [ref=e27] [cursor=pointer]:
+        - img [ref=e28]
+        - text: دخول اللوحة
+  - alert [ref=e30]

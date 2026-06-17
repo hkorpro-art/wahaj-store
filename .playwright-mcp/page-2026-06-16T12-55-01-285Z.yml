@@ -1,0 +1,1 @@
+- generic [ref=e2]: "User-Agent: * Allow: / Disallow: /admin/ Disallow: /api/ User-Agent: GPTBot Disallow: / User-Agent: CCBot Disallow: / Sitemap: https://wahaj0.vercel.app/sitemap.xml"

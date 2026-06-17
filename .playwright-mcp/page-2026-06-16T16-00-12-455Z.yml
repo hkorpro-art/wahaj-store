@@ -1,0 +1,83 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: وهاج
+    - generic [ref=e6]: Modern Gulf Luxury
+  - generic [ref=e7]:
+    - main [ref=e8]:
+      - generic [ref=e10]:
+        - navigation [ref=e11]:
+          - link "الرئيسية" [ref=e12] [cursor=pointer]:
+            - /url: /
+          - img [ref=e13]
+          - generic [ref=e15]: عقود
+        - generic [ref=e16]:
+          - img "عقود" [ref=e19]
+          - generic [ref=e20]:
+            - heading "عقود" [level=1] [ref=e21]
+            - paragraph [ref=e22]: عقود وسلاسل ناعمة تلتف برقة لتبرز جمال عنقك
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - paragraph [ref=e25]: تشكيلة عقود
+          - generic [ref=e26]: 0 قطعة
+        - generic [ref=e27]: لا توجد منتجات متوفرة في هذه المجموعة حالياً. ترقبي مجموعاتنا الفاخرة قريباً.
+    - contentinfo [ref=e28]:
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - heading "وهاج" [level=3] [ref=e32]
+          - list [ref=e33]:
+            - listitem [ref=e34]:
+              - link "من نحن" [ref=e35] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e36]:
+              - link "الأسئلة الشائعة" [ref=e37] [cursor=pointer]:
+                - /url: /faq
+            - listitem [ref=e38]:
+              - link "سياسة الطلب" [ref=e39] [cursor=pointer]:
+                - /url: /order-policy
+            - listitem [ref=e40]:
+              - link "سياسة الاستبدال" [ref=e41] [cursor=pointer]:
+                - /url: /exchange-policy
+            - listitem [ref=e42]:
+              - link "تواصل معنا" [ref=e43] [cursor=pointer]:
+                - /url: /contact
+        - generic [ref=e44]:
+          - heading "المجموعات" [level=3] [ref=e45]
+          - list [ref=e46]:
+            - listitem [ref=e47]:
+              - link "أطقم" [ref=e48] [cursor=pointer]:
+                - /url: /collections/atqam
+            - listitem [ref=e49]:
+              - link "عقود" [ref=e50] [cursor=pointer]:
+                - /url: /collections/uqud
+            - listitem [ref=e51]:
+              - link "أساور" [ref=e52] [cursor=pointer]:
+                - /url: /collections/asawir
+            - listitem [ref=e53]:
+              - link "أقراط" [ref=e54] [cursor=pointer]:
+                - /url: /collections/aqrat
+            - listitem [ref=e55]:
+              - link "خواتم" [ref=e56] [cursor=pointer]:
+                - /url: /collections/khawatim
+        - generic [ref=e57]:
+          - heading "التصنيفات" [level=3] [ref=e58]
+          - list [ref=e59]:
+            - listitem [ref=e60]:
+              - link "أطقم" [ref=e61] [cursor=pointer]:
+                - /url: /category/atqam
+            - listitem [ref=e62]:
+              - link "عقود" [ref=e63] [cursor=pointer]:
+                - /url: /category/uqud
+            - listitem [ref=e64]:
+              - link "أساور" [ref=e65] [cursor=pointer]:
+                - /url: /category/asawir
+            - listitem [ref=e66]:
+              - link "أقراط" [ref=e67] [cursor=pointer]:
+                - /url: /category/aqrat
+            - listitem [ref=e68]:
+              - link "خواتم" [ref=e69] [cursor=pointer]:
+                - /url: /category/khawatim
+        - generic [ref=e70]:
+          - heading "نبذة" [level=3] [ref=e71]
+          - paragraph [ref=e72]: وهاج متجر إكسسوارات نسائية فاخرة. نقدم تشكيلة منتقاة من الزركون الناعم والتصاميم العصرية بجودة عالية.
+          - paragraph [ref=e73]: © 2026WAHAJ — كل الحقوق محفوظة.
+  - alert [ref=e74]

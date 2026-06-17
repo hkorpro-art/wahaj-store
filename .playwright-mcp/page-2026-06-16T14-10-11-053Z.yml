@@ -1,0 +1,184 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - main [ref=e3]:
+      - generic [ref=e5]:
+        - link "العودة" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img [ref=e7]
+        - generic [ref=e9]:
+          - navigation [ref=e10]:
+            - link "الرئيسية" [ref=e11] [cursor=pointer]:
+              - /url: /
+            - img [ref=e12]
+            - link "أطقم" [ref=e14] [cursor=pointer]:
+              - /url: /category/atqam
+            - img [ref=e15]
+          - paragraph [ref=e17]: طقم لونا زركون روز
+          - paragraph [ref=e18]: WAHAJ Detail
+        - button "احفظي للإلهام" [ref=e19] [cursor=pointer]:
+          - img [ref=e20]
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - img "طقم لونا زركون روز" [ref=e25]
+            - button "عرض كامل" [ref=e27] [cursor=pointer]:
+              - img [ref=e28]
+            - generic [ref=e33]:
+              - generic [ref=e34]: جديد
+              - generic [ref=e35]: ترند
+          - generic [ref=e36]:
+            - button "طقم لونا زركون روز" [ref=e37] [cursor=pointer]:
+              - img "طقم لونا زركون روز" [ref=e38]
+            - button "طقم لونا زركون روز" [ref=e39] [cursor=pointer]:
+              - img "طقم لونا زركون روز" [ref=e40]
+            - button "طقم لونا زركون روز" [ref=e41] [cursor=pointer]:
+              - img "طقم لونا زركون روز" [ref=e42]
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - generic [ref=e46]:
+                - paragraph [ref=e47]: قطعة مختارة
+                - heading "طقم لونا زركون روز" [level=1] [ref=e48]
+              - generic [ref=e49]:
+                - img [ref=e50]
+                - generic [ref=e52]: "4.9"
+            - generic [ref=e53]:
+              - paragraph [ref=e54]: ‏١٨ ر.ي.‏
+              - paragraph [ref=e55]: ‏٢٢٬٠٠٠ ر.ي.‏
+            - paragraph [ref=e56]: طقم زركون بلمعة ناعمة ولمسة روز قولد مصممة للمناسبات الراقية والإطلالات الهادئة.
+            - generic [ref=e58]:
+              - img [ref=e59]
+              - generic [ref=e61]: لمعة تدوم
+            - paragraph [ref=e62]: زركون فاخر مع طلاء Rose Gold مقاوم للبهتان
+          - generic [ref=e63]:
+            - paragraph [ref=e64]: اختاري اللون
+            - generic [ref=e65]:
+              - button "روز قولد" [ref=e66] [cursor=pointer]: روز قولد
+              - button "فضي" [ref=e68] [cursor=pointer]: فضي
+              - button "ذهبي ناعم" [ref=e70] [cursor=pointer]: ذهبي ناعم
+          - generic [ref=e72]:
+            - paragraph [ref=e73]: اختاري المقاس
+            - generic [ref=e74]:
+              - button "قابل للتعديل" [ref=e75] [cursor=pointer]
+              - button "S" [ref=e76] [cursor=pointer]
+              - button "M" [ref=e77] [cursor=pointer]
+          - generic [ref=e79]:
+            - paragraph [ref=e80]: الكمية
+            - generic [ref=e81]:
+              - button [ref=e82] [cursor=pointer]:
+                - img [ref=e83]
+              - generic [ref=e84]: "1"
+              - button "+" [ref=e85] [cursor=pointer]
+          - generic [ref=e86]:
+            - button "أضيفي لمستك ✨" [ref=e87] [cursor=pointer]:
+              - img [ref=e88]
+              - text: أضيفي لمستك ✨
+            - generic [ref=e91]:
+              - button "اطلبي الان ✨" [ref=e92] [cursor=pointer]:
+                - img [ref=e93]
+                - text: اطلبي الان ✨
+              - button "مشاركة القطعة" [ref=e95] [cursor=pointer]:
+                - img [ref=e96]
+          - button "تفاصيل القطعة والعناية بها" [ref=e103] [cursor=pointer]:
+            - generic [ref=e104]: تفاصيل القطعة والعناية بها
+            - img [ref=e105]
+      - generic [ref=e107]:
+        - generic [ref=e109]:
+          - paragraph [ref=e110]: تقييمات وهاج
+          - heading "لمعة وصلت لعميلاتنا" [level=2] [ref=e111]
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - img [ref=e115]
+              - img [ref=e117]
+              - img [ref=e119]
+              - img [ref=e121]
+              - img [ref=e123]
+            - paragraph [ref=e125]: التغليف راق جدًا واللمعة مثل الصورة.
+          - generic [ref=e126]:
+            - generic [ref=e127]:
+              - img [ref=e128]
+              - img [ref=e130]
+              - img [ref=e132]
+              - img [ref=e134]
+              - img [ref=e136]
+            - paragraph [ref=e138]: وصلت بسرعة، قطعة ناعمة وتناسب كل شيء.
+          - generic [ref=e139]:
+            - generic [ref=e140]:
+              - img [ref=e141]
+              - img [ref=e143]
+              - img [ref=e145]
+              - img [ref=e147]
+              - img [ref=e149]
+            - paragraph [ref=e151]: تفاصيل الزركون فاخرة وهادئة.
+      - generic [ref=e152]:
+        - generic [ref=e153]:
+          - paragraph [ref=e154]: قد تناسبك
+          - heading "منتجات مشابهة" [level=2] [ref=e155]
+        - link "طقم ليال المسائي طقم ليال المسائي ‏٢١٬٥٠٠ ر.ي.‏" [ref=e157] [cursor=pointer]:
+          - /url: /product/layal-evening-set
+          - img "طقم ليال المسائي" [ref=e159]
+          - generic [ref=e160]:
+            - paragraph [ref=e161]: طقم ليال المسائي
+            - paragraph [ref=e162]: ‏٢١٬٥٠٠ ر.ي.‏
+    - contentinfo [ref=e163]:
+      - generic [ref=e165]:
+        - generic [ref=e166]:
+          - heading "وهاج" [level=3] [ref=e167]
+          - list [ref=e168]:
+            - listitem [ref=e169]:
+              - link "من نحن" [ref=e170] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e171]:
+              - link "الأسئلة الشائعة" [ref=e172] [cursor=pointer]:
+                - /url: /faq
+            - listitem [ref=e173]:
+              - link "سياسة الطلب" [ref=e174] [cursor=pointer]:
+                - /url: /order-policy
+            - listitem [ref=e175]:
+              - link "سياسة الاستبدال" [ref=e176] [cursor=pointer]:
+                - /url: /exchange-policy
+            - listitem [ref=e177]:
+              - link "تواصل معنا" [ref=e178] [cursor=pointer]:
+                - /url: /contact
+        - generic [ref=e179]:
+          - heading "المجموعات" [level=3] [ref=e180]
+          - list [ref=e181]:
+            - listitem [ref=e182]:
+              - link "أطقم" [ref=e183] [cursor=pointer]:
+                - /url: /collections/atqam
+            - listitem [ref=e184]:
+              - link "عقود" [ref=e185] [cursor=pointer]:
+                - /url: /collections/uqud
+            - listitem [ref=e186]:
+              - link "أساور" [ref=e187] [cursor=pointer]:
+                - /url: /collections/asawir
+            - listitem [ref=e188]:
+              - link "أقراط" [ref=e189] [cursor=pointer]:
+                - /url: /collections/aqrat
+            - listitem [ref=e190]:
+              - link "خواتم" [ref=e191] [cursor=pointer]:
+                - /url: /collections/khawatim
+        - generic [ref=e192]:
+          - heading "التصنيفات" [level=3] [ref=e193]
+          - list [ref=e194]:
+            - listitem [ref=e195]:
+              - link "أطقم" [ref=e196] [cursor=pointer]:
+                - /url: /category/atqam
+            - listitem [ref=e197]:
+              - link "عقود" [ref=e198] [cursor=pointer]:
+                - /url: /category/uqud
+            - listitem [ref=e199]:
+              - link "أساور" [ref=e200] [cursor=pointer]:
+                - /url: /category/asawir
+            - listitem [ref=e201]:
+              - link "أقراط" [ref=e202] [cursor=pointer]:
+                - /url: /category/aqrat
+            - listitem [ref=e203]:
+              - link "خواتم" [ref=e204] [cursor=pointer]:
+                - /url: /category/khawatim
+        - generic [ref=e205]:
+          - heading "نبذة" [level=3] [ref=e206]
+          - paragraph [ref=e207]: وهاج متجر إكسسوارات نسائية فاخرة. نقدم تشكيلة منتقاة من الزركون الناعم والتصاميم العصرية بجودة عالية.
+          - paragraph [ref=e208]: © 2026WAHAJ — كل الحقوق محفوظة.
+  - alert [ref=e209]

@@ -1,0 +1,66 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e5]:
+      - heading "404" [level=1] [ref=e6]
+      - heading "This page could not be found." [level=2] [ref=e8]
+    - contentinfo [ref=e9]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - heading "وهاج" [level=3] [ref=e13]
+          - list [ref=e14]:
+            - listitem [ref=e15]:
+              - link "من نحن" [ref=e16] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e17]:
+              - link "الأسئلة الشائعة" [ref=e18] [cursor=pointer]:
+                - /url: /faq
+            - listitem [ref=e19]:
+              - link "سياسة الطلب" [ref=e20] [cursor=pointer]:
+                - /url: /order-policy
+            - listitem [ref=e21]:
+              - link "سياسة الاستبدال" [ref=e22] [cursor=pointer]:
+                - /url: /exchange-policy
+            - listitem [ref=e23]:
+              - link "تواصل معنا" [ref=e24] [cursor=pointer]:
+                - /url: /contact
+        - generic [ref=e25]:
+          - heading "المجموعات" [level=3] [ref=e26]
+          - list [ref=e27]:
+            - listitem [ref=e28]:
+              - link "أطقم" [ref=e29] [cursor=pointer]:
+                - /url: /collections/atqam
+            - listitem [ref=e30]:
+              - link "عقود" [ref=e31] [cursor=pointer]:
+                - /url: /collections/uqud
+            - listitem [ref=e32]:
+              - link "أساور" [ref=e33] [cursor=pointer]:
+                - /url: /collections/asawir
+            - listitem [ref=e34]:
+              - link "أقراط" [ref=e35] [cursor=pointer]:
+                - /url: /collections/aqrat
+            - listitem [ref=e36]:
+              - link "خواتم" [ref=e37] [cursor=pointer]:
+                - /url: /collections/khawatim
+        - generic [ref=e38]:
+          - heading "التصنيفات" [level=3] [ref=e39]
+          - list [ref=e40]:
+            - listitem [ref=e41]:
+              - link "أطقم" [ref=e42] [cursor=pointer]:
+                - /url: /category/atqam
+            - listitem [ref=e43]:
+              - link "عقود" [ref=e44] [cursor=pointer]:
+                - /url: /category/uqud
+            - listitem [ref=e45]:
+              - link "أساور" [ref=e46] [cursor=pointer]:
+                - /url: /category/asawir
+            - listitem [ref=e47]:
+              - link "أقراط" [ref=e48] [cursor=pointer]:
+                - /url: /category/aqrat
+            - listitem [ref=e49]:
+              - link "خواتم" [ref=e50] [cursor=pointer]:
+                - /url: /category/khawatim
+        - generic [ref=e51]:
+          - heading "نبذة" [level=3] [ref=e52]
+          - paragraph [ref=e53]: وهاج متجر إكسسوارات نسائية فاخرة. نقدم تشكيلة منتقاة من الزركون الناعم والتصاميم العصرية بجودة عالية.
+          - paragraph [ref=e54]: © 2026WAHAJ — كل الحقوق محفوظة.
+  - alert [ref=e55]

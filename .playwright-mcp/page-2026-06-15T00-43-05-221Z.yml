@@ -1,0 +1,425 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]: This XML file does not appear to have any style information associated with it. The document tree is shown below.
+  - generic [ref=e4]:
+    - generic [ref=e7]:
+      - text: <urlset
+      - generic [ref=e8]: xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      - text: ">"
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e13]: <url>
+        - generic [ref=e14]:
+          - generic [ref=e15]:
+            - generic [ref=e16]: <loc>
+            - text: https://wahaj0.vercel.app
+            - generic [ref=e17]: </loc>
+          - generic [ref=e18]:
+            - generic [ref=e19]: <changefreq>
+            - text: weekly
+            - generic [ref=e20]: </changefreq>
+          - generic [ref=e21]:
+            - generic [ref=e22]: <priority>
+            - text: "1"
+            - generic [ref=e23]: </priority>
+        - generic [ref=e25]: </url>
+      - generic [ref=e26]:
+        - generic [ref=e29]: <url>
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: <loc>
+            - text: https://wahaj0.vercel.app/about
+            - generic [ref=e33]: </loc>
+          - generic [ref=e34]:
+            - generic [ref=e35]: <changefreq>
+            - text: monthly
+            - generic [ref=e36]: </changefreq>
+          - generic [ref=e37]:
+            - generic [ref=e38]: <priority>
+            - text: "0.4"
+            - generic [ref=e39]: </priority>
+        - generic [ref=e41]: </url>
+      - generic [ref=e42]:
+        - generic [ref=e45]: <url>
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - generic [ref=e48]: <loc>
+            - text: https://wahaj0.vercel.app/contact
+            - generic [ref=e49]: </loc>
+          - generic [ref=e50]:
+            - generic [ref=e51]: <changefreq>
+            - text: monthly
+            - generic [ref=e52]: </changefreq>
+          - generic [ref=e53]:
+            - generic [ref=e54]: <priority>
+            - text: "0.3"
+            - generic [ref=e55]: </priority>
+        - generic [ref=e57]: </url>
+      - generic [ref=e58]:
+        - generic [ref=e61]: <url>
+        - generic [ref=e62]:
+          - generic [ref=e63]:
+            - generic [ref=e64]: <loc>
+            - text: https://wahaj0.vercel.app/faq
+            - generic [ref=e65]: </loc>
+          - generic [ref=e66]:
+            - generic [ref=e67]: <changefreq>
+            - text: monthly
+            - generic [ref=e68]: </changefreq>
+          - generic [ref=e69]:
+            - generic [ref=e70]: <priority>
+            - text: "0.4"
+            - generic [ref=e71]: </priority>
+        - generic [ref=e73]: </url>
+      - generic [ref=e74]:
+        - generic [ref=e77]: <url>
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - generic [ref=e80]: <loc>
+            - text: https://wahaj0.vercel.app/order-policy
+            - generic [ref=e81]: </loc>
+          - generic [ref=e82]:
+            - generic [ref=e83]: <changefreq>
+            - text: monthly
+            - generic [ref=e84]: </changefreq>
+          - generic [ref=e85]:
+            - generic [ref=e86]: <priority>
+            - text: "0.3"
+            - generic [ref=e87]: </priority>
+        - generic [ref=e89]: </url>
+      - generic [ref=e90]:
+        - generic [ref=e93]: <url>
+        - generic [ref=e94]:
+          - generic [ref=e95]:
+            - generic [ref=e96]: <loc>
+            - text: https://wahaj0.vercel.app/exchange-policy
+            - generic [ref=e97]: </loc>
+          - generic [ref=e98]:
+            - generic [ref=e99]: <changefreq>
+            - text: monthly
+            - generic [ref=e100]: </changefreq>
+          - generic [ref=e101]:
+            - generic [ref=e102]: <priority>
+            - text: "0.3"
+            - generic [ref=e103]: </priority>
+        - generic [ref=e105]: </url>
+      - generic [ref=e106]:
+        - generic [ref=e109]: <url>
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - generic [ref=e112]: <loc>
+            - text: https://wahaj0.vercel.app/product/luna-zircon-set
+            - generic [ref=e113]: </loc>
+          - generic [ref=e114]:
+            - generic [ref=e115]: <lastmod>
+            - text: 2026-06-15T00:02:58.745Z
+            - generic [ref=e116]: </lastmod>
+          - generic [ref=e117]:
+            - generic [ref=e118]: <changefreq>
+            - text: weekly
+            - generic [ref=e119]: </changefreq>
+          - generic [ref=e120]:
+            - generic [ref=e121]: <priority>
+            - text: "0.8"
+            - generic [ref=e122]: </priority>
+        - generic [ref=e124]: </url>
+      - generic [ref=e125]:
+        - generic [ref=e128]: <url>
+        - generic [ref=e129]:
+          - generic [ref=e130]:
+            - generic [ref=e131]: <loc>
+            - text: https://wahaj0.vercel.app/product/serene-crown
+            - generic [ref=e132]: </loc>
+          - generic [ref=e133]:
+            - generic [ref=e134]: <lastmod>
+            - text: 2026-06-15T00:02:58.745Z
+            - generic [ref=e135]: </lastmod>
+          - generic [ref=e136]:
+            - generic [ref=e137]: <changefreq>
+            - text: weekly
+            - generic [ref=e138]: </changefreq>
+          - generic [ref=e139]:
+            - generic [ref=e140]: <priority>
+            - text: "0.8"
+            - generic [ref=e141]: </priority>
+        - generic [ref=e143]: </url>
+      - generic [ref=e144]:
+        - generic [ref=e147]: <url>
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - generic [ref=e150]: <loc>
+            - text: https://wahaj0.vercel.app/product/mira-earrings
+            - generic [ref=e151]: </loc>
+          - generic [ref=e152]:
+            - generic [ref=e153]: <lastmod>
+            - text: 2026-06-15T00:02:58.745Z
+            - generic [ref=e154]: </lastmod>
+          - generic [ref=e155]:
+            - generic [ref=e156]: <changefreq>
+            - text: weekly
+            - generic [ref=e157]: </changefreq>
+          - generic [ref=e158]:
+            - generic [ref=e159]: <priority>
+            - text: "0.8"
+            - generic [ref=e160]: </priority>
+        - generic [ref=e162]: </url>
+      - generic [ref=e163]:
+        - generic [ref=e166]: <url>
+        - generic [ref=e167]:
+          - generic [ref=e168]:
+            - generic [ref=e169]: <loc>
+            - text: https://wahaj0.vercel.app/product/roya-bracelet
+            - generic [ref=e170]: </loc>
+          - generic [ref=e171]:
+            - generic [ref=e172]: <lastmod>
+            - text: 2026-06-15T00:02:58.745Z
+            - generic [ref=e173]: </lastmod>
+          - generic [ref=e174]:
+            - generic [ref=e175]: <changefreq>
+            - text: weekly
+            - generic [ref=e176]: </changefreq>
+          - generic [ref=e177]:
+            - generic [ref=e178]: <priority>
+            - text: "0.8"
+            - generic [ref=e179]: </priority>
+        - generic [ref=e181]: </url>
+      - generic [ref=e182]:
+        - generic [ref=e185]: <url>
+        - generic [ref=e186]:
+          - generic [ref=e187]:
+            - generic [ref=e188]: <loc>
+            - text: https://wahaj0.vercel.app/product/noor-zircon-ring
+            - generic [ref=e189]: </loc>
+          - generic [ref=e190]:
+            - generic [ref=e191]: <lastmod>
+            - text: 2026-06-15T00:02:58.745Z
+            - generic [ref=e192]: </lastmod>
+          - generic [ref=e193]:
+            - generic [ref=e194]: <changefreq>
+            - text: weekly
+            - generic [ref=e195]: </changefreq>
+          - generic [ref=e196]:
+            - generic [ref=e197]: <priority>
+            - text: "0.8"
+            - generic [ref=e198]: </priority>
+        - generic [ref=e200]: </url>
+      - generic [ref=e201]:
+        - generic [ref=e204]: <url>
+        - generic [ref=e205]:
+          - generic [ref=e206]:
+            - generic [ref=e207]: <loc>
+            - text: https://wahaj0.vercel.app/product/tala-pearl-chain
+            - generic [ref=e208]: </loc>
+          - generic [ref=e209]:
+            - generic [ref=e210]: <lastmod>
+            - text: 2026-06-15T00:02:58.745Z
+            - generic [ref=e211]: </lastmod>
+          - generic [ref=e212]:
+            - generic [ref=e213]: <changefreq>
+            - text: weekly
+            - generic [ref=e214]: </changefreq>
+          - generic [ref=e215]:
+            - generic [ref=e216]: <priority>
+            - text: "0.8"
+            - generic [ref=e217]: </priority>
+        - generic [ref=e219]: </url>
+      - generic [ref=e220]:
+        - generic [ref=e223]: <url>
+        - generic [ref=e224]:
+          - generic [ref=e225]:
+            - generic [ref=e226]: <loc>
+            - text: https://wahaj0.vercel.app/product/layal-evening-set
+            - generic [ref=e227]: </loc>
+          - generic [ref=e228]:
+            - generic [ref=e229]: <lastmod>
+            - text: 2026-06-15T00:02:58.745Z
+            - generic [ref=e230]: </lastmod>
+          - generic [ref=e231]:
+            - generic [ref=e232]: <changefreq>
+            - text: weekly
+            - generic [ref=e233]: </changefreq>
+          - generic [ref=e234]:
+            - generic [ref=e235]: <priority>
+            - text: "0.8"
+            - generic [ref=e236]: </priority>
+        - generic [ref=e238]: </url>
+      - generic [ref=e239]:
+        - generic [ref=e242]: <url>
+        - generic [ref=e243]:
+          - generic [ref=e244]:
+            - generic [ref=e245]: <loc>
+            - text: https://wahaj0.vercel.app/product/haneen-mini-earcuff
+            - generic [ref=e246]: </loc>
+          - generic [ref=e247]:
+            - generic [ref=e248]: <lastmod>
+            - text: 2026-06-15T00:02:58.745Z
+            - generic [ref=e249]: </lastmod>
+          - generic [ref=e250]:
+            - generic [ref=e251]: <changefreq>
+            - text: weekly
+            - generic [ref=e252]: </changefreq>
+          - generic [ref=e253]:
+            - generic [ref=e254]: <priority>
+            - text: "0.8"
+            - generic [ref=e255]: </priority>
+        - generic [ref=e257]: </url>
+      - generic [ref=e258]:
+        - generic [ref=e261]: <url>
+        - generic [ref=e262]:
+          - generic [ref=e263]:
+            - generic [ref=e264]: <loc>
+            - text: https://wahaj0.vercel.app/collections/atqam
+            - generic [ref=e265]: </loc>
+          - generic [ref=e266]:
+            - generic [ref=e267]: <changefreq>
+            - text: weekly
+            - generic [ref=e268]: </changefreq>
+          - generic [ref=e269]:
+            - generic [ref=e270]: <priority>
+            - text: "0.6"
+            - generic [ref=e271]: </priority>
+        - generic [ref=e273]: </url>
+      - generic [ref=e274]:
+        - generic [ref=e277]: <url>
+        - generic [ref=e278]:
+          - generic [ref=e279]:
+            - generic [ref=e280]: <loc>
+            - text: https://wahaj0.vercel.app/collections/uqud
+            - generic [ref=e281]: </loc>
+          - generic [ref=e282]:
+            - generic [ref=e283]: <changefreq>
+            - text: weekly
+            - generic [ref=e284]: </changefreq>
+          - generic [ref=e285]:
+            - generic [ref=e286]: <priority>
+            - text: "0.6"
+            - generic [ref=e287]: </priority>
+        - generic [ref=e289]: </url>
+      - generic [ref=e290]:
+        - generic [ref=e293]: <url>
+        - generic [ref=e294]:
+          - generic [ref=e295]:
+            - generic [ref=e296]: <loc>
+            - text: https://wahaj0.vercel.app/collections/asawir
+            - generic [ref=e297]: </loc>
+          - generic [ref=e298]:
+            - generic [ref=e299]: <changefreq>
+            - text: weekly
+            - generic [ref=e300]: </changefreq>
+          - generic [ref=e301]:
+            - generic [ref=e302]: <priority>
+            - text: "0.6"
+            - generic [ref=e303]: </priority>
+        - generic [ref=e305]: </url>
+      - generic [ref=e306]:
+        - generic [ref=e309]: <url>
+        - generic [ref=e310]:
+          - generic [ref=e311]:
+            - generic [ref=e312]: <loc>
+            - text: https://wahaj0.vercel.app/collections/aqrat
+            - generic [ref=e313]: </loc>
+          - generic [ref=e314]:
+            - generic [ref=e315]: <changefreq>
+            - text: weekly
+            - generic [ref=e316]: </changefreq>
+          - generic [ref=e317]:
+            - generic [ref=e318]: <priority>
+            - text: "0.6"
+            - generic [ref=e319]: </priority>
+        - generic [ref=e321]: </url>
+      - generic [ref=e322]:
+        - generic [ref=e325]: <url>
+        - generic [ref=e326]:
+          - generic [ref=e327]:
+            - generic [ref=e328]: <loc>
+            - text: https://wahaj0.vercel.app/collections/khawatim
+            - generic [ref=e329]: </loc>
+          - generic [ref=e330]:
+            - generic [ref=e331]: <changefreq>
+            - text: weekly
+            - generic [ref=e332]: </changefreq>
+          - generic [ref=e333]:
+            - generic [ref=e334]: <priority>
+            - text: "0.6"
+            - generic [ref=e335]: </priority>
+        - generic [ref=e337]: </url>
+      - generic [ref=e338]:
+        - generic [ref=e341]: <url>
+        - generic [ref=e342]:
+          - generic [ref=e343]:
+            - generic [ref=e344]: <loc>
+            - text: https://wahaj0.vercel.app/category/crowns
+            - generic [ref=e345]: </loc>
+          - generic [ref=e346]:
+            - generic [ref=e347]: <changefreq>
+            - text: weekly
+            - generic [ref=e348]: </changefreq>
+          - generic [ref=e349]:
+            - generic [ref=e350]: <priority>
+            - text: "0.5"
+            - generic [ref=e351]: </priority>
+        - generic [ref=e353]: </url>
+      - generic [ref=e354]:
+        - generic [ref=e357]: <url>
+        - generic [ref=e358]:
+          - generic [ref=e359]:
+            - generic [ref=e360]: <loc>
+            - text: https://wahaj0.vercel.app/category/earrings
+            - generic [ref=e361]: </loc>
+          - generic [ref=e362]:
+            - generic [ref=e363]: <changefreq>
+            - text: weekly
+            - generic [ref=e364]: </changefreq>
+          - generic [ref=e365]:
+            - generic [ref=e366]: <priority>
+            - text: "0.5"
+            - generic [ref=e367]: </priority>
+        - generic [ref=e369]: </url>
+      - generic [ref=e370]:
+        - generic [ref=e373]: <url>
+        - generic [ref=e374]:
+          - generic [ref=e375]:
+            - generic [ref=e376]: <loc>
+            - text: https://wahaj0.vercel.app/category/bracelets
+            - generic [ref=e377]: </loc>
+          - generic [ref=e378]:
+            - generic [ref=e379]: <changefreq>
+            - text: weekly
+            - generic [ref=e380]: </changefreq>
+          - generic [ref=e381]:
+            - generic [ref=e382]: <priority>
+            - text: "0.5"
+            - generic [ref=e383]: </priority>
+        - generic [ref=e385]: </url>
+      - generic [ref=e386]:
+        - generic [ref=e389]: <url>
+        - generic [ref=e390]:
+          - generic [ref=e391]:
+            - generic [ref=e392]: <loc>
+            - text: https://wahaj0.vercel.app/category/zircon
+            - generic [ref=e393]: </loc>
+          - generic [ref=e394]:
+            - generic [ref=e395]: <changefreq>
+            - text: weekly
+            - generic [ref=e396]: </changefreq>
+          - generic [ref=e397]:
+            - generic [ref=e398]: <priority>
+            - text: "0.5"
+            - generic [ref=e399]: </priority>
+        - generic [ref=e401]: </url>
+      - generic [ref=e402]:
+        - generic [ref=e405]: <url>
+        - generic [ref=e406]:
+          - generic [ref=e407]:
+            - generic [ref=e408]: <loc>
+            - text: https://wahaj0.vercel.app/category/sets
+            - generic [ref=e409]: </loc>
+          - generic [ref=e410]:
+            - generic [ref=e411]: <changefreq>
+            - text: weekly
+            - generic [ref=e412]: </changefreq>
+          - generic [ref=e413]:
+            - generic [ref=e414]: <priority>
+            - text: "0.5"
+            - generic [ref=e415]: </priority>
+        - generic [ref=e417]: </url>
+    - generic [ref=e419]: </urlset>

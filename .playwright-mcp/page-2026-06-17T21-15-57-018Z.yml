@@ -1,0 +1,168 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: وهاج
+    - generic [ref=e6]: Modern Gulf Luxury
+  - generic [ref=e7]:
+    - main [ref=e8]:
+      - generic [ref=e10]:
+        - link "العودة" [ref=e11] [cursor=pointer]:
+          - /url: /
+          - img [ref=e12]
+        - generic [ref=e15]: طقم لونا زركون روز
+        - link "السلة" [ref=e16] [cursor=pointer]:
+          - /url: /
+          - img [ref=e17]
+      - generic [ref=e20]:
+        - img "طقم لونا زركون روز" [ref=e23]
+        - generic [ref=e25]:
+          - button "طقم لونا زركون روز" [ref=e26] [cursor=pointer]:
+            - img "طقم لونا زركون روز" [ref=e27]
+          - button "طقم لونا زركون روز" [ref=e28] [cursor=pointer]:
+            - img "طقم لونا زركون روز" [ref=e29]
+          - button "طقم لونا زركون روز" [ref=e30] [cursor=pointer]:
+            - img "طقم لونا زركون روز" [ref=e31]
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - heading "طقم لونا زركون روز" [level=1] [ref=e35]
+            - generic [ref=e36]:
+              - paragraph [ref=e37]: 18 YER
+              - paragraph [ref=e38]: 22,000 YER
+          - generic [ref=e39]:
+            - generic [ref=e40]:
+              - generic [ref=e41]: ✨
+              - generic [ref=e42]: جديد
+            - generic [ref=e43]:
+              - img [ref=e44]
+              - generic [ref=e46]: "4.9"
+          - paragraph [ref=e47]: طقم زركون بلمعة ناعمة ولمسة روز قولد مصممة للمناسبات الراقية والإطلالات الهادئة.
+        - generic [ref=e48]:
+          - generic [ref=e50]:
+            - generic [ref=e51]: ✨
+            - generic [ref=e52]: لمعة تدوم
+          - generic [ref=e53]:
+            - button "الرسالة 1" [ref=e54] [cursor=pointer]
+            - button "الرسالة 2" [ref=e55] [cursor=pointer]
+            - button "الرسالة 3" [ref=e56] [cursor=pointer]
+            - button "الرسالة 4" [ref=e57] [cursor=pointer]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - paragraph [ref=e60]: اختاري اللون
+            - generic [ref=e61]:
+              - button "روز قولد" [ref=e62] [cursor=pointer]: روز قولد
+              - button "فضي" [ref=e64] [cursor=pointer]: فضي
+              - button "ذهبي ناعم" [ref=e66] [cursor=pointer]: ذهبي ناعم
+          - generic [ref=e68]:
+            - paragraph [ref=e69]: اختاري المقاس
+            - generic [ref=e70]:
+              - button "قابل للتعديل" [ref=e71] [cursor=pointer]
+              - button "S" [ref=e72] [cursor=pointer]
+              - button "M" [ref=e73] [cursor=pointer]
+          - generic [ref=e75]:
+            - paragraph [ref=e76]: الكمية
+            - generic [ref=e77]:
+              - button "تقليل الكمية" [ref=e78] [cursor=pointer]:
+                - img [ref=e79]
+              - generic [ref=e80]: "1"
+              - button "زيادة الكمية" [ref=e81] [cursor=pointer]:
+                - img [ref=e82]
+        - generic [ref=e83]:
+          - button "✨ احجزي قطعتك الفاخرة" [ref=e84] [cursor=pointer]:
+            - img [ref=e85]
+            - generic [ref=e87]: ✨ احجزي قطعتك الفاخرة
+          - generic [ref=e88]:
+            - button "أضيفي للسلة" [ref=e89] [cursor=pointer]:
+              - img [ref=e90]
+              - text: أضيفي للسلة
+            - button "مشاركة القطعة" [ref=e93] [cursor=pointer]:
+              - img [ref=e94]
+        - generic [ref=e100]:
+          - button "تفاصيل القطعة" [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]:
+              - img [ref=e104]
+              - generic [ref=e106]: تفاصيل القطعة
+            - img [ref=e107]
+          - button "العناية بالقطعة" [ref=e110] [cursor=pointer]:
+            - generic [ref=e111]:
+              - img [ref=e112]
+              - generic [ref=e115]: العناية بالقطعة
+            - img [ref=e116]
+          - button "الشحن والتوصيل" [ref=e119] [cursor=pointer]:
+            - generic [ref=e120]:
+              - img [ref=e121]
+              - generic [ref=e126]: الشحن والتوصيل
+            - img [ref=e127]
+          - button "الاستبدال والاسترجاع" [ref=e130] [cursor=pointer]:
+            - generic [ref=e131]:
+              - img [ref=e132]
+              - generic [ref=e137]: الاستبدال والاسترجاع
+            - img [ref=e138]
+        - generic [ref=e140]:
+          - heading "قد يعجبك أيضاً" [level=2] [ref=e142]
+          - link "طقم ليال المسائي طقم ليال المسائي 21,500 YER" [ref=e144] [cursor=pointer]:
+            - /url: /product/layal-evening-set
+            - img "طقم ليال المسائي" [ref=e146]
+            - generic [ref=e147]:
+              - paragraph [ref=e148]: طقم ليال المسائي
+              - paragraph [ref=e149]: 21,500 YER
+    - contentinfo [ref=e150]:
+      - generic [ref=e152]:
+        - generic [ref=e153]:
+          - heading "وهاج" [level=3] [ref=e154]
+          - list [ref=e155]:
+            - listitem [ref=e156]:
+              - link "من نحن" [ref=e157] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e158]:
+              - link "الأسئلة الشائعة" [ref=e159] [cursor=pointer]:
+                - /url: /faq
+            - listitem [ref=e160]:
+              - link "سياسة الطلب" [ref=e161] [cursor=pointer]:
+                - /url: /order-policy
+            - listitem [ref=e162]:
+              - link "سياسة الاستبدال" [ref=e163] [cursor=pointer]:
+                - /url: /exchange-policy
+            - listitem [ref=e164]:
+              - link "تواصل معنا" [ref=e165] [cursor=pointer]:
+                - /url: /contact
+        - generic [ref=e166]:
+          - heading "المجموعات" [level=3] [ref=e167]
+          - list [ref=e168]:
+            - listitem [ref=e169]:
+              - link "أطقم" [ref=e170] [cursor=pointer]:
+                - /url: /collections/atqam
+            - listitem [ref=e171]:
+              - link "عقود" [ref=e172] [cursor=pointer]:
+                - /url: /collections/uqud
+            - listitem [ref=e173]:
+              - link "أساور" [ref=e174] [cursor=pointer]:
+                - /url: /collections/asawir
+            - listitem [ref=e175]:
+              - link "أقراط" [ref=e176] [cursor=pointer]:
+                - /url: /collections/aqrat
+            - listitem [ref=e177]:
+              - link "خواتم" [ref=e178] [cursor=pointer]:
+                - /url: /collections/khawatim
+        - generic [ref=e179]:
+          - heading "التصنيفات" [level=3] [ref=e180]
+          - list [ref=e181]:
+            - listitem [ref=e182]:
+              - link "أطقم" [ref=e183] [cursor=pointer]:
+                - /url: /category/atqam
+            - listitem [ref=e184]:
+              - link "عقود" [ref=e185] [cursor=pointer]:
+                - /url: /category/uqud
+            - listitem [ref=e186]:
+              - link "أساور" [ref=e187] [cursor=pointer]:
+                - /url: /category/asawir
+            - listitem [ref=e188]:
+              - link "أقراط" [ref=e189] [cursor=pointer]:
+                - /url: /category/aqrat
+            - listitem [ref=e190]:
+              - link "خواتم" [ref=e191] [cursor=pointer]:
+                - /url: /category/khawatim
+        - generic [ref=e192]:
+          - heading "نبذة" [level=3] [ref=e193]
+          - paragraph [ref=e194]: وهاج متجر إكسسوارات نسائية فاخرة. نقدم تشكيلة منتقاة من الزركون الناعم والتصاميم العصرية بجودة عالية.
+          - paragraph [ref=e195]: © 2026WAHAJ — كل الحقوق محفوظة.
+  - alert [ref=e196]

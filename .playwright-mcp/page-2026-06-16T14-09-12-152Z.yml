@@ -1,0 +1,80 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - main [ref=e531]:
+      - generic [ref=e533]:
+        - navigation [ref=e534]:
+          - link "الرئيسية" [ref=e535] [cursor=pointer]:
+            - /url: /
+          - img [ref=e536]
+          - generic [ref=e538]: أطقم
+        - generic [ref=e539]:
+          - img "أطقم" [ref=e542]
+          - generic [ref=e543]:
+            - heading "أطقم" [level=1] [ref=e544]
+            - paragraph [ref=e545]: أطقم زركون متكاملة تمنحك إطلالة راقية في مناسباتك الخاصة
+      - generic [ref=e546]:
+        - generic [ref=e547]:
+          - paragraph [ref=e548]: تشكيلة أطقم
+          - generic [ref=e549]: 0 قطعة
+        - generic [ref=e550]: لا توجد منتجات متوفرة في هذا التصنيف حالياً. ترقبي عروضنا الفاخرة قريباً.
+    - contentinfo [ref=e430]:
+      - generic [ref=e432]:
+        - generic [ref=e433]:
+          - heading "وهاج" [level=3] [ref=e434]
+          - list [ref=e435]:
+            - listitem [ref=e436]:
+              - link "من نحن" [ref=e437] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e438]:
+              - link "الأسئلة الشائعة" [ref=e439] [cursor=pointer]:
+                - /url: /faq
+            - listitem [ref=e440]:
+              - link "سياسة الطلب" [ref=e441] [cursor=pointer]:
+                - /url: /order-policy
+            - listitem [ref=e442]:
+              - link "سياسة الاستبدال" [ref=e443] [cursor=pointer]:
+                - /url: /exchange-policy
+            - listitem [ref=e444]:
+              - link "تواصل معنا" [ref=e445] [cursor=pointer]:
+                - /url: /contact
+        - generic [ref=e446]:
+          - heading "المجموعات" [level=3] [ref=e447]
+          - list [ref=e448]:
+            - listitem [ref=e449]:
+              - link "أطقم" [ref=e450] [cursor=pointer]:
+                - /url: /collections/atqam
+            - listitem [ref=e451]:
+              - link "عقود" [ref=e452] [cursor=pointer]:
+                - /url: /collections/uqud
+            - listitem [ref=e453]:
+              - link "أساور" [ref=e454] [cursor=pointer]:
+                - /url: /collections/asawir
+            - listitem [ref=e455]:
+              - link "أقراط" [ref=e456] [cursor=pointer]:
+                - /url: /collections/aqrat
+            - listitem [ref=e457]:
+              - link "خواتم" [ref=e458] [cursor=pointer]:
+                - /url: /collections/khawatim
+        - generic [ref=e459]:
+          - heading "التصنيفات" [level=3] [ref=e460]
+          - list [ref=e461]:
+            - listitem [ref=e462]:
+              - link "أطقم" [active] [ref=e463] [cursor=pointer]:
+                - /url: /category/atqam
+            - listitem [ref=e464]:
+              - link "عقود" [ref=e465] [cursor=pointer]:
+                - /url: /category/uqud
+            - listitem [ref=e466]:
+              - link "أساور" [ref=e467] [cursor=pointer]:
+                - /url: /category/asawir
+            - listitem [ref=e468]:
+              - link "أقراط" [ref=e469] [cursor=pointer]:
+                - /url: /category/aqrat
+            - listitem [ref=e470]:
+              - link "خواتم" [ref=e471] [cursor=pointer]:
+                - /url: /category/khawatim
+        - generic [ref=e472]:
+          - heading "نبذة" [level=3] [ref=e473]
+          - paragraph [ref=e474]: وهاج متجر إكسسوارات نسائية فاخرة. نقدم تشكيلة منتقاة من الزركون الناعم والتصاميم العصرية بجودة عالية.
+          - paragraph [ref=e475]: © 2026WAHAJ — كل الحقوق محفوظة.
+  - alert [ref=e476]: أطقم | وهاج
