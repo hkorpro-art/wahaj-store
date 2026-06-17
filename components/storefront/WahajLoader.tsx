@@ -51,14 +51,19 @@ export default function WahajLoader({ children }: { children: React.ReactNode })
       setPhase("transition");
       setOverlayKey(`trans-${pathname}`);
       setShowOverlay(true);
-      const timer = setTimeout(() => {
-        setPhase("done");
-        setShowOverlay(false);
-      }, TRANSITION_MS);
-      return () => clearTimeout(timer);
+      return;
     }
     prevPath.current = pathname;
   }, [pathname, phase]);
+
+  useEffect(() => {
+    if (phase !== "transition") return;
+    const timer = setTimeout(() => {
+      setPhase("done");
+      setShowOverlay(false);
+    }, TRANSITION_MS);
+    return () => clearTimeout(timer);
+  }, [phase]);
 
   return (
     <>
