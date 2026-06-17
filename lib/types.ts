@@ -8,6 +8,12 @@ export type ProductStatus = "new" | "trend" | "best-seller" | "featured";
 
 export type InventoryStatus = "متوفر" | "منخفض" | "نفد";
 
+export type TrustMessage = {
+  icon: string;
+  text: string;
+  visible: boolean;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -32,6 +38,18 @@ export type Product = {
   showScarcity?: boolean;
   scarcityText?: string;
   categoryIds?: string[];
+  badgeIcons?: string[];
+  ratingLabel?: string;
+  trustMessages?: TrustMessage[];
+  whatsappCtaText?: string;
+  showColors?: boolean;
+  showSizes?: boolean;
+  showQuantity?: boolean;
+  accordionDetails?: string;
+  accordionCare?: string;
+  accordionShipping?: string;
+  accordionReturns?: string;
+  videos?: StoredImage[];
 };
 
 export type Collection = {
