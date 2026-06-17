@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
-import { seedManagedProducts } from "@/lib/products";
-import { seedCollections } from "@/lib/collections";
-import { seedCategories } from "@/lib/categories";
+import { getManagedProducts } from "@/lib/products";
+import { getManagedCollections } from "@/lib/collection-management";
+import { getManagedCategories } from "@/lib/category-management";
 import { SITE_URL } from "@/lib/site-config";
 
 export const revalidate = 86400;
@@ -20,8 +20,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/exchange-policy`, changeFrequency: "monthly", priority: 0.3, lastModified: now }
   ];
 
-  const products = seedManagedProducts();
-  const productPages: MetadataRoute.Sitemap = products
+  const [productsResult, collectionsResult, categoriesResult] = await Promise.all([
+    getManagedProducts(),
+    getManagedCollections(),
+    getManagedCategories()
+  ]);
+
+  const productPages: MetadataRoute.Sitemap = productsResult.products
     .filter((p) => p.visible !== false)
     .map((product) => ({
       url: `${baseUrl}/product/${product.slug}`,
@@ -30,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now
     }));
 
-  const collectionPages: MetadataRoute.Sitemap = seedCollections
+  const collectionPages: MetadataRoute.Sitemap = collectionsResult.collections
     .filter((c) => c.visible !== false)
     .map((collection) => ({
       url: `${baseUrl}/collections/${collection.slug}`,
@@ -39,7 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now
     }));
 
-  const categoryPages: MetadataRoute.Sitemap = seedCategories
+  const categoryPages: MetadataRoute.Sitemap = categoriesResult.categories
     .filter((c) => c.visible !== false)
     .map((category) => ({
       url: `${baseUrl}/category/${category.slug}`,

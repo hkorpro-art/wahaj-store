@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
-import { getManagedCategories } from "@/lib/category-management";
 import { imageUrl } from "@/lib/imagekit";
 import type { ManagedCategory } from "@/lib/admin-local";
 

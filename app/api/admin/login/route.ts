@@ -2,7 +2,27 @@ import { NextResponse } from "next/server";
 import { adminCredentials, createAdminToken } from "@/lib/auth";
 import { loginSchema } from "@/lib/validation";
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(key: string, maxAttempts: number, windowMs: number): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(key);
+  if (!record || now > record.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (record.count >= maxAttempts) {
+    return false;
+  }
+  record.count++;
+  return true;
+}
+
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+  if (!checkRateLimit(`login:${ip}`, 10, 60000)) {
+    return NextResponse.json({ message: "محاولات كثيرة جداً. حاولي بعد دقيقة." }, { status: 429 });
+  }
   const payload = loginSchema.safeParse(await request.json());
 
   if (!payload.success) {

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { cache } from "react";
 import { ChevronRight } from "lucide-react";
 import { SITE_URL } from "@/lib/site-config";
 import { getManagedCategories } from "@/lib/category-management";
@@ -8,6 +9,14 @@ import { getManagedProducts } from "@/lib/products";
 import { formatPrice } from "@/lib/data";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import JsonLd from "@/components/JsonLd";
+
+const getCachedPageData = cache(async () => {
+  const [categoriesResult, productsResult] = await Promise.all([
+    getManagedCategories(),
+    getManagedProducts()
+  ]);
+  return { categories: categoriesResult.categories, products: productsResult.products };
+});
 
 export const revalidate = 300;
 
@@ -17,7 +26,7 @@ type Props = {
 
 export async function generateMetadata(props: Props) {
   const params = await props.params;
-  const { categories } = await getManagedCategories();
+  const { categories } = await getCachedPageData();
   const category = categories.find((c) => c.slug === params.slug && c.visible !== false);
 
   if (!category) {
@@ -55,10 +64,7 @@ export async function generateMetadata(props: Props) {
 
 export default async function CategoryPage(props: Props) {
   const params = await props.params;
-  const [{ categories }, { products }] = await Promise.all([
-    getManagedCategories(),
-    getManagedProducts()
-  ]);
+  const { categories, products } = await getCachedPageData();
 
   const category = categories.find((c) => c.slug === params.slug && c.visible !== false);
 
@@ -124,10 +130,12 @@ export default async function CategoryPage(props: Props) {
             {/* Category Image */}
             <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full border border-wahaj-border bg-white/80 p-1 shadow-soft">
               <div className="relative h-full w-full overflow-hidden rounded-full">
-                <img
+                <Image
                   src={category.image ? imageUrl(category.image, { width: 224, height: 224 }) : "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=224&q=80"}
                   alt={category.name}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="112px"
+                  className="object-cover"
                 />
               </div>
             </div>

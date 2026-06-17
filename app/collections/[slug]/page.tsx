@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { cache } from "react";
 import { ChevronRight } from "lucide-react";
 import { SITE_URL } from "@/lib/site-config";
 import { getManagedCollections } from "@/lib/collection-management";
@@ -10,6 +11,14 @@ import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { TrackCollectionVisit } from "@/components/storefront/TrackVisit";
 import JsonLd from "@/components/JsonLd";
 
+const getCachedPageData = cache(async () => {
+  const [collectionsResult, productsResult] = await Promise.all([
+    getManagedCollections(),
+    getManagedProducts()
+  ]);
+  return { collections: collectionsResult.collections, products: productsResult.products };
+});
+
 export const revalidate = 300;
 
 type Props = {
@@ -18,7 +27,7 @@ type Props = {
 
 export async function generateMetadata(props: Props) {
   const params = await props.params;
-  const { collections } = await getManagedCollections();
+  const { collections } = await getCachedPageData();
   const collection = collections.find((c) => c.slug === params.slug && c.visible !== false);
 
   if (!collection) {
@@ -56,10 +65,7 @@ export async function generateMetadata(props: Props) {
 
 export default async function CollectionPage(props: Props) {
   const params = await props.params;
-  const [{ collections }, { products }] = await Promise.all([
-    getManagedCollections(),
-    getManagedProducts()
-  ]);
+  const { collections, products } = await getCachedPageData();
 
   const collection = collections.find((c) => c.slug === params.slug && c.visible !== false);
 
@@ -131,10 +137,12 @@ export default async function CollectionPage(props: Props) {
           <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
             <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full border border-wahaj-border bg-white/80 p-1 shadow-soft">
               <div className="relative h-full w-full overflow-hidden rounded-full">
-                <img
+                <Image
                   src={collection.image ? imageUrl(collection.image, { width: 224, height: 224 }) : "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=224&q=80"}
                   alt={collection.name}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="112px"
+                  className="object-cover"
                 />
               </div>
             </div>

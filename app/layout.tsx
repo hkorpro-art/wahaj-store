@@ -52,6 +52,7 @@ const thmanyahText = localFont({
   fallback: ["Arial", "sans-serif"]
 });
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import JsonLd from "@/components/JsonLd";
 import { SITE_URL } from "@/lib/site-config";
 
@@ -143,10 +144,12 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           />
           <WahajLoader>
             <div className="wahaj-app-shell">
-              <MotionShell>
-                {children}
-              </MotionShell>
-              <Footer />
+              <ErrorBoundary>
+                <MotionShell>
+                  {children}
+                </MotionShell>
+                <Footer />
+              </ErrorBoundary>
             </div>
           </WahajLoader>
           </PHProvider>

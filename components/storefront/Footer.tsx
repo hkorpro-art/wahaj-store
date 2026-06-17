@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { seedCollections } from "@/lib/collections";
 import { seedCategories } from "@/lib/categories";
 import type { Collection } from "@/lib/types";
-import { SITE_URL } from "@/lib/site-config";
 
 const infoLinks = [
   { label: "من نحن", href: "/about" },
@@ -48,8 +47,8 @@ export default function Footer() {
     loadCategories();
   }, []);
 
-  const visibleCollections = collections.filter((c) => c.visible);
-  const visibleCategories = categories.filter((c) => c.visible);
+  const visibleCollections = useMemo(() => collections.filter((c) => c.visible), [collections]);
+  const visibleCategories = useMemo(() => categories.filter((c) => c.visible), [categories]);
 
   return (
     <footer className="border-t border-wahaj-border bg-white/60 backdrop-blur-sm">

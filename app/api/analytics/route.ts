@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirebaseFirestoreAdmin } from "@/lib/firebase-admin";
+import { verifyAdminToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +52,12 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
+  const token = (await cookies()).get("wahaj_admin")?.value;
+  const admin = await verifyAdminToken(token);
+  if (!admin) {
+    return NextResponse.json({ message: "غير مصرح." }, { status: 401 });
+  }
+
   const db = getFirebaseFirestoreAdmin();
   if (!db) return NextResponse.json({ productViews: {}, whatsappClicks: {}, collectionVisits: {}, whatsappTotal: 0, whatsappDaily: {} });
 

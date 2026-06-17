@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { SITE_URL } from "@/lib/site-config";
 import ProductDetailClient from "@/components/storefront/ProductDetailClient";
 import JsonLd from "@/components/JsonLd";
@@ -6,6 +7,8 @@ import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { getManagedProducts } from "@/lib/products";
 import { seedCategories } from "@/lib/categories";
 import type { Collection } from "@/lib/types";
+
+const getCachedProducts = cache(() => getManagedProducts());
 
 const legacyCategoryToId: Record<string, string> = {
   sets: "atqam",
@@ -28,7 +31,7 @@ type ProductPageProps = {
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const { products: managedProducts } = await getManagedProducts();
+  const { products: managedProducts } = await getCachedProducts();
   const product = managedProducts.find((item) => matchesProductRoute(item, slug));
 
   if (!product) {
@@ -79,7 +82,7 @@ function matchesProductRoute(product: { id: string; slug: string }, routeSlug: s
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-  const { products: managedProducts } = await getManagedProducts();
+  const { products: managedProducts } = await getCachedProducts();
   const initialProduct =
     managedProducts.find((item) => matchesProductRoute(item, slug) && item.visible !== false) ?? null;
   const initialSimilarProducts = initialProduct

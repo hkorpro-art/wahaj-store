@@ -6,10 +6,6 @@ const HERO_SETTINGS_DOC = "hero_settings";
 
 type HeroSource = "firebase" | "seed";
 
-export function getDefaultHeroSlides(): HeroSlide[] {
-  return [];
-}
-
 export async function getHeroSlides(): Promise<{ slides: HeroSlide[]; source: HeroSource }> {
   const firestore = getFirebaseFirestoreAdmin();
 
@@ -31,7 +27,7 @@ export async function getHeroSlides(): Promise<{ slides: HeroSlide[]; source: He
     }
   }
 
-  return { slides: getDefaultHeroSlides(), source: "seed" };
+  return { slides: [], source: "seed" };
 }
 
 export async function saveHeroSlides(slides: HeroSlide[]) {

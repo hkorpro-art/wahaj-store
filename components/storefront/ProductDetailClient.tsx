@@ -5,7 +5,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { ArrowLeft, ChevronDown, Gem, Minus, Plus, RefreshCw, Share2, ShoppingBag, Sparkles, Star, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 import { useCart } from "@/lib/cart-context";
 import type { ManagedProduct } from "@/lib/admin-local";
@@ -193,9 +193,12 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     });
   }, [product, posthog]);
 
-  const trustMessages: TrustMessage[] = product?.trustMessages && product.trustMessages.length > 0
-    ? product.trustMessages.filter((m) => m.visible !== false)
-    : defaultTrustMessages;
+  const trustMessages: TrustMessage[] = useMemo(
+    () => product?.trustMessages && product.trustMessages.length > 0
+      ? product.trustMessages.filter((m) => m.visible !== false)
+      : defaultTrustMessages,
+    [product?.trustMessages]
+  );
 
   useEffect(() => {
     if (trustMessages.length <= 1 || reducedMotion) return;
@@ -278,8 +281,8 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     );
   }
 
-  const galleryImages = normalizeProductImages(product?.images);
-  const coverImage = product ? productCoverUrl(galleryImages, { width: 1200 }) : "";
+  const galleryImages = useMemo(() => normalizeProductImages(product?.images), [product?.images]);
+  const coverImage = useMemo(() => product ? productCoverUrl(galleryImages, { width: 1200 }) : "", [product, galleryImages]);
 
   if (!product || galleryImages.length === 0 || !coverImage) {
     return (

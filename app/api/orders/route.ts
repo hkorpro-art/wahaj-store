@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { verifyAdminToken } from "@/lib/auth";
 import { orderInputSchema } from "@/lib/validation";
 import { deleteOrderFromFirestore, getManagedOrders, saveOrder } from "@/lib/orders";
+import type { OrderStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,28 @@ export async function GET() {
   return NextResponse.json({ orders: ordersList });
 }
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(key: string, maxAttempts: number, windowMs: number): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(key);
+  if (!record || now > record.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (record.count >= maxAttempts) {
+    return false;
+  }
+  record.count++;
+  return true;
+}
+
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+  if (!checkRateLimit(`order:${ip}`, 20, 60000)) {
+    return NextResponse.json({ message: "طلبات كثيرة جداً. حاولي بعد دقيقة." }, { status: 429 });
+  }
+
   const json = await request.json();
   const payload = orderInputSchema.safeParse(json);
 
@@ -39,7 +61,7 @@ export async function POST(request: Request) {
     products: orderData.products,
     total: orderData.total,
     notes: orderData.notes || "بدون ملاحظات",
-    status: status as any,
+    status: status as OrderStatus,
     createdAt,
     isGift: orderData.isGift ?? false,
     giftMessage: orderData.giftMessage ?? ""

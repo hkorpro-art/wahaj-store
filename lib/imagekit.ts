@@ -90,11 +90,6 @@ export function resolveImageSrc(image: unknown): string {
     return parsed.url;
   }
 
-  if (typeof image === "object" && image !== null && "url" in image) {
-    const url = (image as { url?: unknown }).url;
-    return typeof url === "string" ? url.trim() : "";
-  }
-
   return "";
 }
 
