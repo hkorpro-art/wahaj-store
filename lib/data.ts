@@ -251,6 +251,33 @@ export const products: Product[] = [
     tags: ["إيركف", "يومي", "خفيف"],
     views: 890,
     sold: 31
+  },
+  {
+    id: "p-009",
+    slug: "zircon-test-ascii",
+    name: "طقم لونا زركون روز",
+    category: "sets",
+    price: 18500,
+    compareAt: 22000,
+    rating: 4.9,
+    reviews: 128,
+    badges: ["جديد", "ترند"],
+    status: ["new", "trend", "featured"],
+    images: [
+      storeImage("https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1512163143273-bde0e3cc7407?auto=format&fit=crop&w=1100&q=85"),
+      storeImage("https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1100&q=85")
+    ],
+    colors: ["روز قولد", "فضي", "ذهبي ناعم"],
+    sizes: ["قابل للتعديل", "S", "M"],
+    stock: 18,
+    inventoryStatus: "متوفر",
+    description:
+      "طقم زركون بلمعة ناعمة ولمسة روز قولد مصممة للمناسبات الراقية والإطلالات الهادئة.",
+    material: "زركون فاخر مع طلاء Rose Gold مقاوم للبهتان",
+    tags: ["زركون", "طقم", "مناسبات"],
+    views: 0,
+    sold: 0
   }
 ];
 
