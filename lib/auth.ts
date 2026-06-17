@@ -3,13 +3,13 @@ import { SignJWT, jwtVerify } from "jose";
 const encoder = new TextEncoder();
 
 function adminSecret() {
-  return process.env.WAHAJ_AUTH_SECRET || "wahaj-local-demo-secret-change-before-launch";
+  return process.env.WAHAJ_AUTH_SECRET || "8226d5cb293e61826651a1cc460e18d2a40db1d54e6a440a31426794d2f8a5aa";
 }
 
 export function adminCredentials() {
   return {
-    email: process.env.WAHAJ_ADMIN_EMAIL || "admin@wahaj.local",
-    password: process.env.WAHAJ_ADMIN_PASSWORD || "wahaj-demo-2026"
+    email: process.env.WAHAJ_ADMIN_EMAIL || "hkorpro@gmail.com",
+    password: process.env.WAHAJ_ADMIN_PASSWORD || "44615449"
   };
 }
 
