@@ -83,7 +83,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const initialProduct =
     managedProducts.find((item) => matchesProductRoute(item, slug) && item.visible !== false) ?? null;
   const initialSimilarProducts = initialProduct
-    ? managedProducts.filter((item) => item.visible !== false && item.category === initialProduct.category && item.id !== initialProduct.id).slice(0, 4)
+    ? managedProducts.filter((item) => item.visible !== false && item.category === initialProduct.category && item.id !== initialProduct.id).slice(0, 3)
     : [];
 
   const productCategory = initialProduct ? findProductCategory(initialProduct) : undefined;

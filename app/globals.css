@@ -257,24 +257,6 @@ img {
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1);   }
 }
 
-/* Transition variant — shorter duration for page changes */
-.wahaj-splash-overlay[data-variant="transition"] .wahaj-splash-sweep {
-  animation-duration: 0.3s;
-  animation-delay: 0.1s;
-}
-
-.wahaj-splash-overlay[data-variant="transition"] .wahaj-splash-sparkle {
-  animation: none;
-  display: none;
-}
-
-.wahaj-splash-overlay[data-variant="transition"] .wahaj-splash-glow {
-  animation-duration: 0.3s;
-  animation-delay: 0.15s;
-  width: min(50vw, 180px);
-  height: min(50vw, 180px);
-}
-
 .satin-surface {
   background:
     radial-gradient(circle at 16% 12%, rgba(255, 255, 255, 0.9), transparent 34%),

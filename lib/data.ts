@@ -56,6 +56,22 @@ export const products: Product[] = [
     rating: 4.9,
     reviews: 128,
     badges: ["جديد", "ترند"],
+    badgeIcons: ["✨", "🔥"],
+    ratingLabel: "مختارات وهاج",
+    trustMessages: [
+      { icon: "✨", text: "لمعة تدوم", visible: true },
+      { icon: "💎", text: "مقاوم للبهتان", visible: true },
+      { icon: "🎁", text: "تغليف فاخر", visible: true },
+      { icon: "🛡️", text: "جودة مختارة", visible: true }
+    ],
+    whatsappCtaText: "✨ احجزي قطعتك الفاخرة",
+    showColors: true,
+    showSizes: true,
+    showQuantity: true,
+    accordionDetails: "طقم زركون فاخر من 3 قطع: عقد, أقراط, وخاتم. جميع القطع مطلية بـ Rose Gold عيار 18 مع حجر زركون شفاف عالي النقاء.",
+    accordionCare: "للحفاظ على بريق الزركون: تجنبي تعريض القطعة للعطور والمواد الكيميائية. احفظيها في العلبة الأصلية بعيداً عن الرطوبة. نظفي بلطف بالمنديل المرفق بعد كل استخدام.",
+    accordionShipping: "الشحن عبر البريد الممتاز خلال 3-5 أيام عمل. تغليف فاخر ومجاني لجميع الطلبات. الشحن متوفر لجميع المحافظات اليمنية.",
+    accordionReturns: "يمكن استبدال القطعة خلال 7 أيام من الاستلام بشرط أن تكون بحالتها الأصلية مع العبوة. الاستبدال متاح مرة واحدة فقط.",
     status: ["new", "trend", "featured"],
     images: [
       storeImage("https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=1100&q=85"),

@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { seedCollections } from "@/lib/collections";
 import { seedCategories } from "@/lib/categories";
+import type { Collection } from "@/lib/types";
 import { SITE_URL } from "@/lib/site-config";
 
 const infoLinks = [
@@ -12,8 +16,40 @@ const infoLinks = [
 ] as const;
 
 export default function Footer() {
-  const visibleCollections = seedCollections.filter((c) => c.visible);
-  const visibleCategories = seedCategories.filter((c) => c.visible);
+  const [collections, setCollections] = useState<Collection[]>(seedCollections);
+  const [categories, setCategories] = useState<Collection[]>(seedCategories);
+
+  useEffect(() => {
+    async function loadCollections() {
+      try {
+        const response = await fetch(`/api/collections?refresh=${Date.now()}`, { cache: "no-store" });
+        const payload = await response.json().catch(() => null);
+        if (response.ok && Array.isArray(payload?.collections)) {
+          setCollections(payload.collections as Collection[]);
+        }
+      } catch {
+        // keep seedCollections as fallback
+      }
+    }
+
+    async function loadCategories() {
+      try {
+        const response = await fetch(`/api/categories?refresh=${Date.now()}`, { cache: "no-store" });
+        const payload = await response.json().catch(() => null);
+        if (response.ok && Array.isArray(payload?.categories)) {
+          setCategories(payload.categories as Collection[]);
+        }
+      } catch {
+        // keep seedCategories as fallback
+      }
+    }
+
+    loadCollections();
+    loadCategories();
+  }, []);
+
+  const visibleCollections = collections.filter((c) => c.visible);
+  const visibleCategories = categories.filter((c) => c.visible);
 
   return (
     <footer className="border-t border-wahaj-border bg-white/60 backdrop-blur-sm">

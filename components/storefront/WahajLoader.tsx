@@ -1,36 +1,27 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import BrandMark from "@/components/storefront/BrandMark";
 
 const SPLASH_SESSION_KEY = "wahaj_splash_seen";
 const FULL_SPLASH_MS = 1050;
-const TRANSITION_MS = 700;
-
-type Phase = "full" | "transition" | "done";
 
 export default function WahajLoader({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const prevPath = useRef(pathname);
-  const [phase, setPhase] = useState<Phase>("full");
-  const [showOverlay, setShowOverlay] = useState(true);
-  const [overlayKey, setOverlayKey] = useState("initial");
+  const [showOverlay, setShowOverlay] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const seen = window.sessionStorage.getItem(SPLASH_SESSION_KEY) === "1";
-    if (seen) {
-      setPhase("done");
-      setShowOverlay(false);
-      return;
-    }
+    if (seen) return;
+
+    setShowOverlay(true);
     document.documentElement.dataset.splash = "active";
+
     const timer = setTimeout(() => {
       window.sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
-      setPhase("done");
       setShowOverlay(false);
     }, FULL_SPLASH_MS);
+
     return () => {
       clearTimeout(timer);
       delete document.documentElement.dataset.splash;
@@ -45,34 +36,13 @@ export default function WahajLoader({ children }: { children: React.ReactNode })
     }
   }, [showOverlay]);
 
-  useEffect(() => {
-    if (phase === "done" && prevPath.current !== pathname) {
-      prevPath.current = pathname;
-      setPhase("transition");
-      setOverlayKey(`trans-${pathname}`);
-      setShowOverlay(true);
-      return;
-    }
-    prevPath.current = pathname;
-  }, [pathname, phase]);
-
-  useEffect(() => {
-    if (phase !== "transition") return;
-    const timer = setTimeout(() => {
-      setPhase("done");
-      setShowOverlay(false);
-    }, TRANSITION_MS);
-    return () => clearTimeout(timer);
-  }, [phase]);
-
   return (
     <>
       <AnimatePresence>
         {showOverlay ? (
           <motion.div
-            key={overlayKey}
+            key="splash"
             className="wahaj-splash-overlay"
-            data-variant={phase}
             initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
 import WahajLoader from "@/components/storefront/WahajLoader";
+import MotionShell from "@/components/storefront/MotionShell";
 import Footer from "@/components/storefront/Footer";
 import { CartProvider } from "@/lib/cart-context";
 import { PHProvider } from "@/lib/posthog";
@@ -142,7 +143,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           />
           <WahajLoader>
             <div className="wahaj-app-shell">
-              {children}
+              <MotionShell>
+                {children}
+              </MotionShell>
               <Footer />
             </div>
           </WahajLoader>

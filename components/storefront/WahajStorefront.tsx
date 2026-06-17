@@ -10,6 +10,7 @@ import {
   Menu,
   MessageCircle,
   Minus,
+  Settings,
   ShoppingBag,
   Sparkles,
   Star,
@@ -24,6 +25,7 @@ import { usePostHog } from "posthog-js/react";
 import {
   adminStorageKeys,
   defaultSiteContent,
+  type ManagedCollection,
   type ManagedProduct,
   type SiteContent
 } from "@/lib/admin-local";
@@ -33,7 +35,6 @@ import BrandMark from "@/components/storefront/BrandMark";
 import LifestyleHero from "@/components/storefront/LifestyleHero";
 import CircularCollections from "@/components/storefront/CircularCollections";
 import { seedCollections } from "@/lib/collections";
-import { seedCategories } from "@/lib/categories";
 import { formatPrice, products } from "@/lib/data";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl } from "@/lib/imagekit";
@@ -54,6 +55,7 @@ export default function WahajStorefront() {
   const posthog = usePostHog();
   const { cartItems, cartTotal, cartCount, addToCart: contextAddToCart, updateQuantity, removeFromCart, clearCart } = useCart();
   const [storeProducts, setStoreProducts] = useState<ManagedProduct[]>(seedManagedProducts);
+  const [storeCollections, setStoreCollections] = useState<ManagedCollection[]>(seedCollections);
   const [siteContent, setSiteContent] = useState<SiteContent>(defaultSiteContent);
   const [query, setQuery] = useState("");
   const prevQuery = useRef("");
@@ -108,6 +110,39 @@ export default function WahajStorefront() {
       void loadStoreProducts();
     }
 
+    void loadStoreCollections();
+    void loadSiteContent();
+
+    return () => {
+      active = false;
+      unsubscribeProducts?.();
+    };
+  }, []);
+
+  async function loadStoreCollections() {
+    try {
+      const response = await fetch(`/api/collections?refresh=${Date.now()}`, { cache: "no-store" });
+      const payload = await response.json().catch(() => null);
+      if (response.ok && Array.isArray(payload?.collections)) {
+        setStoreCollections(payload.collections as ManagedCollection[]);
+      }
+    } catch {
+      // keep seedCollections as fallback
+    }
+  }
+
+  async function loadSiteContent() {
+    try {
+      const response = await fetch(`/api/site-content?refresh=${Date.now()}`, { cache: "no-store" });
+      const payload = await response.json().catch(() => null);
+      if (response.ok && payload?.content) {
+        setSiteContent({ ...defaultSiteContent, ...payload.content });
+        return;
+      }
+    } catch {
+      // fall through to localStorage
+    }
+
     try {
       const savedContent = window.localStorage.getItem(adminStorageKeys.content);
       if (savedContent) {
@@ -116,12 +151,7 @@ export default function WahajStorefront() {
     } catch {
       setSiteContent(defaultSiteContent);
     }
-
-    return () => {
-      active = false;
-      unsubscribeProducts?.();
-    };
-  }, []);
+  }
 
   const filteredProducts = useMemo(() => {
     return storeProducts.filter((product) => {
@@ -278,7 +308,7 @@ export default function WahajStorefront() {
         onCheckout={handleCartCheckout}
       />
 
-      <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} collections={storeCollections} />
 
       <AnimatePresence>
         {addedToast.visible ? (
@@ -826,18 +856,16 @@ function CartSheet({ open, items, total, products, onClose, onQty, onRemove, onC
    MENU SHEET — Premium Navigation Drawer
    ═══════════════════════════════════════════════════════════ */
 
-function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+function MenuSheet({ open, onClose, collections }: { open: boolean; onClose: () => void; collections: ManagedCollection[] }) {
   const infoLinks = [
     ["من نحن", "/about"],
     ["الأسئلة الشائعة", "/faq"],
     ["سياسة الطلب", "/order-policy"],
     ["سياسة الاستبدال", "/exchange-policy"],
-    ["تواصل معنا", "/contact"],
-    ["لوحة التحكم", "/admin"]
+    ["تواصل معنا", "/contact"]
   ];
 
-  const visibleCollections = seedCollections.filter((c) => c.visible);
-  const visibleCategories = seedCategories.filter((c) => c.visible);
+  const visibleCollections = collections.filter((c) => c.visible);
 
   return (
     <AnimatePresence>
@@ -877,25 +905,6 @@ function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
               </>
             ) : null}
 
-            {visibleCategories.length > 0 ? (
-              <>
-                <p className="mt-5 mb-2 text-xs font-bold text-wahaj-rose/80">التصنيفات</p>
-                <div className="space-y-2">
-                  {visibleCategories.map((c) => (
-                    <Link
-                      key={c.id}
-                      href={`/category/${c.slug}`}
-                      onClick={onClose}
-                      className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white/70 px-4 py-3 font-bold btn-luxury"
-                    >
-                      {c.name}
-                      <ChevronLeft className="h-4 w-4 text-wahaj-rose" />
-                    </Link>
-                  ))}
-                </div>
-              </>
-            ) : null}
-
             <p className="mt-5 mb-2 text-xs font-bold text-wahaj-rose/80">وهاج</p>
             <div className="space-y-2">
               {infoLinks.map(([label, href]) => (
@@ -910,6 +919,14 @@ function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
                 </Link>
               ))}
             </div>
+            <Link
+              href="/admin"
+              onClick={onClose}
+              className="mt-5 flex items-center justify-center gap-1.5 text-wahaj-rose/40 hover:text-wahaj-rose/70 transition-colors"
+              aria-label="لوحة التحكم"
+            >
+              <Settings className="h-4 w-4" />
+            </Link>
           </motion.aside>
         </motion.div>
       ) : null}

@@ -62,7 +62,7 @@ import {
   type MenuIconsRecord,
   type StoredImage
 } from "@/lib/imagekit";
-import type { Order, OrderStatus, ProductBadge, ProductStatus } from "@/lib/types";
+import type { Order, OrderStatus, ProductBadge, ProductStatus, TrustMessage } from "@/lib/types";
 
 const tabs = [
   { id: "overview", label: "الرئيسية", icon: LayoutDashboard },
@@ -261,9 +261,9 @@ export default function AdminDashboard() {
 
     void loadSharedProducts();
     void loadSharedOrders();
+    void loadContent();
     setOrders(readStored(adminStorageKeys.orders, seedOrders));
     setCoupons(readStored(adminStorageKeys.coupons, seedManagedCoupons()));
-    setContent({ ...defaultSiteContent, ...readStored(adminStorageKeys.content, defaultSiteContent) });
     setStories(readStored(adminStorageKeys.stories, seedManagedStories()));
     setNotifications(readStored(adminStorageKeys.notifications, initialNotifications));
     setVipPhones(readStored(adminStorageKeys.vipPhones, []));
@@ -342,6 +342,33 @@ export default function AdminDashboard() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings)
+      });
+    } catch {
+      // local-only
+    }
+  }
+
+  async function loadContent() {
+    try {
+      const response = await fetch(`/api/site-content?refresh=${Date.now()}`, { cache: "no-store" });
+      const payload = await response.json().catch(() => null);
+      if (response.ok && payload?.content) {
+        setContent({ ...defaultSiteContent, ...payload.content });
+        writeStored(adminStorageKeys.content, payload.content);
+        return;
+      }
+    } catch {
+      // fall through to localStorage
+    }
+    setContent({ ...defaultSiteContent, ...readStored(adminStorageKeys.content, defaultSiteContent) });
+  }
+
+  async function persistContent(next: SiteContent) {
+    try {
+      await fetch("/api/site-content", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(next)
       });
     } catch {
       // local-only
@@ -756,6 +783,7 @@ export default function AdminDashboard() {
                 content={content}
                 onContentChange={(next) => {
                   setContent(next);
+                  persistContent(next);
                   showToast("تم تحديث نصوص الواجهة وشريط العروض.");
                 }}
                 products={products}
@@ -934,6 +962,17 @@ type ProductFormState = {
   sizes: string;
   tags: string;
   badges: ProductBadge[];
+  badgeIcons: string;
+  ratingLabel: string;
+  trustMessages: string;
+  whatsappCtaText: string;
+  showColors: boolean;
+  showSizes: boolean;
+  showQuantity: boolean;
+  accordionDetails: string;
+  accordionCare: string;
+  accordionShipping: string;
+  accordionReturns: string;
   status: ProductStatus[];
   visible: boolean;
   discountEndsAt: string;
@@ -953,6 +992,22 @@ function emptyProductForm(): ProductFormState {
     sizes: "قابل للتعديل، S، M",
     tags: "وهاج، زركون، جديد",
     badges: ["جديد"],
+    badgeIcons: "✨",
+    ratingLabel: "مختارات وهاج",
+    trustMessages: JSON.stringify([
+      { icon: "✨", text: "لمعة تدوم", visible: true },
+      { icon: "💎", text: "مقاوم للبهتان", visible: true },
+      { icon: "🎁", text: "تغليف فاخر", visible: true },
+      { icon: "🛡️", text: "جودة مختارة", visible: true }
+    ], null, 2),
+    whatsappCtaText: "✨ احجزي قطعتك الفاخرة",
+    showColors: true,
+    showSizes: true,
+    showQuantity: true,
+    accordionDetails: "",
+    accordionCare: "",
+    accordionShipping: "",
+    accordionReturns: "",
     status: ["new"],
     visible: true,
     discountEndsAt: ""
@@ -1333,6 +1388,22 @@ function productToForm(product: ManagedProduct): ProductFormState {
     sizes: product.sizes.join("، "),
     tags: product.tags.join("، "),
     badges: product.badges,
+    badgeIcons: (product.badgeIcons && product.badgeIcons.length > 0 ? product.badgeIcons : ["✨"]).join("، "),
+    ratingLabel: product.ratingLabel || "",
+    trustMessages: JSON.stringify(
+      product.trustMessages && product.trustMessages.length > 0
+        ? product.trustMessages
+        : [{ icon: "✨", text: "لمعة تدوم", visible: true }],
+      null, 2
+    ),
+    whatsappCtaText: product.whatsappCtaText || "",
+    showColors: product.showColors !== false,
+    showSizes: product.showSizes !== false,
+    showQuantity: product.showQuantity !== false,
+    accordionDetails: product.accordionDetails || "",
+    accordionCare: product.accordionCare || "",
+    accordionShipping: product.accordionShipping || "",
+    accordionReturns: product.accordionReturns || "",
     status: product.status,
     visible: product.visible !== false,
     discountEndsAt: product.discountEndsAt || ""
@@ -1375,6 +1446,15 @@ function ProductsManager({
     const timestamp = Date.now();
     const stock = Number.isFinite(parsedStock) ? Math.max(0, parsedStock) : 0;
     const existing = products.find((product) => product.id === form.id);
+
+    let parsedTrustMessages: TrustMessage[] | undefined;
+    try {
+      const parsed = JSON.parse(form.trustMessages || "[]");
+      parsedTrustMessages = Array.isArray(parsed) ? parsed as TrustMessage[] : undefined;
+    } catch {
+      parsedTrustMessages = undefined;
+    }
+
     const product: ManagedProduct = {
       id: form.id || `admin-${timestamp}`,
       slug: existing?.slug || createSlug(form.name) || `product-${timestamp}`,
@@ -1385,6 +1465,17 @@ function ProductsManager({
       rating: existing?.rating ?? 5,
       reviews: existing?.reviews ?? 0,
       badges: form.badges.length > 0 ? form.badges : ["مميز"],
+      badgeIcons: splitList(form.badgeIcons),
+      ratingLabel: form.ratingLabel.trim() || undefined,
+      trustMessages: parsedTrustMessages,
+      whatsappCtaText: form.whatsappCtaText.trim() || undefined,
+      showColors: form.showColors,
+      showSizes: form.showSizes,
+      showQuantity: form.showQuantity,
+      accordionDetails: form.accordionDetails.trim() || undefined,
+      accordionCare: form.accordionCare.trim() || undefined,
+      accordionShipping: form.accordionShipping.trim() || undefined,
+      accordionReturns: form.accordionReturns.trim() || undefined,
       status: form.status.length > 0 ? form.status : ["featured"],
       images,
       colors: splitList(form.colors),
@@ -1586,6 +1677,9 @@ function ProductsManager({
               <input className="AdminInput" value={form.sizes} onChange={(event) => setForm({ ...form, sizes: event.target.value })} placeholder="المقاسات" />
             </div>
             <input className="AdminInput" value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} placeholder="الوسوم" />
+            <input className="AdminInput" value={form.badgeIcons} onChange={(event) => setForm({ ...form, badgeIcons: event.target.value })} placeholder="أيقونات البادجات (مثال: ✨، 🔥، 💎)" />
+            <input className="AdminInput" value={form.ratingLabel} onChange={(event) => setForm({ ...form, ratingLabel: event.target.value })} placeholder="تسمية التقييم (مثال: مختارات وهاج)" />
+            <input className="AdminInput" value={form.whatsappCtaText} onChange={(event) => setForm({ ...form, whatsappCtaText: event.target.value })} placeholder="نص زر واتساب (مثال: ✨ احجزي قطعتك الفاخرة)" />
 
             <div className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
               <p className="mb-2 text-sm font-bold text-wahaj-ink">Badges</p>
@@ -1614,6 +1708,55 @@ function ProductsManager({
                 ))}
               </div>
             </div>
+
+            <details className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
+              <summary className="text-sm font-bold text-wahaj-ink cursor-pointer">إعدادات متقدمة</summary>
+              <div className="mt-3 space-y-3">
+                <textarea
+                  className="AdminInput min-h-20 py-3"
+                  value={form.trustMessages}
+                  onChange={(event) => setForm({ ...form, trustMessages: event.target.value })}
+                  placeholder='رسائل الثقة (JSON): [{"icon":"✨","text":"لمعة تدوم","visible":true}]'
+                  dir="ltr"
+                />
+                <textarea
+                  className="AdminInput min-h-16 py-3"
+                  value={form.accordionDetails}
+                  onChange={(event) => setForm({ ...form, accordionDetails: event.target.value })}
+                  placeholder="محتوى قسم تفاصيل القطعة"
+                />
+                <textarea
+                  className="AdminInput min-h-16 py-3"
+                  value={form.accordionCare}
+                  onChange={(event) => setForm({ ...form, accordionCare: event.target.value })}
+                  placeholder="محتوى قسم العناية"
+                />
+                <textarea
+                  className="AdminInput min-h-16 py-3"
+                  value={form.accordionShipping}
+                  onChange={(event) => setForm({ ...form, accordionShipping: event.target.value })}
+                  placeholder="محتوى قسم الشحن"
+                />
+                <textarea
+                  className="AdminInput min-h-16 py-3"
+                  value={form.accordionReturns}
+                  onChange={(event) => setForm({ ...form, accordionReturns: event.target.value })}
+                  placeholder="محتوى قسم الاستبدال"
+                />
+                <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
+                  إظهار خيار الألوان
+                  <input type="checkbox" checked={form.showColors} onChange={(event) => setForm({ ...form, showColors: event.target.checked })} />
+                </label>
+                <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
+                  إظهار خيار المقاسات
+                  <input type="checkbox" checked={form.showSizes} onChange={(event) => setForm({ ...form, showSizes: event.target.checked })} />
+                </label>
+                <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
+                  إظهار خيار الكمية
+                  <input type="checkbox" checked={form.showQuantity} onChange={(event) => setForm({ ...form, showQuantity: event.target.checked })} />
+                </label>
+              </div>
+            </details>
 
             <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
               إظهار المنتج في المتجر

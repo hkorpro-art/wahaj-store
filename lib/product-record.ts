@@ -45,7 +45,19 @@ export function rowToManagedProduct(row: ProductRow): ManagedProduct | null {
     discountEndsAt: stringValue(row.discount_ends_at ?? row.discountEndsAt) || undefined,
     showScarcity: booleanValue(row.showScarcity ?? row.show_scarcity, false),
     scarcityText: stringValue(row.scarcityText ?? row.scarcity_text),
-    categoryIds: arrayValue(row.category_ids ?? row.categoryIds)
+    categoryIds: arrayValue(row.category_ids ?? row.categoryIds),
+    badgeIcons: arrayValue(row.badgeIcons ?? row.badge_icons),
+    ratingLabel: stringValue(row.ratingLabel ?? row.rating_label) || undefined,
+    trustMessages: jsonArrayValue<ManagedProduct["trustMessages"]>(row.trustMessages ?? row.trust_messages),
+    whatsappCtaText: stringValue(row.whatsappCtaText ?? row.whatsapp_cta_text) || undefined,
+    showColors: booleanValue(row.showColors ?? row.show_colors, true),
+    showSizes: booleanValue(row.showSizes ?? row.show_sizes, true),
+    showQuantity: booleanValue(row.showQuantity ?? row.show_quantity, true),
+    accordionDetails: stringValue(row.accordionDetails ?? row.accordion_details) || undefined,
+    accordionCare: stringValue(row.accordionCare ?? row.accordion_care) || undefined,
+    accordionShipping: stringValue(row.accordionShipping ?? row.accordion_shipping) || undefined,
+    accordionReturns: stringValue(row.accordionReturns ?? row.accordion_returns) || undefined,
+    videos: parseStoredImages(row.videos)
   };
 }
 
@@ -75,12 +87,37 @@ export function productToRow(product: ManagedProduct) {
     discount_ends_at: product.discountEndsAt ?? null,
     show_scarcity: product.showScarcity ?? false,
     scarcity_text: product.scarcityText ?? "",
-    category_ids: product.categoryIds ?? []
+    category_ids: product.categoryIds ?? [],
+    badge_icons: product.badgeIcons ?? [],
+    rating_label: product.ratingLabel ?? null,
+    trust_messages: product.trustMessages ?? [],
+    whatsapp_cta_text: product.whatsappCtaText ?? null,
+    show_colors: product.showColors !== false,
+    show_sizes: product.showSizes !== false,
+    show_quantity: product.showQuantity !== false,
+    accordion_details: product.accordionDetails ?? null,
+    accordion_care: product.accordionCare ?? null,
+    accordion_shipping: product.accordionShipping ?? null,
+    accordion_returns: product.accordionReturns ?? null,
+    videos: product.videos ?? []
   };
 }
 
 export function rowSortOrder(row: ProductRow, fallback: number) {
   return numberValue(row.sort_order, fallback);
+}
+
+function jsonArrayValue<T>(value: unknown): T | undefined {
+  if (!value) return undefined;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return undefined;
+    }
+  }
+  if (Array.isArray(value)) return value as T;
+  return undefined;
 }
 
 function arrayValue(value: unknown): string[] {
