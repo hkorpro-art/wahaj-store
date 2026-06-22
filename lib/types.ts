@@ -112,7 +112,11 @@ export type Coupon = {
   code: string;
   type: "percentage" | "fixed";
   value: number;
+  minOrder: number;
   expiresAt: string;
   usageLimit: number;
-  minOrder: number;
+  usageCount: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
 };

@@ -167,6 +167,7 @@ export default function CircularCollections() {
                       alt={collection.name}
                       width={80}
                       height={80}
+                      priority={index === 0}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       draggable={false}
                     />

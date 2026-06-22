@@ -45,14 +45,13 @@ import {
   type HeroAnimationSettings,
   type HeroSlide,
   type ManagedCollection,
-  type ManagedCoupon,
   type ManagedNotification,
   type ManagedProduct,
   type ManagedStory,
   type SiteContent,
   type StoryTarget
 } from "@/lib/admin-local";
-import { categories, coupons as seedCoupons, formatPrice, orders as seedOrders, products as seedProducts, stories as seedStories } from "@/lib/data";
+import { categories, formatPrice, orders as seedOrders, products as seedProducts, stories as seedStories } from "@/lib/data";
 import {
   imageUrl,
   MENU_ICON_IDS,
@@ -62,7 +61,7 @@ import {
   type MenuIconsRecord,
   type StoredImage
 } from "@/lib/imagekit";
-import type { Order, OrderStatus, ProductBadge, ProductStatus, TrustMessage } from "@/lib/types";
+import type { Coupon, Order, OrderStatus, ProductBadge, ProductStatus, TrustMessage } from "@/lib/types";
 
 const tabs = [
   { id: "overview", label: "الرئيسية", icon: LayoutDashboard },
@@ -145,10 +144,6 @@ function seedManagedStories(): ManagedStory[] {
   }));
 }
 
-function seedManagedCoupons(): ManagedCoupon[] {
-  return seedCoupons.map((coupon) => ({ ...coupon, used: 0, active: true, createdAt: "2026-05-23" }));
-}
-
 function readStored<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") {
     return fallback;
@@ -175,7 +170,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [products, setProducts] = useState<ManagedProduct[]>(seedManagedProducts);
   const [orders, setOrders] = useState<Order[]>(seedOrders);
-  const [coupons, setCoupons] = useState<ManagedCoupon[]>(seedManagedCoupons);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [content, setContent] = useState<SiteContent>(defaultSiteContent);
   const [stories, setStories] = useState<ManagedStory[]>(seedManagedStories);
   const [notifications, setNotifications] = useState<ManagedNotification[]>(initialNotifications);
@@ -263,7 +258,14 @@ export default function AdminDashboard() {
     void loadSharedOrders();
     void loadContent();
     setOrders(readStored(adminStorageKeys.orders, seedOrders));
-    setCoupons(readStored(adminStorageKeys.coupons, seedManagedCoupons()));
+
+    fetch("/api/coupons")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.coupons)) setCoupons(data.coupons);
+      })
+      .catch(() => {});
+
     setStories(readStored(adminStorageKeys.stories, seedManagedStories()));
     setNotifications(readStored(adminStorageKeys.notifications, initialNotifications));
     setVipPhones(readStored(adminStorageKeys.vipPhones, []));
@@ -278,10 +280,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (hydrated) writeStored(adminStorageKeys.orders, orders);
   }, [hydrated, orders]);
-
-  useEffect(() => {
-    if (hydrated) writeStored(adminStorageKeys.coupons, coupons);
-  }, [hydrated, coupons]);
 
   useEffect(() => {
     if (hydrated) writeStored(adminStorageKeys.content, content);
@@ -531,6 +529,18 @@ export default function AdminDashboard() {
     }
   }
 
+  async function persistCoupons() {
+    try {
+      await fetch("/api/coupons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coupons })
+      });
+    } catch (error) {
+      console.error("Failed to persist coupons to Firestore:", error);
+    }
+  }
+
   function createOrder(order: Order) {
     setOrders((current) => [order, ...current]);
     void persistOrder(order);
@@ -567,17 +577,27 @@ export default function AdminDashboard() {
     setVipPhones((current) => (current.includes(phone) ? current.filter((item) => item !== phone) : [...current, phone]));
   }
 
-  function createCoupon(coupon: ManagedCoupon) {
+  function createCoupon(coupon: Coupon) {
     setCoupons((current) => [coupon, ...current]);
-    showToast("تم حفظ الكوبون في لوحة التحكم.");
+    setTimeout(() => persistCoupons(), 0);
+    showToast("تم إنشاء الكوبون.");
+  }
+
+  function updateCoupon(couponId: string, patch: Partial<Coupon>) {
+    setCoupons((current) => current.map((c) => (c.id === couponId ? { ...c, ...patch } : c)));
+    setTimeout(() => persistCoupons(), 0);
+    showToast("تم تعديل الكوبون.");
   }
 
   function toggleCoupon(couponId: string) {
     setCoupons((current) => current.map((coupon) => (coupon.id === couponId ? { ...coupon, active: !coupon.active } : coupon)));
+    setTimeout(() => persistCoupons(), 0);
   }
 
   function deleteCoupon(couponId: string) {
     setCoupons((current) => current.filter((coupon) => coupon.id !== couponId));
+    setTimeout(() => persistCoupons(), 0);
+    showToast("تم حذف الكوبون.");
   }
 
   function updateStory(storyId: string, patch: Partial<ManagedStory>) {
@@ -775,7 +795,7 @@ export default function AdminDashboard() {
             {activeTab === "customers" ? <CustomersManager customers={customerRecords} onToggleVip={toggleVip} /> : null}
 
             {activeTab === "coupons" ? (
-              <CouponsManager coupons={coupons} onCreate={createCoupon} onDelete={deleteCoupon} onToggle={toggleCoupon} />
+              <CouponsManager coupons={coupons} onCreate={createCoupon} onUpdate={updateCoupon} onDelete={deleteCoupon} onToggle={toggleCoupon} />
             ) : null}
 
             {activeTab === "content" ? (
@@ -869,7 +889,7 @@ function Overview({
 }: {
   products: ManagedProduct[];
   orders: Order[];
-  coupons: ManagedCoupon[];
+  coupons: Coupon[];
   notifications: ManagedNotification[];
   lowStock: ManagedProduct[];
   onQuickAction: (tab: TabId) => void;
@@ -2046,14 +2066,17 @@ function CustomersManager({
 function CouponsManager({
   coupons,
   onCreate,
+  onUpdate,
   onDelete,
   onToggle
 }: {
-  coupons: ManagedCoupon[];
-  onCreate: (coupon: ManagedCoupon) => void;
+  coupons: Coupon[];
+  onCreate: (coupon: Coupon) => void;
+  onUpdate: (couponId: string, patch: Partial<Coupon>) => void;
   onDelete: (couponId: string) => void;
   onToggle: (couponId: string) => void;
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [type, setType] = useState<"percentage" | "fixed">("percentage");
   const [value, setValue] = useState("");
@@ -2061,6 +2084,28 @@ function CouponsManager({
   const [minOrder, setMinOrder] = useState("10000");
   const [expiresAt, setExpiresAt] = useState("2026-12-31");
   const [message, setMessage] = useState("");
+
+  function startEdit(coupon: Coupon) {
+    setEditingId(coupon.id);
+    setCode(coupon.code);
+    setType(coupon.type);
+    setValue(String(coupon.value));
+    setUsageLimit(String(coupon.usageLimit));
+    setMinOrder(String(coupon.minOrder));
+    setExpiresAt(coupon.expiresAt);
+    setMessage("");
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setCode("");
+    setType("percentage");
+    setValue("");
+    setUsageLimit("100");
+    setMinOrder("10000");
+    setExpiresAt("2026-12-31");
+    setMessage("");
+  }
 
   function submitCoupon() {
     const parsedValue = Number(value);
@@ -2072,22 +2117,36 @@ function CouponsManager({
       return;
     }
 
-    onCreate({
-      id: `coupon-${Date.now()}`,
-      code: code.trim().toUpperCase(),
-      type,
-      value: parsedValue,
-      expiresAt,
-      usageLimit: Number.isFinite(parsedLimit) ? parsedLimit : 100,
-      minOrder: Number.isFinite(parsedMin) ? parsedMin : 0,
-      used: 0,
-      active: true,
-      createdAt: new Date().toISOString().slice(0, 10)
-    });
-    setCode("");
-    setValue("");
-    setExpiresAt("2026-12-31");
-    setMessage("تم حفظ الكوبون.");
+    if (editingId) {
+      onUpdate(editingId, {
+        code: code.trim().toUpperCase(),
+        type,
+        value: parsedValue,
+        usageLimit: Number.isFinite(parsedLimit) ? parsedLimit : 100,
+        minOrder: Number.isFinite(parsedMin) ? parsedMin : 0,
+        expiresAt,
+        updatedAt: new Date().toISOString()
+      });
+      cancelEdit();
+    } else {
+      onCreate({
+        id: `coupon-${Date.now()}`,
+        code: code.trim().toUpperCase(),
+        type,
+        value: parsedValue,
+        minOrder: Number.isFinite(parsedMin) ? parsedMin : 0,
+        expiresAt,
+        usageLimit: Number.isFinite(parsedLimit) ? parsedLimit : 100,
+        usageCount: 0,
+        active: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      setCode("");
+      setValue("");
+      setExpiresAt("2026-12-31");
+    }
+    setMessage(editingId ? "تم تعديل الكوبون." : "تم إنشاء الكوبون.");
   }
 
   return (
@@ -2102,10 +2161,13 @@ function CouponsManager({
                   {coupon.type === "percentage" ? `${coupon.value}%` : formatPrice(coupon.value)}
                 </span>
               </div>
-              <div className="mt-4 grid gap-2 text-sm">
+              <div className="mt-3 text-sm">
+                <span className="font-bold text-wahaj-ink">
+                  {coupon.usageCount} / {coupon.usageLimit}
+                </span>
+              </div>
+              <div className="mt-3 grid gap-2 text-sm">
                 <InfoRow label="تاريخ الانتهاء" value={coupon.expiresAt} />
-                <InfoRow label="حد الاستخدام" value={coupon.usageLimit.toLocaleString("ar-YE")} />
-                <InfoRow label="المستخدم" value={(coupon.used || 0).toLocaleString("ar-YE")} />
                 <InfoRow label="الحد الأدنى" value={formatPrice(coupon.minOrder)} />
               </div>
               <div className="mt-4 flex gap-2">
@@ -2117,6 +2179,9 @@ function CouponsManager({
                 >
                   {coupon.active === false ? "متوقف" : "نشط"}
                 </button>
+                <button onClick={() => startEdit(coupon)} className="min-h-9 rounded-full bg-wahaj-card px-3 text-xs font-bold text-wahaj-ink">
+                  تعديل
+                </button>
                 <button onClick={() => onDelete(coupon.id)} className="min-h-9 rounded-full bg-red-50 px-3 text-xs font-bold text-red-600">
                   حذف
                 </button>
@@ -2127,7 +2192,7 @@ function CouponsManager({
         {coupons.length === 0 ? <EmptyState text="لا توجد كوبونات محفوظة." /> : null}
       </Panel>
 
-      <Panel title="إنشاء كوبون" icon={BadgePercent}>
+      <Panel title={editingId ? "تعديل كوبون" : "إنشاء كوبون"} icon={BadgePercent}>
         <div className="space-y-3">
           <input className="AdminInput" value={code} onChange={(event) => setCode(event.target.value)} placeholder="CODE" />
           <select className="AdminInput" value={type} onChange={(event) => setType(event.target.value as "percentage" | "fixed")}>
@@ -2141,9 +2206,16 @@ function CouponsManager({
           <input className="AdminInput" type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} />
           <input className="AdminInput" value={minOrder} onChange={(event) => setMinOrder(event.target.value)} placeholder="حد أدنى للطلب" inputMode="numeric" />
           {message ? <p className="rounded-[8px] bg-wahaj-card p-3 text-sm font-bold">{message}</p> : null}
-          <button onClick={submitCoupon} className="min-h-11 w-full rounded-full bg-wahaj-rose px-4 font-bold text-white">
-            حفظ الكوبون
-          </button>
+          <div className="flex gap-2">
+            <button onClick={submitCoupon} className="min-h-11 flex-1 rounded-full bg-wahaj-rose px-4 font-bold text-white">
+              {editingId ? "حفظ التعديلات" : "حفظ الكوبون"}
+            </button>
+            {editingId ? (
+              <button onClick={cancelEdit} className="min-h-11 rounded-full border border-wahaj-border bg-white px-4 text-sm font-bold text-wahaj-ink">
+                إلغاء
+              </button>
+            ) : null}
+          </div>
         </div>
       </Panel>
     </div>
@@ -2779,6 +2851,25 @@ function AnalyticsManager({
     whatsappDaily: {}
   });
 
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  async function handleReset() {
+    setIsResetting(true);
+    try {
+      const res = await fetch("/api/analytics", { method: "DELETE" });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.message || "فشل الحذف");
+      const fresh = await fetch("/api/analytics").then((r) => r.json());
+      if (fresh && typeof fresh === "object") setAnalyticsData(fresh);
+      setShowResetConfirm(false);
+    } catch (err) {
+      console.error("Reset error:", err);
+    } finally {
+      setIsResetting(false);
+    }
+  }
+
   useEffect(() => {
     fetch("/api/analytics")
       .then((res) => res.json())
@@ -2941,6 +3032,55 @@ function AnalyticsManager({
           </div>
         </Panel>
       ) : null}
+
+      {/* Analytics Reset */}
+      <div className="border-t border-wahaj-border/50 pt-6">
+        <button
+          onClick={() => setShowResetConfirm(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-[8px] border border-red-200 bg-red-50/50 px-4 py-3 text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
+        >
+          <Trash2 className="h-4 w-4" />
+          إعادة تعيين التحليلات
+        </button>
+      </div>
+
+      {/* Reset confirmation modal */}
+      {showResetConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setShowResetConfirm(false)}
+        >
+          <div className="mx-4 w-full max-w-sm rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-wahaj-ink">إعادة تعيين التحليلات</h3>
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="rounded-full p-1 text-wahaj-text/50 hover:bg-wahaj-bg hover:text-wahaj-ink"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mb-6 text-sm leading-6 text-wahaj-text/80">
+              سيتم حذف جميع بيانات التحليلات الحالية. لا يمكن التراجع عن هذه العملية.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 rounded-[8px] border border-wahaj-border bg-white px-4 py-2.5 text-sm font-bold text-wahaj-ink transition-colors hover:bg-wahaj-bg"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleReset}
+                disabled={isResetting}
+                className="flex-1 rounded-[8px] bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+              >
+                {isResetting ? "جار الحذف..." : "نعم، إعادة التعيين"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

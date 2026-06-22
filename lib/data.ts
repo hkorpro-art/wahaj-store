@@ -1,5 +1,5 @@
 import { storeImage } from "./imagekit";
-import type { Coupon, Customer, Order, Product, Story } from "./types";
+import type { Customer, Order, Product, Story } from "./types";
 
 export const whatsappNumber = "967781679899";
 
@@ -367,27 +367,6 @@ export const customers: Customer[] = [
     orders: 5,
     total: 86200,
     inspiration: ["سوار رؤى المرن", "أقراط ميرا المتدلية"]
-  }
-];
-
-export const coupons: Coupon[] = [
-  {
-    id: "co-001",
-    code: "WAHAJ10",
-    type: "percentage",
-    value: 10,
-    expiresAt: "2026-06-15",
-    usageLimit: 100,
-    minOrder: 10000
-  },
-  {
-    id: "co-002",
-    code: "ROSE1500",
-    type: "fixed",
-    value: 1500,
-    expiresAt: "2026-06-01",
-    usageLimit: 40,
-    minOrder: 15000
   }
 ];
 

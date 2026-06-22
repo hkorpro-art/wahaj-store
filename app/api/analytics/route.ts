@@ -51,6 +51,44 @@ export async function POST(request: Request) {
   }
 }
 
+export async function DELETE() {
+  const token = (await cookies()).get("wahaj_admin")?.value;
+  const admin = await verifyAdminToken(token);
+  if (!admin) {
+    return NextResponse.json({ message: "غير مصرح." }, { status: 401 });
+  }
+
+  const db = getFirebaseFirestoreAdmin();
+  if (!db) return NextResponse.json({ ok: false, message: "No Firestore." });
+
+  try {
+    const snapshot = await db.collection(COLL).get();
+    const docs = snapshot.docs;
+
+    if (docs.length === 0) {
+      return NextResponse.json({ ok: true, deletedCount: 0 });
+    }
+
+    let deletedCount = 0;
+    const batchSize = 500;
+
+    for (let i = 0; i < docs.length; i += batchSize) {
+      const batch = db.batch();
+      const chunk = docs.slice(i, i + batchSize);
+      for (const doc of chunk) {
+        batch.delete(doc.ref);
+      }
+      await batch.commit();
+      deletedCount += chunk.length;
+    }
+
+    return NextResponse.json({ ok: true, deletedCount, timestamp: new Date().toISOString() });
+  } catch (err) {
+    console.error("Analytics DELETE error:", err);
+    return NextResponse.json({ ok: false, message: "Failed." }, { status: 500 });
+  }
+}
+
 export async function GET() {
   const token = (await cookies()).get("wahaj_admin")?.value;
   const admin = await verifyAdminToken(token);

@@ -1,10 +1,9 @@
-import type { Coupon, Product, Story, Collection } from "./types";
+import type { Product, Story, Collection } from "./types";
 import type { StoredImage } from "./imagekit";
 
 export const adminStorageKeys = {
   products: "wahaj_admin_products",
   orders: "wahaj_admin_orders",
-  coupons: "wahaj_admin_coupons",
   content: "wahaj_admin_content",
   stories: "wahaj_admin_stories",
   notifications: "wahaj_admin_notifications",
@@ -38,12 +37,6 @@ export type StoryTarget = "new" | "offers" | "trend" | "sets" | "clients" | "all
 export type ManagedStory = Story & {
   visible?: boolean;
   target?: StoryTarget;
-};
-
-export type ManagedCoupon = Coupon & {
-  used?: number;
-  active?: boolean;
-  createdAt?: string;
 };
 
 export type ManagedNotification = {

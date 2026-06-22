@@ -17,7 +17,7 @@ export default function TrustStrip() {
   useEffect(() => {
     const timer = setInterval(() => {
       setIndex((i) => (i + 1) % items.length);
-    }, 7500);
+    }, 2000);
     return () => clearInterval(timer);
   }, []);
 
@@ -26,12 +26,12 @@ export default function TrustStrip() {
 
   return (
     <div className="flex items-center justify-center gap-2 py-2">
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         <motion.div
           key={index}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
+          exit={{ opacity: 0, y: 8 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="flex items-center gap-2 text-sm text-wahaj-text/70"
         >

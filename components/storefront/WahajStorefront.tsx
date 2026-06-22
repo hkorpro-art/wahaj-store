@@ -9,12 +9,10 @@ import {
   Home,
   Menu,
   MessageCircle,
-  Minus,
   Settings,
   ShoppingBag,
   Sparkles,
   Star,
-  Trash2,
   X
 } from "lucide-react";
 import Image from "next/image";
@@ -53,13 +51,13 @@ const seedManagedProducts = products.map((product) => ({ ...product, visible: tr
 
 export default function WahajStorefront() {
   const posthog = usePostHog();
+  const router = useRouter();
   const { cartItems, cartTotal, cartCount, addToCart: contextAddToCart, updateQuantity, removeFromCart, clearCart } = useCart();
   const [storeProducts, setStoreProducts] = useState<ManagedProduct[]>(seedManagedProducts);
   const [storeCollections, setStoreCollections] = useState<ManagedCollection[]>(seedCollections);
   const [siteContent, setSiteContent] = useState<SiteContent>(defaultSiteContent);
   const [query, setQuery] = useState("");
   const prevQuery = useRef("");
-  const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [addedToast, setAddedToast] = useState<{ visible: boolean; productName: string }>({ visible: false, productName: "" });
   const [heroContrasts, setHeroContrasts] = useState<ElementContrasts>({ logo: "dark", menu: "dark", cart: "dark", search: "dark" });
@@ -173,59 +171,10 @@ export default function WahajStorefront() {
     prevQuery.current = trimmed;
   }, [query, posthog]);
 
-  function handleCartCheckout() {
-    openWhatsAppForCart("", "", false, "");
-  }
-
   function handleAddToCart(product: Product) {
     contextAddToCart(product);
-    setCartOpen(true);
     setAddedToast({ visible: true, productName: product.name });
     setTimeout(() => setAddedToast({ visible: false, productName: "" }), 2500);
-  }
-
-  async function openWhatsAppForCart(customerName: string, customerPhone: string, isGift: boolean, giftMessage: string) {
-    if (cartItems.length === 0) return;
-
-    const order = {
-      customer: customerName,
-      phone: customerPhone,
-      products: cartItems.map((item) => `${item.product.name} (x${item.quantity})`),
-      total: cartTotal,
-      notes: isGift ? `تغليف إهداء: ${giftMessage}` : "طلب عادي",
-      isGift,
-      giftMessage
-    };
-
-    try {
-      await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(order)
-      });
-    } catch (err) {
-      console.error("Failed to save order to Firestore:", err);
-    }
-
-    for (const item of cartItems) {
-      fetch("/api/analytics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "whatsapp_click", productId: item.product.id, productName: item.product.name, source: "cart_checkout" })
-      }).catch(() => {});
-
-      posthog?.capture("whatsapp_click", { product_id: item.product.id, product_name: item.product.name, source: "cart_checkout", $current_url: window.location.href });
-    }
-
-    let message = buildCartMessage(cartItems);
-    message = message.replace("الاسم:", `الاسم: ${customerName}`);
-    if (isGift) {
-      message = message.replace("ملاحظات:", `ملاحظات: إرسال كهدية وتغليف فاخر 🎁\nرسالة الإهداء: "${giftMessage}"`);
-    }
-    window.open(whatsappUrl(message), "_blank", "noopener,noreferrer");
-
-    clearCart();
-    setCartOpen(false);
   }
 
   return (
@@ -233,7 +182,7 @@ export default function WahajStorefront() {
       <Header
         cartCount={cartItems.length}
         heroContrasts={heroContrasts}
-        onCart={() => setCartOpen(true)}
+        onCart={() => router.push("/cart")}
         onMenu={() => setMenuOpen(true)}
       />
 
@@ -292,21 +241,10 @@ export default function WahajStorefront() {
 
       <BottomNavigation
         cartCount={cartItems.length}
-        onCart={() => setCartOpen(true)}
+        onCart={() => router.push("/cart")}
       />
 
       <FloatingWhatsApp items={cartItems} />
-
-      <CartSheet
-        open={cartOpen}
-        items={cartItems}
-        total={cartTotal}
-        products={storeProducts}
-        onClose={() => setCartOpen(false)}
-        onQty={updateQuantity}
-        onRemove={removeFromCart}
-        onCheckout={handleCartCheckout}
-      />
 
       <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} collections={storeCollections} />
 
@@ -603,15 +541,27 @@ function FloatingWhatsApp({ items }: { items: CartItem[] }) {
       : whatsappUrl("مرحبًا وهاج ✨\nأرغب بمعرفة أحدث القطع المتوفرة.");
 
   function handleClick() {
-    for (const item of items) {
-      fetch("/api/analytics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "whatsapp_click", productId: item.product.id, productName: item.product.name, source: "floating_button" })
-      }).catch(() => {});
+    fetch("/api/analytics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "whatsapp_click",
+        source: "floating_button",
+        itemCount: items.length,
+        total: items.reduce((sum, i) => sum + i.product.price * i.quantity, 0),
+        productIds: items.map((i) => i.product.id).join(","),
+        productNames: items.map((i) => `${i.product.name} (x${i.quantity})`).join(" | ")
+      })
+    }).catch(() => {});
 
-      posthog?.capture("whatsapp_click", { product_id: item.product.id, product_name: item.product.name, source: "floating_button", $current_url: window.location.href });
-    }
+    posthog?.capture("whatsapp_click", {
+      source: "floating_button",
+      item_count: items.length,
+      total: items.reduce((sum, i) => sum + i.product.price * i.quantity, 0),
+      product_ids: items.map((i) => i.product.id),
+      product_names: items.map((i) => `${i.product.name} (x${i.quantity})`),
+      $current_url: window.location.href,
+    });
   }
 
   return (
@@ -632,225 +582,7 @@ function FloatingWhatsApp({ items }: { items: CartItem[] }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CART SHEET — Luxury Slide-in Cart
-   ═══════════════════════════════════════════════════════════ */
 
-type CartSheetProps = {
-  open: boolean;
-  items: CartItem[];
-  total: number;
-  products: ManagedProduct[];
-  onClose: () => void;
-  onQty: (productId: string, delta: number) => void;
-  onRemove: (productId: string) => void;
-  onCheckout: () => void;
-};
-
-function CartSheet({ open, items, total, products, onClose, onQty, onRemove, onCheckout }: CartSheetProps) {
-  const cartProductIds = useMemo(() => new Set(items.map((i) => i.product.id)), [items]);
-
-  const suggested = useMemo(() => {
-    return products
-      .filter((p) => p.visible !== false && !cartProductIds.has(p.id))
-      .slice(0, 2);
-  }, [products, cartProductIds]);
-
-  const totalQty = items.reduce((s, i) => s + i.quantity, 0);
-
-  return (
-    <AnimatePresence>
-      {open ? (
-        <motion.div
-          className="fixed inset-0 z-[70] bg-wahaj-bg"
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 28, stiffness: 250, mass: 0.8 }}
-        >
-          {items.length === 0 ? (
-            /* ── Empty State: flex centering ── */
-            <div className="flex h-full flex-col">
-              <div className="flex shrink-0 items-center justify-between border-b border-wahaj-border/40 bg-white/90 px-4 py-3">
-                <button
-                  onClick={onClose}
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-wahaj-soft/60 text-wahaj-ink transition-all duration-200 active:scale-90 hover:bg-wahaj-soft"
-                  aria-label="العودة للتسوق"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-                <div className="flex items-center gap-2">
-                  <span className="font-display text-lg font-medium text-wahaj-ink">طلبك الناعم ✨</span>
-                </div>
-                <div className="w-10" />
-              </div>
-              <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
-                <div className="mb-5 rounded-full bg-wahaj-soft/60 p-4">
-                  <ShoppingBag className="h-8 w-8 text-wahaj-rose" />
-                </div>
-                <p className="font-display text-xl font-medium text-wahaj-ink">✨ لم تختاري لمستك بعد</p>
-                <p className="mt-2 text-sm leading-6 text-wahaj-text/70">
-                  اكتشفي قطعاً صُممت لتضيئي بها لحظاتك
-                </p>
-                <button
-                  onClick={onClose}
-                  className="mt-6 flex min-h-11 items-center justify-center rounded-full bg-wahaj-ink px-8 text-sm font-bold text-white transition-all duration-300 hover:bg-wahaj-rose"
-                >
-                  استكشفي المجموعة
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* ── Non-empty: natural flow with sticky top bar + checkout ── */
-            <div className="h-full overflow-y-auto">
-              <div className="sticky top-0 z-10 border-b border-wahaj-border/40 bg-white/90 px-4 py-3 backdrop-blur-xl">
-                <div className="flex items-center justify-between">
-                  <button
-                    onClick={onClose}
-                    className="flex h-11 w-11 items-center justify-center rounded-full bg-wahaj-soft/60 text-wahaj-ink transition-all duration-200 active:scale-90 hover:bg-wahaj-soft"
-                    aria-label="العودة للتسوق"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                  <div className="flex items-center gap-2">
-                    <span className="font-display text-lg font-medium text-wahaj-ink">طلبك الناعم ✨</span>
-                    <span className="rounded-full bg-wahaj-rose/10 px-2.5 py-0.5 text-xs font-bold text-wahaj-rose">
-                      {totalQty}
-                    </span>
-                  </div>
-                  <div className="w-10" />
-                </div>
-              </div>
-
-              <div className="px-4 pt-4 pb-4 space-y-3">
-                <p className="font-thmanyah-text text-xs font-medium text-wahaj-text/60">
-                  طلبك الناعم • {totalQty} {totalQty === 1 ? "قطعة مختارة" : "قطع مختارة"} ✨
-                </p>
-
-                <AnimatePresence mode="popLayout">
-                  {items.map((item) => (
-                    <motion.div
-                      key={item.product.id}
-                      layout
-                      initial={{ opacity: 0, x: -30, scale: 0.96 }}
-                      animate={{ opacity: 1, x: 0, scale: 1 }}
-                      exit={{ opacity: 0, x: 30, scale: 0.96 }}
-                      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                      className="flex gap-4 rounded-2xl border border-wahaj-border/50 bg-white/85 p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]"
-                    >
-                      <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-xl">
-                        <Image
-                          src={imageUrl(item.product.images[0], { width: 200, height: 260 })}
-                          alt={item.product.name}
-                          fill
-                          sizes="96px"
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="flex min-w-0 flex-1 flex-col justify-between">
-                        <div>
-                          <p className="line-clamp-2 text-sm font-bold leading-snug text-wahaj-ink">
-                            {item.product.name}
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-wahaj-rose">
-                            {formatPrice(item.product.price)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1 rounded-full border border-wahaj-border/60 bg-white/80 p-0.5 shadow-sm">
-                            <button
-                              onClick={() => onQty(item.product.id, -1)}
-                              className="flex h-10 w-10 items-center justify-center rounded-full text-wahaj-text/60 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
-                            >
-                              <Minus className="h-3.5 w-3.5" />
-                            </button>
-                            <motion.span
-                              key={item.quantity}
-                              initial={{ scale: 1.2, opacity: 0.6 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              transition={{ duration: 0.15 }}
-                              className="min-w-[24px] text-center text-sm font-bold text-wahaj-ink"
-                            >
-                              {item.quantity}
-                            </motion.span>
-                            <button
-                              onClick={() => onQty(item.product.id, 1)}
-                              className="flex h-10 w-10 items-center justify-center rounded-full text-wahaj-text/60 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
-                            >
-                              <span className="text-lg font-bold leading-none">+</span>
-                            </button>
-                          </div>
-                          <button
-                            onClick={() => onRemove(item.product.id)}
-                            className="flex h-10 w-10 items-center justify-center rounded-full text-wahaj-text/30 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-
-                {suggested.length > 0 ? (
-                  <div className="pt-2">
-                    <p className="mb-3 font-thmanyah-text text-xs font-medium text-wahaj-text/50">
-                      قد يعجبك أيضاً
-                    </p>
-                    <div className="flex gap-3">
-                      {suggested.map((p) => {
-                        const imgUrl = p.images?.[0]
-                          ? imageUrl(p.images[0], { width: 160, height: 160 })
-                          : "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=128&q=80";
-                        return (
-                          <Link
-                            key={p.id}
-                            href={`/product/${p.slug}`}
-                            onClick={onClose}
-                            className="flex flex-1 items-center gap-3 rounded-xl border border-wahaj-border/30 bg-white/70 p-2 transition-all duration-200 hover:shadow-md"
-                          >
-                            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg">
-                              <Image
-                                src={imgUrl}
-                                alt={p.name}
-                                fill
-                                sizes="56px"
-                                className="object-cover"
-                              />
-                            </div>
-                            <p className="line-clamp-2 text-xs font-bold leading-snug text-wahaj-ink">
-                              {p.name}
-                            </p>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="sticky bottom-0 z-10 border-t border-wahaj-border/40 bg-white/90 px-4 py-4 backdrop-blur-xl">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-wahaj-text/70">الإجمالي</span>
-                  <span className="font-thmanyah-text text-xl font-bold text-wahaj-ink">
-                    {formatPrice(total)}
-                  </span>
-                </div>
-                <button
-                  onClick={onCheckout}
-                  className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-wahaj-ink text-base font-bold text-white shadow-lg transition-all duration-300 hover:bg-wahaj-rose active:scale-[0.98]"
-                >
-                  <MessageCircle className="h-5 w-5" />
-                  إتمام الطلب الفاخر ✨
-                </button>
-              </div>
-            </div>
-          )}
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════
    MENU SHEET — Premium Navigation Drawer

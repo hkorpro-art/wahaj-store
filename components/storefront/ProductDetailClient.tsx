@@ -191,7 +191,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       product_name: product.name,
       $current_url: window.location.href,
     });
-  }, [product, posthog]);
+  }, [product?.id, posthog]);
 
   const trustMessages: TrustMessage[] = useMemo(
     () => product?.trustMessages && product.trustMessages.length > 0
@@ -330,7 +330,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             </span>
           </div>
           <Link
-            href="/"
+            href="/cart"
             className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-wahaj-ink/60 transition hover:bg-wahaj-soft/40 hover:text-wahaj-ink"
             aria-label="السلة"
           >

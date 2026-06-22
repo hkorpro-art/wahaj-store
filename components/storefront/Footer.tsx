@@ -1,10 +1,7 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { seedCollections } from "@/lib/collections";
 import { seedCategories } from "@/lib/categories";
-import type { Collection } from "@/lib/types";
 
 const infoLinks = [
   { label: "من نحن", href: "/about" },
@@ -15,40 +12,8 @@ const infoLinks = [
 ] as const;
 
 export default function Footer() {
-  const [collections, setCollections] = useState<Collection[]>(seedCollections);
-  const [categories, setCategories] = useState<Collection[]>(seedCategories);
-
-  useEffect(() => {
-    async function loadCollections() {
-      try {
-        const response = await fetch(`/api/collections?refresh=${Date.now()}`, { cache: "no-store" });
-        const payload = await response.json().catch(() => null);
-        if (response.ok && Array.isArray(payload?.collections)) {
-          setCollections(payload.collections as Collection[]);
-        }
-      } catch {
-        // keep seedCollections as fallback
-      }
-    }
-
-    async function loadCategories() {
-      try {
-        const response = await fetch(`/api/categories?refresh=${Date.now()}`, { cache: "no-store" });
-        const payload = await response.json().catch(() => null);
-        if (response.ok && Array.isArray(payload?.categories)) {
-          setCategories(payload.categories as Collection[]);
-        }
-      } catch {
-        // keep seedCategories as fallback
-      }
-    }
-
-    loadCollections();
-    loadCategories();
-  }, []);
-
-  const visibleCollections = useMemo(() => collections.filter((c) => c.visible), [collections]);
-  const visibleCategories = useMemo(() => categories.filter((c) => c.visible), [categories]);
+  const visibleCollections = useMemo(() => seedCollections.filter((c) => c.visible), []);
+  const visibleCategories = useMemo(() => seedCategories.filter((c) => c.visible), []);
 
   return (
     <footer className="border-t border-wahaj-border bg-white/60 backdrop-blur-sm">
