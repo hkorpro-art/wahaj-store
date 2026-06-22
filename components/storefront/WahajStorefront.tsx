@@ -38,7 +38,7 @@ import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl } from "@/lib/imagekit";
 import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
 import { buildCartMessage, whatsappUrl } from "@/lib/whatsapp";
-import type { CartItem, Product } from "@/lib/types";
+import type { CartItem, Coupon, Product } from "@/lib/types";
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -56,6 +56,7 @@ export default function WahajStorefront() {
   const [storeProducts, setStoreProducts] = useState<ManagedProduct[]>(seedManagedProducts);
   const [storeCollections, setStoreCollections] = useState<ManagedCollection[]>(seedCollections);
   const [siteContent, setSiteContent] = useState<SiteContent>(defaultSiteContent);
+  const [activeCoupons, setActiveCoupons] = useState<Coupon[]>([]);
   const [query, setQuery] = useState("");
   const prevQuery = useRef("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -135,6 +136,7 @@ export default function WahajStorefront() {
       const payload = await response.json().catch(() => null);
       if (response.ok && payload?.content) {
         setSiteContent({ ...defaultSiteContent, ...payload.content });
+        setActiveCoupons(payload.activeCoupons ?? []);
         return;
       }
     } catch {
@@ -193,7 +195,7 @@ export default function WahajStorefront() {
         onSearchChange={setQuery}
       />
 
-      <OfferBar offers={siteContent.offerMessages} />
+      <OfferBar offers={siteContent.offerMessages} activeCoupons={activeCoupons} />
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
 
@@ -357,8 +359,19 @@ function Counter({ value }: { value: number }) {
    OFFER BAR — Animated Marquee
    ═══════════════════════════════════════════════════════════ */
 
-function OfferBar({ offers }: { offers: string[] }) {
-  const items = offers.length > 0 ? offers : defaultSiteContent.offerMessages;
+function OfferBar({ offers, activeCoupons }: { offers: string[]; activeCoupons: Coupon[] }) {
+  const couponMessages = useMemo(
+    () =>
+      activeCoupons.map((c) =>
+        c.type === "percentage"
+          ? `خصم ${c.value}% بكود ${c.code}`
+          : `خصم ${c.value} ريال بكود ${c.code}`,
+      ),
+    [activeCoupons],
+  );
+
+  const manualItems = offers.length > 0 ? offers : defaultSiteContent.offerMessages;
+  const items = [...manualItems, ...couponMessages];
 
   return (
     <div className="overflow-hidden border-b border-white/20 bg-white/30 backdrop-blur-sm">

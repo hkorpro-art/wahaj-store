@@ -2286,6 +2286,15 @@ function ContentManager({
             onChange={(event) => setDraft({ ...draft, offerMessages: splitList(event.target.value) })}
             placeholder="شريط العروض، كل عرض في سطر"
           />
+          <label className="flex items-center gap-3 rounded-[8px] bg-wahaj-card p-3">
+            <input
+              type="checkbox"
+              checked={draft.showActiveCoupons ?? false}
+              onChange={(event) => setDraft({ ...draft, showActiveCoupons: event.target.checked })}
+              className="h-5 w-5 accent-wahaj-rose"
+            />
+            <span className="text-sm font-bold">إظهار الكوبونات النشطة تلقائياً</span>
+          </label>
           <div className="grid gap-2 sm:grid-cols-2">
             <button onClick={() => onContentChange(draft)} className="min-h-11 rounded-full bg-wahaj-rose px-5 font-bold text-white">
               تحديث الواجهة

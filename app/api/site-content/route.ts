@@ -12,7 +12,8 @@ const siteContentSchema = z.object({
   heroDescription: z.string(),
   primaryCta: z.string(),
   secondaryCta: z.string(),
-  offerMessages: z.array(z.string())
+  offerMessages: z.array(z.string()),
+  showActiveCoupons: z.boolean()
 });
 
 export async function GET() {

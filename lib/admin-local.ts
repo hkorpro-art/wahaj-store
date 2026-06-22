@@ -20,6 +20,7 @@ export type SiteContent = {
   primaryCta: string;
   secondaryCta: string;
   offerMessages: string[];
+  showActiveCoupons: boolean;
 };
 
 export type ManagedProduct = Product & {
@@ -61,7 +62,8 @@ export const defaultSiteContent: SiteContent = {
     "كوبون WAHAJ10",
     "وصل حديثًا: أطقم زركون ناعمة",
     "تغليف هدية فاخر لكل طلب"
-  ]
+  ],
+  showActiveCoupons: false
 };
 
 export type HeroSlide = {
