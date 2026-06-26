@@ -13,7 +13,11 @@ const siteContentSchema = z.object({
   primaryCta: z.string(),
   secondaryCta: z.string(),
   offerMessages: z.array(z.string()),
-  showActiveCoupons: z.boolean()
+  showActiveCoupons: z.boolean(),
+  accordionDetails: z.string(),
+  accordionCare: z.string(),
+  accordionShipping: z.string(),
+  accordionReturns: z.string()
 });
 
 export async function GET() {

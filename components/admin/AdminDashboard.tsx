@@ -2295,6 +2295,35 @@ function ContentManager({
             />
             <span className="text-sm font-bold">إظهار الكوبونات النشطة تلقائياً</span>
           </label>
+          <details className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
+            <summary className="text-sm font-bold text-wahaj-ink cursor-pointer">النصوص الافتراضية للأكورديون</summary>
+            <div className="mt-3 space-y-3">
+              <textarea
+                className="AdminInput min-h-16 py-3"
+                value={draft.accordionDetails}
+                onChange={(event) => setDraft({ ...draft, accordionDetails: event.target.value })}
+                placeholder="محتوى قسم تفاصيل القطعة"
+              />
+              <textarea
+                className="AdminInput min-h-16 py-3"
+                value={draft.accordionCare}
+                onChange={(event) => setDraft({ ...draft, accordionCare: event.target.value })}
+                placeholder="محتوى قسم العناية"
+              />
+              <textarea
+                className="AdminInput min-h-16 py-3"
+                value={draft.accordionShipping}
+                onChange={(event) => setDraft({ ...draft, accordionShipping: event.target.value })}
+                placeholder="محتوى قسم الشحن"
+              />
+              <textarea
+                className="AdminInput min-h-16 py-3"
+                value={draft.accordionReturns}
+                onChange={(event) => setDraft({ ...draft, accordionReturns: event.target.value })}
+                placeholder="محتوى قسم الاستبدال"
+              />
+            </div>
+          </details>
           <div className="grid gap-2 sm:grid-cols-2">
             <button onClick={() => onContentChange(draft)} className="min-h-11 rounded-full bg-wahaj-rose px-5 font-bold text-white">
               تحديث الواجهة

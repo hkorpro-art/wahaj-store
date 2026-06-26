@@ -6,6 +6,7 @@ import JsonLd from "@/components/JsonLd";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { getManagedProducts } from "@/lib/products";
 import { seedCategories } from "@/lib/categories";
+import { getSiteContent } from "@/lib/site-content";
 import type { Collection } from "@/lib/types";
 
 const getCachedProducts = cache(() => getManagedProducts());
@@ -83,6 +84,7 @@ function matchesProductRoute(product: { id: string; slug: string }, routeSlug: s
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
   const { products: managedProducts } = await getCachedProducts();
+  const siteContent = await getSiteContent();
   const initialProduct =
     managedProducts.find((item) => matchesProductRoute(item, slug) && item.visible !== false) ?? null;
   const initialSimilarProducts = initialProduct
@@ -155,6 +157,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         initialProduct={initialProduct}
         initialSimilarProducts={initialSimilarProducts}
         parentCategory={productCategory ? { name: productCategory.name, slug: productCategory.slug } : undefined}
+        siteContentDefaults={siteContent.content}
       />
     </>
   );

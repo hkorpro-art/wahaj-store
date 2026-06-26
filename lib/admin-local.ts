@@ -21,6 +21,10 @@ export type SiteContent = {
   secondaryCta: string;
   offerMessages: string[];
   showActiveCoupons: boolean;
+  accordionDetails: string;
+  accordionCare: string;
+  accordionShipping: string;
+  accordionReturns: string;
 };
 
 export type ManagedProduct = Product & {
@@ -63,7 +67,11 @@ export const defaultSiteContent: SiteContent = {
     "وصل حديثًا: أطقم زركون ناعمة",
     "تغليف هدية فاخر لكل طلب"
   ],
-  showActiveCoupons: false
+  showActiveCoupons: false,
+  accordionDetails: "قطعة وهاج فاخرة بتفاصيل أنثوية ناعمة.",
+  accordionCare: "للحفاظ على بريق الزركون: تجنبي تعريض القطعة للعطور والمواد الكيميائية. احفظيها في العلبة الأصلية بعيداً عن الرطوبة. نظفي بلطف بالمنديل المرفق بعد كل استخدام.",
+  accordionShipping: "الشحن عبر البريد الممتاز خلال 3-5 أيام عمل. تغليف فاخر ومجاني لجميع الطلبات. الشحن متوفر لجميع المحافظات اليمنية.",
+  accordionReturns: "يمكن استبدال القطعة خلال 7 أيام من الاستلام بشرط أن تكون بحالتها الأصلية مع العبوة. الاستبدال متاح مرة واحدة فقط."
 };
 
 export type HeroSlide = {

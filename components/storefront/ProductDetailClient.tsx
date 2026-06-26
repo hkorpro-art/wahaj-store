@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 import { useCart } from "@/lib/cart-context";
-import type { ManagedProduct } from "@/lib/admin-local";
+import type { ManagedProduct, SiteContent } from "@/lib/admin-local";
 import type { TrustMessage } from "@/lib/types";
 import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl, productCoverUrl, resolveImageSrc } from "@/lib/imagekit";
@@ -20,6 +20,7 @@ type ProductDetailClientProps = {
   initialProduct: ManagedProduct | null;
   initialSimilarProducts: ManagedProduct[];
   parentCategory?: { name: string; slug: string };
+  siteContentDefaults: SiteContent;
 };
 
 function normalizeSlug(value: string) {
@@ -91,7 +92,7 @@ function formatPriceLatin(value: number) {
   return `${new Intl.NumberFormat("en-US").format(value)} YER`;
 }
 
-export default function ProductDetailClient({ slug, initialProduct, initialSimilarProducts }: ProductDetailClientProps) {
+export default function ProductDetailClient({ slug, initialProduct, initialSimilarProducts, siteContentDefaults }: ProductDetailClientProps) {
   const posthog = usePostHog();
   const [product, setProduct] = useState<ManagedProduct | null>(
     initialProduct
@@ -608,10 +609,10 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
         <section className="mt-4 space-y-2">
           {accordionConfig.map(({ id, title, Icon }) => {
             const contentMap: Record<string, string> = {
-              details: product.accordionDetails || "قطعة وهاج فاخرة بتفاصيل أنثوية ناعمة.",
-              care: product.accordionCare || "للحفاظ على بريق الزركون: تجنبي تعريض القطعة للعطور والمواد الكيميائية. احفظيها في العلبة الأصلية بعيداً عن الرطوبة. نظفي بلطف بالمنديل المرفق بعد كل استخدام.",
-              shipping: product.accordionShipping || "الشحن عبر البريد الممتاز خلال 3-5 أيام عمل. تغليف فاخر ومجاني لجميع الطلبات. الشحن متوفر لجميع المحافظات اليمنية.",
-              returns: product.accordionReturns || "يمكن استبدال القطعة خلال 7 أيام من الاستلام بشرط أن تكون بحالتها الأصلية مع العبوة. الاستبدال متاح مرة واحدة فقط."
+              details: product.accordionDetails || siteContentDefaults.accordionDetails,
+              care: product.accordionCare || siteContentDefaults.accordionCare,
+              shipping: product.accordionShipping || siteContentDefaults.accordionShipping,
+              returns: product.accordionReturns || siteContentDefaults.accordionReturns
             };
             const content = contentMap[id];
             const isOpen = openAccordion === id;
