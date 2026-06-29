@@ -125,7 +125,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             ).filter(Boolean),
             brand: {
               "@type": "Brand",
-              name: "WAHAJ"
+              name: initialProduct.brand || "WAHAJ"
             },
             offers: {
               "@type": "Offer",

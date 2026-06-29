@@ -10,6 +10,7 @@ export const productInputSchema = z.object({
   id: z.string().min(1).max(120),
   slug: z.string().min(1).max(160),
   name: z.string().min(2).max(120),
+  brand: z.string().max(80).optional(),
   category: z.string().min(2).max(60),
   price: z.number().positive(),
   compareAt: z.number().positive().optional(),

@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { collection, onSnapshot } from "firebase/firestore";
-import { ArrowLeft, ChevronDown, Gem, Minus, Plus, RefreshCw, Share2, ShoppingBag, Sparkles, Star, Truck } from "lucide-react";
+import { ArrowLeft, ChevronDown, Gem, Minus, Plus, RefreshCw, Share2, ShoppingBag, Sparkles, Star, Tag, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -302,16 +302,10 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     );
   }
 
-  const badgeIcons = product.badgeIcons && product.badgeIcons.length > 0
-    ? product.badgeIcons
-    : ["✨"];
-
   const whatsappText = product.whatsappCtaText || "✨ احجزي قطعتك الفاخرة";
-  const showColors = product.showColors !== false;
-  const showSizes = product.showSizes !== false;
   const showQuantity = product.showQuantity !== false;
 
-  const hasAnyOption = (showColors && product.colors.length > 0) || (showSizes && product.sizes.length > 0) || showQuantity;
+  const hasAnyOption = product.colors.length > 0 || product.sizes.length > 0 || showQuantity;
 
   return (
     <main className="min-h-screen bg-wahaj-bg text-wahaj-text">
@@ -443,12 +437,12 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             </div>
           </div>
 
-          {/* Badge + Rating row */}
+          {/* Brand + Rating row */}
           <div className="mt-4 flex items-center gap-3">
-            {product.badges.length > 0 ? (
+            {product.brand ? (
               <span className="inline-flex items-center gap-1.5 text-sm font-bold text-wahaj-rose">
-                <span className="text-base">{badgeIcons[0] || "✨"}</span>
-                <span>{product.badges[0]}</span>
+                <Tag className="h-4 w-4" />
+                <span>{product.brand}</span>
               </span>
             ) : null}
             <span className="inline-flex items-center gap-1 text-xs font-medium text-wahaj-stars/70">
@@ -504,7 +498,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
         {hasAnyOption ? (
           <section className="mt-5 divide-y divide-wahaj-border/40">
 
-            {showColors && product.colors.length > 0 ? (
+            {product.colors.length > 0 ? (
               <div className="py-3.5">
                 <p className="mb-2.5 text-sm font-bold text-wahaj-ink">اختاري اللون</p>
                 <div className="flex flex-wrap gap-2">
@@ -529,7 +523,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
               </div>
             ) : null}
 
-            {showSizes && product.sizes.length > 0 ? (
+            {product.sizes.length > 0 ? (
               <div className="py-3.5">
                 <p className="mb-2.5 text-sm font-bold text-wahaj-ink">اختاري المقاس</p>
                 <div className="flex flex-wrap gap-2">

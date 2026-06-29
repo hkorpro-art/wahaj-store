@@ -971,6 +971,7 @@ function QuickActions({ onAction }: { onAction: (tab: TabId) => void }) {
 type ProductFormState = {
   id?: string;
   name: string;
+  brand: string;
   price: string;
   compareAt: string;
   category: string;
@@ -1001,15 +1002,16 @@ type ProductFormState = {
 function emptyProductForm(): ProductFormState {
   return {
     name: "",
+    brand: "",
     price: "",
     compareAt: "",
     category: categories[0]?.id || "sets",
     description: "",
     material: "زركون فاخر مع طلاء Rose Gold مقاوم للبهتان",
     stock: "10",
-    images: [storeImage("https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1100&q=85")],
-    colors: "روز قولد، فضي، ذهبي ناعم",
-    sizes: "قابل للتعديل، S، M",
+    images: [],
+    colors: "ذهبي، فضي",
+    sizes: "",
     tags: "وهاج، زركون، جديد",
     badges: ["جديد"],
     badgeIcons: "✨",
@@ -1397,6 +1399,7 @@ function productToForm(product: ManagedProduct): ProductFormState {
   return {
     id: product.id,
     name: product.name,
+    brand: product.brand || "",
     price: product.price.toString(),
     compareAt: product.compareAt?.toString() || "",
     category: product.category,
@@ -1479,6 +1482,7 @@ function ProductsManager({
       id: form.id || `admin-${timestamp}`,
       slug: existing?.slug || createSlug(form.name) || `product-${timestamp}`,
       name: form.name.trim(),
+      brand: form.brand.trim() || undefined,
       category: form.category,
       price: parsedPrice,
       compareAt: parsedCompareAt && parsedCompareAt > parsedPrice ? parsedCompareAt : undefined,
@@ -1668,6 +1672,7 @@ function ProductsManager({
         <Panel title={form.id ? "تعديل منتج" : "إضافة منتج"} icon={PackagePlus}>
           <div className="space-y-3">
             <input className="AdminInput" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="اسم المنتج" />
+            <input className="AdminInput" value={form.brand} onChange={(event) => setForm({ ...form, brand: event.target.value })} placeholder="العلامة التجارية (مثال: WAHAJ)" />
             <div className="grid grid-cols-2 gap-2">
               <input className="AdminInput" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} placeholder="السعر" inputMode="numeric" />
               <input className="AdminInput" value={form.compareAt} onChange={(event) => setForm({ ...form, compareAt: event.target.value })} placeholder="قبل الخصم" inputMode="numeric" />
@@ -1679,10 +1684,7 @@ function ProductsManager({
                 </option>
               ))}
             </select>
-            <div className="grid grid-cols-2 gap-2">
-              <input className="AdminInput" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} placeholder="المخزون" inputMode="numeric" />
-              <input className="AdminInput" type="date" value={form.discountEndsAt} onChange={(event) => setForm({ ...form, discountEndsAt: event.target.value })} title="نهاية الخصم" />
-            </div>
+            <input className="AdminInput" type="date" value={form.discountEndsAt} onChange={(event) => setForm({ ...form, discountEndsAt: event.target.value })} title="نهاية الخصم" />
             <ProductImagesEditor
               images={form.images}
               uploading={uploading}
@@ -1698,9 +1700,18 @@ function ProductsManager({
             </div>
             <input className="AdminInput" value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} placeholder="الوسوم" />
             <input className="AdminInput" value={form.badgeIcons} onChange={(event) => setForm({ ...form, badgeIcons: event.target.value })} placeholder="أيقونات البادجات (مثال: ✨، 🔥، 💎)" />
-            <input className="AdminInput" value={form.ratingLabel} onChange={(event) => setForm({ ...form, ratingLabel: event.target.value })} placeholder="تسمية التقييم (مثال: مختارات وهاج)" />
             <input className="AdminInput" value={form.whatsappCtaText} onChange={(event) => setForm({ ...form, whatsappCtaText: event.target.value })} placeholder="نص زر واتساب (مثال: ✨ احجزي قطعتك الفاخرة)" />
-
+            <textarea
+              className="AdminInput min-h-20 py-3"
+              value={form.trustMessages}
+              onChange={(event) => setForm({ ...form, trustMessages: event.target.value })}
+              placeholder='رسائل الثقة (JSON): [{"icon":"✨","text":"لمعة تدوم","visible":true}]'
+              dir="ltr"
+            />
+            <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
+              إظهار خيار الكمية
+              <input type="checkbox" checked={form.showQuantity} onChange={(event) => setForm({ ...form, showQuantity: event.target.checked })} />
+            </label>
             <div className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
               <p className="mb-2 text-sm font-bold text-wahaj-ink">Badges</p>
               <div className="flex flex-wrap gap-2">
@@ -1714,77 +1725,11 @@ function ProductsManager({
                 ))}
               </div>
             </div>
-
-            <div className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
-              <p className="mb-2 text-sm font-bold text-wahaj-ink">حالة المنتج</p>
-              <div className="flex flex-wrap gap-2">
-                {productStatusOptions.map((status) => (
-                  <ToggleChip
-                    key={status.value}
-                    label={status.label}
-                    active={form.status.includes(status.value)}
-                    onClick={() => setForm({ ...form, status: toggleArray(form.status, status.value) })}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <details className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
-              <summary className="text-sm font-bold text-wahaj-ink cursor-pointer">إعدادات متقدمة</summary>
-              <div className="mt-3 space-y-3">
-                <textarea
-                  className="AdminInput min-h-20 py-3"
-                  value={form.trustMessages}
-                  onChange={(event) => setForm({ ...form, trustMessages: event.target.value })}
-                  placeholder='رسائل الثقة (JSON): [{"icon":"✨","text":"لمعة تدوم","visible":true}]'
-                  dir="ltr"
-                />
-                <textarea
-                  className="AdminInput min-h-16 py-3"
-                  value={form.accordionDetails}
-                  onChange={(event) => setForm({ ...form, accordionDetails: event.target.value })}
-                  placeholder="محتوى قسم تفاصيل القطعة"
-                />
-                <textarea
-                  className="AdminInput min-h-16 py-3"
-                  value={form.accordionCare}
-                  onChange={(event) => setForm({ ...form, accordionCare: event.target.value })}
-                  placeholder="محتوى قسم العناية"
-                />
-                <textarea
-                  className="AdminInput min-h-16 py-3"
-                  value={form.accordionShipping}
-                  onChange={(event) => setForm({ ...form, accordionShipping: event.target.value })}
-                  placeholder="محتوى قسم الشحن"
-                />
-                <textarea
-                  className="AdminInput min-h-16 py-3"
-                  value={form.accordionReturns}
-                  onChange={(event) => setForm({ ...form, accordionReturns: event.target.value })}
-                  placeholder="محتوى قسم الاستبدال"
-                />
-                <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
-                  إظهار خيار الألوان
-                  <input type="checkbox" checked={form.showColors} onChange={(event) => setForm({ ...form, showColors: event.target.checked })} />
-                </label>
-                <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
-                  إظهار خيار المقاسات
-                  <input type="checkbox" checked={form.showSizes} onChange={(event) => setForm({ ...form, showSizes: event.target.checked })} />
-                </label>
-                <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
-                  إظهار خيار الكمية
-                  <input type="checkbox" checked={form.showQuantity} onChange={(event) => setForm({ ...form, showQuantity: event.target.checked })} />
-                </label>
-              </div>
-            </details>
-
             <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
               إظهار المنتج في المتجر
               <input type="checkbox" checked={form.visible} onChange={(event) => setForm({ ...form, visible: event.target.checked })} />
             </label>
-
             {message ? <p className="rounded-[8px] bg-wahaj-card p-3 text-sm font-bold text-wahaj-ink">{message}</p> : null}
-
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => onAskAi(form.name || "منتج وهاج")} className="min-h-11 rounded-full border border-wahaj-border bg-white px-4 font-bold text-wahaj-rose">
                 وصف AI
