@@ -6,6 +6,6 @@
   "author": "Netlify",
   "license": "MIT",
   "dependencies": {
-    "@netlify/plugin-nextjs": "5.15.11"
+    "@netlify/plugin-nextjs": "5.15.12"
   }
 }

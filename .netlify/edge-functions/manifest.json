@@ -2,10 +2,16 @@
   "version": 1,
   "functions": [
     {
-      "function": "___netlify-edge-handler-node-middleware",
+      "function": "___netlify-edge-handler-middleware",
       "name": "Next.js Middleware Handler",
       "pattern": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/admin(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(\\.json|\\.rsc|\\.segments\\/.+\\.segment\\.rsc)?[\\/#\\?]?$",
-      "generator": "@netlify/plugin-nextjs@5.15.11"
+      "generator": "@netlify/plugin-nextjs@5.15.12"
+    },
+    {
+      "function": "___netlify-edge-handler-middleware",
+      "name": "Next.js Middleware Handler",
+      "pattern": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/admin(\\.json|\\.rsc|\\.segments\\/.+\\.segment\\.rsc)?[\\/#\\?]?$",
+      "generator": "@netlify/plugin-nextjs@5.15.12"
     }
   ]
 }
