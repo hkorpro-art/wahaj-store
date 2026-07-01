@@ -96,8 +96,8 @@ async function runAll() {
   // Test B: Localhost origin
   await testUpload("Test B: Localhost Origin (http://localhost:3000)", "http://localhost:3000", "http://localhost:3000/admin");
 
-  // Test C: Deployed origin (simulating Netlify/Vercel)
-  await testUpload("Test C: Deployed Origin (https://wahaj5.netlify.app)", "https://wahaj5.netlify.app", "https://wahaj5.netlify.app/admin");
+  // Test C: Deployed origin (simulating Vercel)
+  await testUpload("Test C: Deployed Origin (https://wahaj0.vercel.app)", "https://wahaj0.vercel.app", "https://wahaj0.vercel.app/admin");
 }
 
 runAll();

@@ -37,7 +37,6 @@
   ],
   "exclude": [
     "node_modules",
-    "wahaj-full-netlify-upload",
-    "wahaj-netlify-source"
+
   ]
 }
