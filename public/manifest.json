@@ -1,0 +1,20 @@
+{
+  "name": "وهاج | WAHAJ - إكسسوارات نسائية فاخرة",
+  "short_name": "WAHAJ",
+  "description": "متجر وهاج لإكسسوارات نسائية فاخرة - زركون ناعم، تيجان ملكية، أقراط متألقة",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3E1E4",
+  "theme_color": "#450006",
+  "orientation": "portrait-primary",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

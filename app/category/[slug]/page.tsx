@@ -43,6 +43,7 @@ export async function generateMetadata(props: Props) {
   return {
     title: category.name,
     description: category.description || `تصفحي تشكيلة ${category.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`,
+    keywords: [`${category.name}`, "وهاج", "WAHAJ", "إكسسوارات نسائية", "تصنيف مجوهرات", "زركون فاخر", "تشكيلة راقية"],
     openGraph: {
       title: `${category.name} | وهاج`,
       description: category.description || `تصفحي تشكيلة ${category.name} من وهاج.`,

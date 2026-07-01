@@ -41,9 +41,14 @@ export async function generateMetadata(props: Props) {
     ? imageUrl(collection.image, { width: 1200, height: 630 })
     : undefined;
 
+  const description = (collection.description || `تصفحي تشكيلة ${collection.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`).length > 160
+    ? (collection.description || `تصفحي تشكيلة ${collection.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`).slice(0, 157) + "..."
+    : (collection.description || `تصفحي تشكيلة ${collection.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`);
+
   return {
     title: collection.name,
-    description: collection.description || `تصفحي تشكيلة ${collection.name} المميزة والراقية من متجر وهاج للزركون الفاخر.`,
+    description,
+    keywords: [`${collection.name}`, "وهاج", "WAHAJ", "إكسسوارات نسائية", "مجموعة مجوهرات", "زركون فاخر", "تشكيلة راقية"],
     openGraph: {
       title: `${collection.name} | وهاج`,
       description: collection.description || `تصفحي تشكيلة ${collection.name} من وهاج.`,

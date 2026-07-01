@@ -366,6 +366,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
           className="h-full min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder-white/60"
           placeholder="ابحثي عن زركون، تاج، طقم..."
           dir="rtl"
+          aria-label="ابحثي في متجر وهاج"
         />
       </label>
     </div>

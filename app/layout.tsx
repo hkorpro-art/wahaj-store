@@ -67,7 +67,16 @@ export const metadata: Metadata = {
   },
   description:
     "متجر وهاج لإكسسوارات نسائية فاخرة بتصميم عربي RTL وتجربة iPhone ناعمة، مع طلب مباشر عبر واتساب.",
-  keywords: ["وهاج", "WAHAJ", "زركون", "إكسسوارات نسائية", "تيجان", "أقراط", "أساور"],
+  keywords: ["وهاج", "WAHAJ", "زركون", "إكسسوارات نسائية", "تيجان", "أقراط", "أساور", "ذهب وردي", "مجوهرات نسائية"],
+  authors: [{ name: "WAHAJ" }],
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "32x32" }
+    ],
+    apple: { url: "/favicon.svg", type: "image/svg+xml" }
+  },
+  manifest: "/manifest.json",
   openGraph: {
     title: "وهاج | WAHAJ",
     description: "لمسات فاخرة تصنع الفرق.",
@@ -89,6 +98,11 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: siteUrl
+  },
+  other: {
+    "application-name": "WAHAJ",
+    "apple-mobile-web-app-title": "WAHAJ",
+    "apple-mobile-web-app-capable": "yes"
   }
 };
 
@@ -117,11 +131,16 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
               url: siteUrl,
               logo: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=512&q=85",
               description: "إكسسوارات نسائية فاخرة - لمسات فاخرة تصنع الفرق.",
+              sameAs: [
+                `https://wa.me/967781679899`,
+                siteUrl
+              ],
               contactPoint: {
                 "@type": "ContactPoint",
                 telephone: "+967-781-679-899",
                 contactType: "customer service",
-                availableLanguage: "Arabic"
+                availableLanguage: "Arabic",
+                areaServed: "YE"
               }
             }}
           />

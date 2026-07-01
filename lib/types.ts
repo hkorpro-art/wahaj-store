@@ -51,6 +51,8 @@ export type Product = {
   accordionShipping?: string;
   accordionReturns?: string;
   videos?: StoredImage[];
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Collection = {

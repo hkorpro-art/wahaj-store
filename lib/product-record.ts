@@ -58,7 +58,9 @@ export function rowToManagedProduct(row: ProductRow): ManagedProduct | null {
     accordionCare: stringValue(row.accordionCare ?? row.accordion_care) || undefined,
     accordionShipping: stringValue(row.accordionShipping ?? row.accordion_shipping) || undefined,
     accordionReturns: stringValue(row.accordionReturns ?? row.accordion_returns) || undefined,
-    videos: parseStoredImages(row.videos)
+    videos: parseStoredImages(row.videos),
+    createdAt: stringValue(row.createdAt ?? row.created_at) || undefined,
+    updatedAt: stringValue(row.updatedAt ?? row.updated_at) || undefined
   };
 }
 
@@ -101,7 +103,9 @@ export function productToRow(product: ManagedProduct) {
     accordion_care: product.accordionCare ?? null,
     accordion_shipping: product.accordionShipping ?? null,
     accordion_returns: product.accordionReturns ?? null,
-    videos: product.videos ?? []
+    videos: product.videos ?? [],
+    created_at: product.createdAt ?? new Date().toISOString(),
+    updated_at: product.updatedAt ?? new Date().toISOString()
   };
 }
 

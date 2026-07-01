@@ -303,6 +303,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
                   alt={product.name}
                   fill
                   priority
+                  fetchPriority="high"
                   sizes="100vw"
                   className="object-cover"
                 />

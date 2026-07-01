@@ -16,10 +16,10 @@ export default function Footer() {
   const visibleCategories = useMemo(() => seedCategories.filter((c) => c.visible), []);
 
   return (
-    <footer className="border-t border-wahaj-border bg-white/60 backdrop-blur-sm">
+    <footer className="border-t border-wahaj-border bg-white/60 backdrop-blur-sm" role="contentinfo">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4" dir="rtl">
-          <div>
+          <nav aria-label="روابط وهاج">
             <h3 className="mb-3 font-thmanyah-display text-lg font-medium text-wahaj-ink">
               وهاج
             </h3>
@@ -35,8 +35,8 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
-          <div>
+          </nav>
+          <nav aria-label="المجموعات">
             <h3 className="mb-3 font-thmanyah-display text-lg font-medium text-wahaj-ink">
               المجموعات
             </h3>
@@ -52,8 +52,8 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
-          <div>
+          </nav>
+          <nav aria-label="التصنيفات">
             <h3 className="mb-3 font-thmanyah-display text-lg font-medium text-wahaj-ink">
               التصنيفات
             </h3>
@@ -69,7 +69,7 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </nav>
           <div className="text-sm leading-7 text-wahaj-text/72">
             <h3 className="mb-3 font-thmanyah-display text-lg font-medium text-wahaj-ink">
               نبذة

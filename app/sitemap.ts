@@ -6,18 +6,17 @@ import { SITE_URL } from "@/lib/site-config";
 
 export const revalidate = 86400;
 
-const now = new Date();
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_URL;
 
   const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl, changeFrequency: "weekly", priority: 1, lastModified: now },
-    { url: `${baseUrl}/about`, changeFrequency: "monthly", priority: 0.4, lastModified: now },
-    { url: `${baseUrl}/contact`, changeFrequency: "monthly", priority: 0.3, lastModified: now },
-    { url: `${baseUrl}/faq`, changeFrequency: "monthly", priority: 0.4, lastModified: now },
-    { url: `${baseUrl}/order-policy`, changeFrequency: "monthly", priority: 0.3, lastModified: now },
-    { url: `${baseUrl}/exchange-policy`, changeFrequency: "monthly", priority: 0.3, lastModified: now }
+    { url: baseUrl, changeFrequency: "weekly", priority: 1 },
+    { url: `${baseUrl}/about`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${baseUrl}/contact`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${baseUrl}/faq`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${baseUrl}/order-policy`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${baseUrl}/exchange-policy`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${baseUrl}/cart`, changeFrequency: "monthly", priority: 0.2 }
   ];
 
   const [productsResult, collectionsResult, categoriesResult] = await Promise.all([
@@ -32,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/product/${product.slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.8,
-      lastModified: now
+      lastModified: product.updatedAt ? new Date(product.updatedAt) : undefined
     }));
 
   const collectionPages: MetadataRoute.Sitemap = collectionsResult.collections
@@ -41,7 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/collections/${collection.slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.6,
-      lastModified: now
+      lastModified: collection.updatedAt ? new Date(collection.updatedAt) : collection.createdAt ? new Date(collection.createdAt) : undefined
     }));
 
   const categoryPages: MetadataRoute.Sitemap = categoriesResult.categories
@@ -50,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/category/${category.slug}`,
       changeFrequency: "weekly" as const,
       priority: 0.5,
-      lastModified: now
+      lastModified: category.updatedAt ? new Date(category.updatedAt) : category.createdAt ? new Date(category.createdAt) : undefined
     }));
 
   return [...staticPages, ...productPages, ...collectionPages, ...categoryPages];

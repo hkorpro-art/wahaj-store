@@ -137,11 +137,12 @@ export default function WahajStorefront({
 
           <motion.div layout className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product, index) => (
+                {filteredProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
                   priority={index < 2}
+                  loading={index >= 4 ? "lazy" : undefined}
                   onCart={handleAddToCart}
                 />
               ))}
@@ -311,10 +312,11 @@ function OfferBar({ offers, activeCoupons }: { offers: string[]; activeCoupons: 
 type ProductCardProps = {
   product: Product;
   priority?: boolean;
+  loading?: "lazy" | "eager";
   onCart: (product: Product) => void;
 };
 
-function ProductCard({ product, priority, onCart }: ProductCardProps) {
+function ProductCard({ product, priority, loading, onCart }: ProductCardProps) {
   const productHref = `/product/${product.slug}`;
 
   return (
@@ -334,6 +336,7 @@ function ProductCard({ product, priority, onCart }: ProductCardProps) {
             alt={product.name}
             fill
             priority={priority}
+            loading={loading}
             sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />

@@ -44,12 +44,29 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
   const ogImage = productCoverUrl(product.images, { width: 1200 });
 
+  const description = product.description.length > 160
+    ? product.description.slice(0, 157) + "..."
+    : product.description;
+
+  const keywords = [
+    product.name,
+    ...product.tags,
+    product.material,
+    ...product.colors,
+    ...(product.brand ? [product.brand] : []),
+    "وهاج",
+    "WAHAJ",
+    "إكسسوارات نسائية",
+    "زركون"
+  ].filter(Boolean).join(", ");
+
   return {
     title: product.name,
-    description: product.description,
+    description,
+    keywords,
     openGraph: {
       title: `${product.name} | وهاج`,
-      description: product.description,
+      description,
       url: `${SITE_URL}/product/${product.slug}`,
       type: "website",
       images: ogImage
@@ -59,7 +76,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     twitter: {
       card: "summary_large_image",
       title: `${product.name} | وهاج`,
-      description: product.description,
+      description,
       images: ogImage ? [ogImage] : []
     },
     alternates: {

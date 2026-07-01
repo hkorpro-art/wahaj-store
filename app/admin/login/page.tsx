@@ -4,6 +4,7 @@ import AdminLogin from "@/components/admin/AdminLogin";
 
 export const metadata: Metadata = {
   title: "دخول لوحة وهاج",
+  description: "تسجيل الدخول إلى لوحة تحكم متجر وهاج.",
   robots: {
     index: false,
     follow: false

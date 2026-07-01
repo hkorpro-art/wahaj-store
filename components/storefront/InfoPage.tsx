@@ -1,19 +1,21 @@
-import { ArrowRight, MessageCircle, Sparkles } from "lucide-react";
+import { ArrowRight, ChevronRight, MessageCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 import BrandMark from "@/components/storefront/BrandMark";
 import { whatsappUrl } from "@/lib/whatsapp";
+import { SITE_URL } from "@/lib/site-config";
 
 type InfoPageProps = {
   title: string;
   eyebrow: string;
   intro: string;
+  currentPath?: string;
   sections: Array<{
     title: string;
     body: string;
   }>;
 };
 
-export default function InfoPage({ title, eyebrow, intro, sections }: InfoPageProps) {
+export default function InfoPage({ title, eyebrow, intro, currentPath, sections }: InfoPageProps) {
   return (
     <main className="min-h-screen bg-wahaj-bg pb-16 text-wahaj-text">
       <header className="sticky top-0 z-40 border-b border-wahaj-border/70 bg-wahaj-bg/76 backdrop-blur-2xl">
@@ -33,6 +35,13 @@ export default function InfoPage({ title, eyebrow, intro, sections }: InfoPagePr
             <MessageCircle className="h-5 w-5" />
           </a>
         </div>
+        {currentPath ? (
+          <nav className="mx-auto flex max-w-4xl items-center gap-1.5 px-4 pb-2 text-xs text-wahaj-text/60" dir="rtl" aria-label="مسار الصفحة">
+            <Link href="/" className="hover:text-wahaj-rose transition">الرئيسية</Link>
+            <ChevronRight className="h-3.5 w-3.5 text-wahaj-text/40" />
+            <span className="text-wahaj-ink font-semibold">{title}</span>
+          </nav>
+        ) : null}
       </header>
 
       <section className="mx-auto max-w-4xl px-4 pt-8">

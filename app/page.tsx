@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cache } from "react";
 import { SITE_URL } from "@/lib/site-config";
 import WahajStorefront from "@/components/storefront/WahajStorefront";
+import JsonLd from "@/components/JsonLd";
 import { getManagedProducts } from "@/lib/products";
 import { getManagedCollections } from "@/lib/collection-management";
 import { getSiteContent } from "@/lib/site-content";
@@ -9,9 +10,10 @@ import { getSiteContent } from "@/lib/site-content";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "وهاج | WAHAJ - إكسسوارات نسائية فاخرة",
+  title: "إكسسوارات نسائية فاخرة - زركون ناعم وتيجان ملكية",
   description:
     "اكتشفي تشكيلة وهاج من الإكسسوارات النسائية الفاخرة. زركون ناعم، تيجان ملكية، أقراط متألقة. اطلبي الآن عبر واتساب.",
+  keywords: ["وهاج", "WAHAJ", "إكسسوارات نسائية", "زركون", "تيجان ملكية", "أقراط ناعمة", "أساور فاخرة", "ذهب وردي", "مجوهرات يمنية", "هدايا نسائية"],
   openGraph: {
     title: "وهاج | WAHAJ - إكسسوارات نسائية فاخرة",
     description:
@@ -47,6 +49,21 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: "وهاج | WAHAJ - إكسسوارات نسائية فاخرة",
+          description: "اكتشفي تشكيلة وهاج من الإكسسوارات النسائية الفاخرة. زركون ناعم، تيجان ملكية، أقراط متألقة.",
+          url: SITE_URL,
+          breadcrumb: {
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "الرئيسية", item: SITE_URL }
+            ]
+          }
+        }}
+      />
       <h1 className="sr-only">وهاج | WAHAJ - إكسسوارات نسائية فاخرة</h1>
       <WahajStorefront
         initialProducts={products}
