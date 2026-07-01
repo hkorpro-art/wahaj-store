@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { SITE_URL } from "@/lib/site-config";
 import WahajStorefront from "@/components/storefront/WahajStorefront";
+import { getManagedProducts } from "@/lib/products";
+import { getManagedCollections } from "@/lib/collection-management";
+import { getSiteContent } from "@/lib/site-content";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "وهاج | WAHAJ - إكسسوارات نسائية فاخرة",
@@ -30,11 +36,24 @@ export const metadata: Metadata = {
   }
 };
 
-export default function HomePage() {
+const getCachedProducts = cache(() => getManagedProducts());
+
+export default async function HomePage() {
+  const [{ products }, { collections }, { content, activeCoupons }] = await Promise.all([
+    getCachedProducts(),
+    getManagedCollections(),
+    getSiteContent()
+  ]);
+
   return (
     <>
       <h1 className="sr-only">وهاج | WAHAJ - إكسسوارات نسائية فاخرة</h1>
-      <WahajStorefront />
+      <WahajStorefront
+        initialProducts={products}
+        initialCollections={collections}
+        initialSiteContent={content}
+        initialActiveCoupons={activeCoupons}
+      />
     </>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { collection, onSnapshot } from "firebase/firestore";
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,7 +20,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePostHog } from "posthog-js/react";
 import {
-  adminStorageKeys,
   defaultSiteContent,
   type ManagedCollection,
   type ManagedProduct,
@@ -32,11 +30,8 @@ import { type ElementContrasts } from "@/lib/contrast";
 import BrandMark from "@/components/storefront/BrandMark";
 import LifestyleHero from "@/components/storefront/LifestyleHero";
 import CircularCollections from "@/components/storefront/CircularCollections";
-import { seedCollections } from "@/lib/collections";
-import { formatPrice, products } from "@/lib/data";
-import { db, isFirebaseClientConfigured } from "@/lib/firebase";
+import { formatPrice } from "@/lib/data";
 import { imageUrl } from "@/lib/imagekit";
-import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
 import { buildCartMessage, whatsappUrl } from "@/lib/whatsapp";
 import type { CartItem, Coupon, Product } from "@/lib/types";
 
@@ -47,111 +42,31 @@ const fadeUp = {
   transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }
 } as const;
 
-const seedManagedProducts = products.map((product) => ({ ...product, visible: true }));
+type WahajStorefrontProps = {
+  initialProducts: ManagedProduct[];
+  initialCollections: ManagedCollection[];
+  initialSiteContent: SiteContent;
+  initialActiveCoupons: Coupon[];
+};
 
-export default function WahajStorefront() {
+export default function WahajStorefront({
+  initialProducts,
+  initialCollections,
+  initialSiteContent,
+  initialActiveCoupons
+}: WahajStorefrontProps) {
   const posthog = usePostHog();
   const router = useRouter();
   const { cartItems, cartTotal, cartCount, addToCart: contextAddToCart, updateQuantity, removeFromCart, clearCart } = useCart();
-  const [storeProducts, setStoreProducts] = useState<ManagedProduct[]>(seedManagedProducts);
-  const [storeCollections, setStoreCollections] = useState<ManagedCollection[]>(seedCollections);
-  const [siteContent, setSiteContent] = useState<SiteContent>(defaultSiteContent);
-  const [activeCoupons, setActiveCoupons] = useState<Coupon[]>([]);
+  const [storeProducts, setStoreProducts] = useState<ManagedProduct[]>(initialProducts);
+  const [storeCollections, setStoreCollections] = useState<ManagedCollection[]>(initialCollections);
+  const [siteContent, setSiteContent] = useState<SiteContent>(initialSiteContent);
+  const [activeCoupons, setActiveCoupons] = useState<Coupon[]>(initialActiveCoupons);
   const [query, setQuery] = useState("");
   const prevQuery = useRef("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [addedToast, setAddedToast] = useState<{ visible: boolean; productName: string }>({ visible: false, productName: "" });
   const [heroContrasts, setHeroContrasts] = useState<ElementContrasts>({ logo: "dark", menu: "dark", cart: "dark", search: "dark" });
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadStoreProducts() {
-      try {
-        const response = await fetch(`/api/products?refresh=${Date.now()}`, { cache: "no-store" });
-        const payload = await response.json().catch(() => null);
-
-        if (active && response.ok && Array.isArray(payload?.products)) {
-          setStoreProducts(payload.products as ManagedProduct[]);
-          return;
-        }
-      } catch {
-        if (active) {
-          setStoreProducts(seedManagedProducts);
-        }
-      }
-    }
-
-    const unsubscribeProducts =
-      db && isFirebaseClientConfigured
-        ? onSnapshot(
-            collection(db, FIRESTORE_PRODUCTS_COLLECTION),
-            (snapshot) => {
-              if (!active) return;
-              const liveProducts = snapshot.docs
-                .map((doc, index) => {
-                  const data = doc.data() as Record<string, unknown>;
-                  return {
-                    sortOrder: rowSortOrder(data, index),
-                    product: rowToManagedProduct({ id: doc.id, ...data })
-                  };
-                })
-                .filter((item) => item.product)
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map((item) => item.product as ManagedProduct);
-              setStoreProducts(liveProducts);
-            },
-            () => { void loadStoreProducts(); }
-          )
-        : null;
-
-    if (!unsubscribeProducts) {
-      void loadStoreProducts();
-    }
-
-    void loadStoreCollections();
-    void loadSiteContent();
-
-    return () => {
-      active = false;
-      unsubscribeProducts?.();
-    };
-  }, []);
-
-  async function loadStoreCollections() {
-    try {
-      const response = await fetch(`/api/collections?refresh=${Date.now()}`, { cache: "no-store" });
-      const payload = await response.json().catch(() => null);
-      if (response.ok && Array.isArray(payload?.collections)) {
-        setStoreCollections(payload.collections as ManagedCollection[]);
-      }
-    } catch {
-      // keep seedCollections as fallback
-    }
-  }
-
-  async function loadSiteContent() {
-    try {
-      const response = await fetch(`/api/site-content?refresh=${Date.now()}`, { cache: "no-store" });
-      const payload = await response.json().catch(() => null);
-      if (response.ok && payload?.content) {
-        setSiteContent({ ...defaultSiteContent, ...payload.content });
-        setActiveCoupons(payload.activeCoupons ?? []);
-        return;
-      }
-    } catch {
-      // fall through to localStorage
-    }
-
-    try {
-      const savedContent = window.localStorage.getItem(adminStorageKeys.content);
-      if (savedContent) {
-        setSiteContent({ ...defaultSiteContent, ...(JSON.parse(savedContent) as SiteContent) });
-      }
-    } catch {
-      setSiteContent(defaultSiteContent);
-    }
-  }
 
   const filteredProducts = useMemo(() => {
     return storeProducts.filter((product) => {

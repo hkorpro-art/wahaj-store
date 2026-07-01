@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { collection, onSnapshot } from "firebase/firestore";
 import { ArrowLeft, ChevronDown, Gem, Minus, Plus, RefreshCw, Share2, ShoppingBag, Sparkles, Star, Tag, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -10,9 +9,7 @@ import { usePostHog } from "posthog-js/react";
 import { useCart } from "@/lib/cart-context";
 import type { ManagedProduct, SiteContent } from "@/lib/admin-local";
 import type { TrustMessage } from "@/lib/types";
-import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl, productCoverUrl, resolveImageSrc } from "@/lib/imagekit";
-import { FIRESTORE_PRODUCTS_COLLECTION, rowSortOrder, rowToManagedProduct } from "@/lib/product-record";
 import { whatsappUrl } from "@/lib/whatsapp";
 
 type ProductDetailClientProps = {
@@ -103,7 +100,6 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       : null
   );
   const [similarProducts, setSimilarProducts] = useState<ManagedProduct[]>(initialSimilarProducts);
-  const [liveResolved, setLiveResolved] = useState(!isFirebaseClientConfigured || !db);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [color, setColor] = useState(initialProduct?.colors[0] ?? "");
   const [size, setSize] = useState(initialProduct?.sizes[0] ?? "");
@@ -120,57 +116,6 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
-
-  useEffect(() => {
-    if (!db || !isFirebaseClientConfigured) {
-      return;
-    }
-
-    const unsubscribe = onSnapshot(
-      collection(db, FIRESTORE_PRODUCTS_COLLECTION),
-      (snapshot) => {
-        const liveProducts = snapshot.docs
-          .map((doc, index) => {
-            const data = doc.data() as Record<string, unknown>;
-            return {
-              sortOrder: rowSortOrder(data, index),
-              product: rowToManagedProduct({ id: doc.id, ...data })
-            };
-          })
-          .filter((item) => item.product)
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((item) => item.product as ManagedProduct)
-          .filter((item) => item.visible !== false);
-
-        const nextProduct = liveProducts.find((item) => matchesProductRoute(item, slug)) ?? null;
-
-        setProduct((current) => {
-          if (nextProduct) {
-            return {
-              ...nextProduct,
-              images: normalizeProductImages(nextProduct.images)
-            };
-          }
-
-          return current;
-        });
-        setSimilarProducts(
-          nextProduct
-            ? liveProducts
-                .filter((item) => item.category === nextProduct.category && item.id !== nextProduct.id)
-                .slice(0, 3)
-                .map((item) => ({ ...item, images: normalizeProductImages(item.images) }))
-            : []
-        );
-        setLiveResolved(true);
-      },
-      () => {
-        setLiveResolved(true);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [slug]);
 
   useEffect(() => {
     if (!product) {
@@ -269,17 +214,6 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     } else {
       await navigator.clipboard.writeText(window.location.href);
     }
-  }
-
-  if (!product && !liveResolved) {
-    return (
-      <main className="min-h-screen bg-wahaj-bg px-4 py-16 text-wahaj-text">
-        <div className="mx-auto max-w-xl rounded-[8px] border border-wahaj-border bg-white/75 p-6 text-center shadow-soft">
-          <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">WAHAJ Live</p>
-          <h1 className="mt-3 font-thmanyah-display text-3xl font-medium text-wahaj-ink">جاري تحميل المنتج...</h1>
-        </div>
-      </main>
-    );
   }
 
   const galleryImages = useMemo(() => normalizeProductImages(product?.images), [product?.images]);
