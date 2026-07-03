@@ -1,10 +1,10 @@
 {
-  "name": "وهاج | WAHAJ - إكسسوارات نسائية فاخرة",
-  "short_name": "WAHAJ",
-  "description": "متجر وهاج لإكسسوارات نسائية فاخرة - زركون ناعم، تيجان ملكية، أقراط متألقة",
+  "name": "وهاج | Wahaj",
+  "short_name": "وهاج",
+  "description": "إكسسوارات نسائية فاخرة بتصاميم راقية وطلب مباشر عبر واتساب.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F3E1E4",
+  "background_color": "#FFF7EA",
   "theme_color": "#450006",
   "orientation": "portrait-primary",
   "dir": "rtl",
@@ -14,7 +14,25 @@
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

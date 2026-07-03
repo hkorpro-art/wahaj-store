@@ -54,43 +54,48 @@ const thmanyahText = localFont({
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import JsonLd from "@/components/JsonLd";
-import { SITE_URL } from "@/lib/site-config";
+import { SITE_URL, SITE_NAME, SITE_NAME_EN, SITE_OG_IMAGE, SITE_TWITTER_CARD } from "@/lib/site-config";
 
 const siteUrl = SITE_URL;
-const ogImage = "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&h=630&q=85";
+const ogImage = SITE_OG_IMAGE;
+const brandDescription =
+  "وهاج علامة عربية متخصصة في الإكسسوارات النسائية الفاخرة. اكتشفي خواتم، أساور، سلاسل وأقراط مختارة بعناية مع تجربة شراء سهلة وطلب مباشر عبر واتساب.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "وهاج | WAHAJ - إكسسوارات نسائية فاخرة",
+    default: "وهاج | Wahaj - إكسسوارات نسائية فاخرة",
     template: "%s | وهاج"
   },
-  description:
-    "متجر وهاج لإكسسوارات نسائية فاخرة بتصميم عربي RTL وتجربة iPhone ناعمة، مع طلب مباشر عبر واتساب.",
-  keywords: ["وهاج", "WAHAJ", "زركون", "إكسسوارات نسائية", "تيجان", "أقراط", "أساور", "ذهب وردي", "مجوهرات نسائية"],
-  authors: [{ name: "WAHAJ" }],
+  description: brandDescription,
+  keywords: ["وهاج", "Wahaj", "WAHAJ", "إكسسوارات نسائية", "خواتم", "أساور", "سلاسل", "أقراط", "هدايا نسائية", "إكسسوارات فاخرة"],
+  authors: [{ name: SITE_NAME_EN }],
+  applicationName: SITE_NAME,
+  category: "shopping",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "32x32" }
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" }
     ],
-    apple: { url: "/favicon.svg", type: "image/svg+xml" }
+    apple: { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }
   },
   manifest: "/manifest.json",
   openGraph: {
-    title: "وهاج | WAHAJ",
-    description: "لمسات فاخرة تصنع الفرق.",
+    title: "وهاج | Wahaj - إكسسوارات نسائية فاخرة",
+    description: brandDescription,
     url: siteUrl,
-    siteName: "WAHAJ",
+    siteName: SITE_NAME,
     locale: "ar_YE",
     type: "website",
-    images: [{ url: ogImage, width: 1200, height: 630 }]
+    images: [{ url: ogImage, width: 1200, height: 630, alt: "وهاج | Wahaj" }]
   },
   twitter: {
     card: "summary_large_image",
-    title: "وهاج | WAHAJ",
-    description: "لمسات فاخرة تصنع الفرق.",
-    images: [ogImage]
+    title: "وهاج | Wahaj - إكسسوارات نسائية فاخرة",
+    description: brandDescription,
+    images: [SITE_TWITTER_CARD]
   },
   robots: {
     index: true,
@@ -100,8 +105,8 @@ export const metadata: Metadata = {
     canonical: siteUrl
   },
   other: {
-    "application-name": "WAHAJ",
-    "apple-mobile-web-app-title": "WAHAJ",
+    "application-name": SITE_NAME,
+    "apple-mobile-web-app-title": "وهاج",
     "apple-mobile-web-app-capable": "yes"
   }
 };
@@ -110,7 +115,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#F3E1E4"
+  themeColor: "#450006"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
@@ -123,54 +128,50 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           <PHProvider>
             <PostHogPageView />
             <JsonLd
-            data={{
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              name: "WAHAJ",
-              alternateName: "وهاج",
-              url: siteUrl,
-              logo: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=512&q=85",
-              description: "إكسسوارات نسائية فاخرة - لمسات فاخرة تصنع الفرق.",
-              sameAs: [
-                `https://wa.me/967781679899`,
-                siteUrl
-              ],
-              contactPoint: {
-                "@type": "ContactPoint",
-                telephone: "+967-781-679-899",
-                contactType: "customer service",
-                availableLanguage: "Arabic",
-                areaServed: "YE"
-              }
-            }}
-          />
-          <JsonLd
-            data={{
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: "WAHAJ",
-              alternateName: "وهاج",
-              url: siteUrl,
-              potentialAction: {
-                "@type": "SearchAction",
-                target: {
-                  "@type": "EntryPoint",
-                  urlTemplate: `${siteUrl}/?q={search_term_string}`
-                },
-                "query-input": "required name=search_term_string"
-              }
-            }}
-          />
-          <WahajLoader>
-            <div className="wahaj-app-shell">
-              <ErrorBoundary>
-                <MotionShell>
-                  {children}
-                </MotionShell>
-                <Footer />
-              </ErrorBoundary>
-            </div>
-          </WahajLoader>
+              data={{
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: "وهاج | Wahaj",
+                alternateName: ["وهاج", "Wahaj", "WAHAJ"],
+                url: siteUrl,
+                logo: `${siteUrl}/icon-512.png`,
+                description: brandDescription,
+                sameAs: [`https://wa.me/967781679899`, siteUrl],
+                contactPoint: {
+                  "@type": "ContactPoint",
+                  telephone: "+967-781-679-899",
+                  contactType: "customer service",
+                  availableLanguage: "Arabic",
+                  areaServed: "YE"
+                }
+              }}
+            />
+            <JsonLd
+              data={{
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                name: "وهاج | Wahaj",
+                alternateName: ["وهاج", "Wahaj", "WAHAJ"],
+                url: siteUrl,
+                inLanguage: "ar",
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: {
+                    "@type": "EntryPoint",
+                    urlTemplate: `${siteUrl}/?q={search_term_string}`
+                  },
+                  "query-input": "required name=search_term_string"
+                }
+              }}
+            />
+            <WahajLoader>
+              <div className="wahaj-app-shell">
+                <ErrorBoundary>
+                  <MotionShell>{children}</MotionShell>
+                  <Footer />
+                </ErrorBoundary>
+              </div>
+            </WahajLoader>
           </PHProvider>
         </CartProvider>
       </body>
