@@ -30,6 +30,7 @@ import { type ElementContrasts } from "@/lib/contrast";
 import BrandMark from "@/components/storefront/BrandMark";
 import LifestyleHero from "@/components/storefront/LifestyleHero";
 import CircularCollections from "@/components/storefront/CircularCollections";
+import NotificationOptIn from "@/components/storefront/NotificationOptIn";
 import { formatPrice } from "@/lib/data";
 import { imageUrl } from "@/lib/imagekit";
 import { buildCartMessage, whatsappUrl } from "@/lib/whatsapp";
@@ -113,6 +114,7 @@ export default function WahajStorefront({
       <OfferBar offers={siteContent.offerMessages} activeCoupons={activeCoupons} />
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
+        <NotificationOptIn />
 
         <div id="collections-section">
           <div className="mb-4">

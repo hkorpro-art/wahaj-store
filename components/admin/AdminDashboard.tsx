@@ -2706,6 +2706,164 @@ function CollectionEditor({
 
 function NotificationsManager({
   notifications,
+  onCreate
+}: {
+  notifications: ManagedNotification[];
+  onCreate: (notification: ManagedNotification) => void;
+  onUpdate: (notificationId: string, patch: Partial<ManagedNotification>) => void;
+  onDelete: (notificationId: string) => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [subscriberCount, setSubscriberCount] = useState(0);
+  const [settingsComplete, setSettingsComplete] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState("");
+  const canSend = title.trim().length > 0 && body.trim().length > 0 && title.length <= 80 && body.length <= 240 && settingsComplete && !sending;
+
+  async function loadNotificationStats() {
+    setLoadingStats(true);
+    try {
+      const response = await fetch(`/api/notifications/stats?refresh=${Date.now()}`, { cache: "no-store" });
+      const payload = await response.json().catch(() => null);
+      if (response.ok) {
+        setSubscriberCount(Number(payload?.subscribers || 0));
+        setSettingsComplete(payload?.settingsComplete !== false);
+      } else {
+        setSettingsComplete(false);
+      }
+    } catch {
+      setSettingsComplete(false);
+    } finally {
+      setLoadingStats(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadNotificationStats();
+  }, []);
+
+  async function sendPushNotification() {
+    if (!canSend) return;
+
+    setSending(true);
+    setSendResult("");
+
+    try {
+      const response = await fetch("/api/notifications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), body: body.trim() })
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        if (payload?.settingsComplete === false) {
+          setSettingsComplete(false);
+          setSendResult("إعدادات الإشعارات غير مكتملة.");
+          return;
+        }
+        throw new Error(payload?.message || "Notification send failed.");
+      }
+
+      const success = Number(payload?.success || 0);
+      const total = Number(payload?.total || 0);
+      setSendResult(`تم الإرسال إلى ${success} من ${total} مشترك.`);
+      onCreate({
+        id: `push-${Date.now()}`,
+        type: "Push",
+        title: title.trim(),
+        body: body.trim(),
+        audience: "مشتركات الإشعارات",
+        status: "sent",
+        createdAt: new Date().toISOString().slice(0, 10)
+      });
+      setTitle("");
+      setBody("");
+      void loadNotificationStats();
+    } catch {
+      setSendResult("تعذر إرسال الإشعار الآن.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-[390px_1fr]">
+      <Panel title="إشعارات وهاج" icon={Bell}>
+        <div className="space-y-3">
+          <div className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-4">
+            <p className="text-sm font-bold text-wahaj-text/70">المشتركات النشطات</p>
+            <p className="mt-2 font-thmanyah-display text-4xl font-medium text-wahaj-ink">
+              {loadingStats ? "..." : subscriberCount.toLocaleString("ar-YE")}
+            </p>
+          </div>
+
+          {!settingsComplete ? (
+            <div className="rounded-[8px] border border-wahaj-warning/40 bg-wahaj-warning/10 p-3 text-sm font-bold leading-7 text-wahaj-ink">
+              إعدادات الإشعارات غير مكتملة.
+            </div>
+          ) : null}
+
+          <div>
+            <label className="mb-1 block text-xs font-bold text-wahaj-text/64">عنوان الإشعار</label>
+            <input
+              className="AdminInput"
+              value={title}
+              maxLength={80}
+              onChange={(event) => setTitle(event.target.value.slice(0, 80))}
+              placeholder="مثال: وصلت قطع وهاج الجديدة"
+            />
+            <p className="mt-1 text-[11px] text-wahaj-text/50">{title.length}/80</p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-bold text-wahaj-text/64">نص الإشعار</label>
+            <textarea
+              className="AdminInput min-h-32 py-3"
+              value={body}
+              maxLength={240}
+              onChange={(event) => setBody(event.target.value.slice(0, 240))}
+              placeholder="اكتشفي أحدث القطع والعروض الراقية من وهاج."
+            />
+            <p className="mt-1 text-[11px] text-wahaj-text/50">{body.length}/240</p>
+          </div>
+
+          <button
+            onClick={sendPushNotification}
+            disabled={!canSend}
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-wahaj-rose font-bold text-white transition hover:bg-wahaj-ink disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <Send className="h-5 w-5" />
+            {sending ? "جاري الإرسال..." : "إرسال الإشعار"}
+          </button>
+
+          {sendResult ? <p className="rounded-[8px] bg-wahaj-soft px-3 py-2 text-sm font-bold text-wahaj-rose">{sendResult}</p> : null}
+        </div>
+      </Panel>
+
+      <Panel title="سجل الإشعارات المرسلة" icon={FileText}>
+        <div className="grid gap-3 md:grid-cols-2">
+          {notifications.map((notification) => (
+            <div key={notification.id} className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-bold text-wahaj-ink">{notification.title}</p>
+                <span className="rounded-full bg-wahaj-success/20 px-3 py-1 text-xs font-bold">مرسل</span>
+              </div>
+              <p className="mt-2 text-sm leading-7 text-wahaj-text/70">{notification.body}</p>
+              <p className="mt-3 text-xs font-bold text-wahaj-text/50">{notification.createdAt}</p>
+            </div>
+          ))}
+        </div>
+        {notifications.length === 0 ? <EmptyState text="لا توجد إشعارات مرسلة بعد." /> : null}
+      </Panel>
+    </div>
+  );
+}
+
+function LocalNotificationsManager({
+  notifications,
   onCreate,
   onUpdate,
   onDelete
