@@ -4,9 +4,24 @@ import { useEffect } from "react";
 import { firebaseApp } from "@/lib/firebase";
 
 let foregroundListenerRegistered = false;
+const PUSH_DEBUG_PREFIX = "[WAHAJ_PUSH_DEBUG]";
 
 function messageText(value: unknown) {
   return typeof value === "string" ? value : "";
+}
+
+function foregroundPayloadSummary(payload: {
+  notification?: { title?: string; body?: string };
+  data?: Record<string, string>;
+  fcmOptions?: { link?: string };
+}) {
+  return {
+    hasNotification: Boolean(payload.notification),
+    dataKeys: Object.keys(payload.data || {}),
+    titleSource: payload.notification?.title ? "notification" : payload.data?.title ? "data" : "fallback",
+    bodySource: payload.notification?.body ? "notification" : payload.data?.body ? "data" : "empty",
+    url: payload.fcmOptions?.link || payload.data?.url || "/"
+  };
 }
 
 export default function NotificationForegroundListener() {
@@ -29,8 +44,11 @@ export default function NotificationForegroundListener() {
 
         foregroundListenerRegistered = true;
         const messaging = getMessaging(firebaseApp);
+        console.info(PUSH_DEBUG_PREFIX, "Foreground listener registered");
 
         onMessage(messaging, async (payload) => {
+          console.info(PUSH_DEBUG_PREFIX, "Foreground onMessage received payload", foregroundPayloadSummary(payload));
+
           if (Notification.permission !== "granted") return;
 
           const title =
@@ -51,8 +69,18 @@ export default function NotificationForegroundListener() {
 
           try {
             const registration = await navigator.serviceWorker.ready;
+            console.info(PUSH_DEBUG_PREFIX, "Foreground calling serviceWorkerRegistration.showNotification", {
+              title,
+              bodyLength: body.length,
+              url
+            });
             await registration.showNotification(title, options);
           } catch {
+            console.info(PUSH_DEBUG_PREFIX, "Foreground calling Notification constructor", {
+              title,
+              bodyLength: body.length,
+              url
+            });
             new Notification(title, options);
           }
         });

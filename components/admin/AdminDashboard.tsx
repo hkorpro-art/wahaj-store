@@ -2751,12 +2751,26 @@ function NotificationsManager({
     setSendResult("");
 
     try {
+      console.info("[WAHAJ_PUSH_DEBUG]", "Admin send request started", {
+        title: title.trim(),
+        body: body.trim(),
+        titleLength: title.trim().length,
+        bodyLength: body.trim().length
+      });
+
       const response = await fetch("/api/notifications/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: title.trim(), body: body.trim() })
       });
       const payload = await response.json().catch(() => null);
+      console.info("[WAHAJ_PUSH_DEBUG]", "Admin received send response", {
+        total: Number(payload?.total || 0),
+        success: Number(payload?.success || 0),
+        failed: Number(payload?.failed || 0),
+        errorCodes: payload?.errorCodes || {},
+        firebaseAccepted: Boolean(payload?.firebaseAccepted)
+      });
 
       if (!response.ok) {
         if (payload?.settingsComplete === false) {

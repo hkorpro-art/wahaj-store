@@ -6,12 +6,15 @@ import { SITE_URL } from "@/lib/site-config";
 
 const COLLECTION = "notification_subscriptions";
 const MAX_MULTICAST_TOKENS = 500;
+const PUSH_DEBUG_PREFIX = "[WAHAJ_PUSH_DEBUG]";
 
 export type NotificationSendResult = {
   total: number;
   success: number;
   failed: number;
   settingsComplete: boolean;
+  errorCodes: Record<string, number>;
+  firebaseAccepted: boolean;
 };
 
 export function hasFirebaseClientMessagingConfig() {
@@ -104,12 +107,20 @@ function isInvalidTokenError(code?: string) {
   return code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token";
 }
 
+function incrementErrorCode(errorCodes: Record<string, number>, code: string) {
+  errorCodes[code] = (errorCodes[code] || 0) + 1;
+}
+
 export async function sendNotificationToActiveSubscribers(title: string, body: string): Promise<NotificationSendResult> {
   const db = getFirebaseFirestoreAdmin();
   const messaging = getFirebaseMessagingAdmin();
 
   if (!db || !messaging) {
-    return { total: 0, success: 0, failed: 0, settingsComplete: false };
+    console.warn(PUSH_DEBUG_PREFIX, "Firebase Admin Messaging is not configured", {
+      hasFirestore: Boolean(db),
+      hasMessaging: Boolean(messaging)
+    });
+    return { total: 0, success: 0, failed: 0, settingsComplete: false, errorCodes: {}, firebaseAccepted: false };
   }
 
   const snapshot = await db.collection(COLLECTION).where("active", "==", true).get();
@@ -117,8 +128,13 @@ export async function sendNotificationToActiveSubscribers(title: string, body: s
     .map((doc) => ({ ref: doc.ref, token: String(doc.data().token || "") }))
     .filter((item) => item.token);
 
+  console.info(PUSH_DEBUG_PREFIX, "Loaded active notification subscriptions", {
+    total: subscriptions.length
+  });
+
   let success = 0;
   let failed = 0;
+  const errorCodes: Record<string, number> = {};
 
   for (let index = 0; index < subscriptions.length; index += MAX_MULTICAST_TOKENS) {
     const chunk = subscriptions.slice(index, index + MAX_MULTICAST_TOKENS);
@@ -152,6 +168,10 @@ export async function sendNotificationToActiveSubscribers(title: string, body: s
     let hasInvalidTokens = false;
 
     response.responses.forEach((item, responseIndex) => {
+      if (!item.success) {
+        incrementErrorCode(errorCodes, item.error?.code || "unknown");
+      }
+
       if (!item.success && isInvalidTokenError(item.error?.code)) {
         hasInvalidTokens = true;
         batch.set(
@@ -167,6 +187,15 @@ export async function sendNotificationToActiveSubscribers(title: string, body: s
       }
     });
 
+    console.info(PUSH_DEBUG_PREFIX, "FCM multicast send response", {
+      chunkStart: index,
+      chunkSize: chunk.length,
+      total: subscriptions.length,
+      success: response.successCount,
+      failed: response.failureCount,
+      errorCodes
+    });
+
     if (hasInvalidTokens) {
       await batch.commit();
     }
@@ -176,6 +205,8 @@ export async function sendNotificationToActiveSubscribers(title: string, body: s
     total: subscriptions.length,
     success,
     failed,
-    settingsComplete: true
+    settingsComplete: true,
+    errorCodes,
+    firebaseAccepted: success > 0
   };
 }
