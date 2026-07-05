@@ -6,8 +6,30 @@ import { useEffect, useState } from "react";
 import { firebaseApp } from "@/lib/firebase";
 
 const STORAGE_KEY = "wahaj_notifications_status";
+const TOKEN_RETRY_DELAY_MS = 750;
 
 type OptInState = "checking" | "hidden" | "ready" | "loading" | "success" | "error";
+
+function delay(ms: number) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+async function getTokenWithRetry(
+  getToken: (options: { vapidKey: string; serviceWorkerRegistration: ServiceWorkerRegistration }) => Promise<string>,
+  options: { vapidKey: string; serviceWorkerRegistration: ServiceWorkerRegistration }
+) {
+  try {
+    const token = await getToken(options);
+    if (token) return token;
+  } catch {
+    // Retry once after the service worker has had a moment to settle.
+  }
+
+  await delay(TOKEN_RETRY_DELAY_MS);
+  return getToken(options);
+}
 
 export default function NotificationOptIn() {
   const [state, setState] = useState<OptInState>("checking");
@@ -69,12 +91,16 @@ export default function NotificationOptIn() {
         throw new Error("Notifications settings are incomplete.");
       }
 
-      const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+      await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+      const registration = await navigator.serviceWorker.ready;
       const messaging = messagingModule.getMessaging(firebaseApp);
-      const token = await messagingModule.getToken(messaging, {
-        vapidKey: config.vapidKey,
-        serviceWorkerRegistration: registration
-      });
+      const token = await getTokenWithRetry(
+        (options) => messagingModule.getToken(messaging, options),
+        {
+          vapidKey: config.vapidKey,
+          serviceWorkerRegistration: registration
+        }
+      );
 
       if (!token) {
         throw new Error("Unable to create FCM token.");

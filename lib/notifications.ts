@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { FieldValue } from "firebase-admin/firestore";
 import { getFirebaseFirestoreAdmin, getFirebaseMessagingAdmin } from "@/lib/firebase-admin";
+import { SITE_URL } from "@/lib/site-config";
 
 const COLLECTION = "notification_subscriptions";
 const MAX_MULTICAST_TOKENS = 500;
@@ -121,18 +122,25 @@ export async function sendNotificationToActiveSubscribers(title: string, body: s
 
   for (let index = 0; index < subscriptions.length; index += MAX_MULTICAST_TOKENS) {
     const chunk = subscriptions.slice(index, index + MAX_MULTICAST_TOKENS);
+    const url = SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://wahaj0.vercel.app";
     const response = await messaging.sendEachForMulticast({
       tokens: chunk.map((item) => item.token),
       notification: { title, body },
+      data: {
+        title,
+        body,
+        url
+      },
       webpush: {
         notification: {
           title,
           body,
           icon: "/icon-192.png",
-          badge: "/icon-192.png"
+          badge: "/icon-192.png",
+          tag: "wahaj-notification"
         },
         fcmOptions: {
-          link: process.env.NEXT_PUBLIC_SITE_URL || "https://wahaj0.vercel.app"
+          link: url
         }
       }
     });

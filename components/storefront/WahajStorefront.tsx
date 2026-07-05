@@ -31,6 +31,7 @@ import BrandMark from "@/components/storefront/BrandMark";
 import LifestyleHero from "@/components/storefront/LifestyleHero";
 import CircularCollections from "@/components/storefront/CircularCollections";
 import NotificationOptIn from "@/components/storefront/NotificationOptIn";
+import NotificationForegroundListener from "@/components/storefront/NotificationForegroundListener";
 import { formatPrice } from "@/lib/data";
 import { imageUrl } from "@/lib/imagekit";
 import { buildCartMessage, whatsappUrl } from "@/lib/whatsapp";
@@ -97,6 +98,7 @@ export default function WahajStorefront({
 
   return (
     <main className="min-h-screen overflow-hidden bg-wahaj-bg text-wahaj-text luxury-grain luxury-radial-light">
+      <NotificationForegroundListener />
       <Header
         cartCount={cartItems.length}
         heroContrasts={heroContrasts}

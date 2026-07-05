@@ -23,17 +23,20 @@ function initializeMessaging() {
 
       messaging.onBackgroundMessage((payload) => {
         const notification = payload.notification || {};
-        const title = notification.title || "وهاج | Wahaj";
-        const options = {
-          body: notification.body || "",
+        const data = payload.data || {};
+        const fcmOptions = payload.fcmOptions || {};
+        const title = notification.title || data.title || "Wahaj";
+        const body = notification.body || data.body || "";
+        const url = fcmOptions.link || data.url || "/";
+
+        self.registration.showNotification(title, {
+          body,
           icon: "/icon-192.png",
           badge: "/icon-192.png",
-          data: {
-            url: payload?.fcmOptions?.link || "/"
-          }
-        };
-
-        self.registration.showNotification(title, options);
+          tag: "wahaj-notification",
+          requireInteraction: false,
+          data: { url }
+        });
       });
 
       return messaging;
@@ -53,7 +56,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = event.notification?.data?.url || "/";
+  const targetUrl = event.notification.data && event.notification.data.url ? event.notification.data.url : "/";
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
