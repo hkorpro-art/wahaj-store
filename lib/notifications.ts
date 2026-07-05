@@ -5,6 +5,7 @@ import { getFirebaseFirestoreAdmin, getFirebaseMessagingAdmin } from "@/lib/fire
 import { SITE_URL } from "@/lib/site-config";
 
 const COLLECTION = "notification_subscriptions";
+const CAMPAIGNS_COLLECTION = "notification_campaigns";
 const MAX_MULTICAST_TOKENS = 500;
 const PUSH_DEBUG_PREFIX = "[WAHAJ_PUSH_DEBUG]";
 
@@ -15,6 +16,20 @@ export type NotificationSendResult = {
   settingsComplete: boolean;
   errorCodes: Record<string, number>;
   firebaseAccepted: boolean;
+};
+
+export type NotificationCampaign = {
+  id: string;
+  title: string;
+  body: string;
+  total: number;
+  success: number;
+  failed: number;
+  errorCodes: Record<string, number>;
+  firebaseAccepted: boolean;
+  createdAt: string;
+  sentBy?: string;
+  target?: "all" | "latest";
 };
 
 export function hasFirebaseClientMessagingConfig() {
@@ -111,7 +126,15 @@ function incrementErrorCode(errorCodes: Record<string, number>, code: string) {
   errorCodes[code] = (errorCodes[code] || 0) + 1;
 }
 
-export async function sendNotificationToActiveSubscribers(title: string, body: string): Promise<NotificationSendResult> {
+async function sendNotificationToSubscriptions({
+  title,
+  body,
+  latestOnly = false
+}: {
+  title: string;
+  body: string;
+  latestOnly?: boolean;
+}): Promise<NotificationSendResult> {
   const db = getFirebaseFirestoreAdmin();
   const messaging = getFirebaseMessagingAdmin();
 
@@ -123,13 +146,17 @@ export async function sendNotificationToActiveSubscribers(title: string, body: s
     return { total: 0, success: 0, failed: 0, settingsComplete: false, errorCodes: {}, firebaseAccepted: false };
   }
 
-  const snapshot = await db.collection(COLLECTION).where("active", "==", true).get();
+  const query = latestOnly
+    ? db.collection(COLLECTION).where("active", "==", true).orderBy("updatedAt", "desc").limit(1)
+    : db.collection(COLLECTION).where("active", "==", true);
+  const snapshot = await query.get();
   const subscriptions = snapshot.docs
     .map((doc) => ({ ref: doc.ref, token: String(doc.data().token || "") }))
     .filter((item) => item.token);
 
   console.info(PUSH_DEBUG_PREFIX, "Loaded active notification subscriptions", {
-    total: subscriptions.length
+    total: subscriptions.length,
+    latestOnly
   });
 
   let success = 0;
@@ -209,4 +236,87 @@ export async function sendNotificationToActiveSubscribers(title: string, body: s
     errorCodes,
     firebaseAccepted: success > 0
   };
+}
+
+export function sendNotificationToActiveSubscribers(title: string, body: string) {
+  return sendNotificationToSubscriptions({ title, body });
+}
+
+export function sendNotificationToLatestActiveSubscriber(title: string, body: string) {
+  return sendNotificationToSubscriptions({ title, body, latestOnly: true });
+}
+
+export async function saveNotificationCampaign({
+  title,
+  body,
+  result,
+  sentBy,
+  target = "all"
+}: {
+  title: string;
+  body: string;
+  result: NotificationSendResult;
+  sentBy?: string;
+  target?: "all" | "latest";
+}) {
+  const db = getFirebaseFirestoreAdmin();
+  if (!db) {
+    return { ok: false, settingsComplete: false };
+  }
+
+  const payload = {
+    title,
+    body,
+    total: result.total,
+    success: result.success,
+    failed: result.failed,
+    errorCodes: result.errorCodes,
+    firebaseAccepted: result.firebaseAccepted,
+    settingsComplete: result.settingsComplete,
+    target,
+    ...(sentBy ? { sentBy } : {}),
+    createdAt: FieldValue.serverTimestamp()
+  };
+
+  const doc = await db.collection(CAMPAIGNS_COLLECTION).add(payload);
+  return { ok: true, settingsComplete: true, id: doc.id };
+}
+
+function serializeDate(value: unknown) {
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return value.toDate().toISOString();
+  }
+  return typeof value === "string" ? value : new Date().toISOString();
+}
+
+export async function getNotificationCampaignHistory(limit = 50) {
+  const db = getFirebaseFirestoreAdmin();
+  if (!db) {
+    return { campaigns: [] as NotificationCampaign[], settingsComplete: false };
+  }
+
+  const snapshot = await db
+    .collection(CAMPAIGNS_COLLECTION)
+    .orderBy("createdAt", "desc")
+    .limit(Math.max(1, Math.min(limit, 100)))
+    .get();
+
+  const campaigns = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      title: String(data.title || ""),
+      body: String(data.body || ""),
+      total: Number(data.total || 0),
+      success: Number(data.success || 0),
+      failed: Number(data.failed || 0),
+      errorCodes: typeof data.errorCodes === "object" && data.errorCodes ? (data.errorCodes as Record<string, number>) : {},
+      firebaseAccepted: Boolean(data.firebaseAccepted),
+      createdAt: serializeDate(data.createdAt),
+      ...(typeof data.sentBy === "string" ? { sentBy: data.sentBy } : {}),
+      target: data.target === "latest" ? "latest" : "all"
+    } satisfies NotificationCampaign;
+  });
+
+  return { campaigns, settingsComplete: true };
 }

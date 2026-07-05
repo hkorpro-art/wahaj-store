@@ -61,6 +61,7 @@ import {
   type MenuIconsRecord,
   type StoredImage
 } from "@/lib/imagekit";
+import { firebaseApp } from "@/lib/firebase";
 import type { Coupon, Order, OrderStatus, ProductBadge, ProductStatus, TrustMessage } from "@/lib/types";
 
 const tabs = [
@@ -131,6 +132,24 @@ const initialNotifications: ManagedNotification[] = [
     createdAt: "2026-05-23"
   }
 ];
+
+type NotificationDiagnostics = {
+  permission: string;
+  serviceWorkerRegistered: boolean;
+  serviceWorkerController: boolean;
+  serviceWorkerScriptUrl: string;
+  messagingSupported: boolean;
+  tokenGenerated: boolean;
+  error?: string;
+};
+
+type NotificationLastSend = {
+  total: number;
+  success: number;
+  failed: number;
+  errorCodes: Record<string, number>;
+  firebaseAccepted: boolean;
+};
 
 function seedManagedProducts(): ManagedProduct[] {
   return seedProducts.map((product) => ({ ...product, visible: true }));
@@ -2718,9 +2737,16 @@ function NotificationsManager({
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [settingsComplete, setSettingsComplete] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [history, setHistory] = useState<ManagedNotification[]>(notifications);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+  const [lastSend, setLastSend] = useState<NotificationLastSend | null>(null);
+  const [diagnostics, setDiagnostics] = useState<NotificationDiagnostics | null>(null);
+  const [checkingDiagnostics, setCheckingDiagnostics] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendingLatest, setSendingLatest] = useState(false);
   const [sendResult, setSendResult] = useState("");
-  const canSend = title.trim().length > 0 && body.trim().length > 0 && title.length <= 80 && body.length <= 240 && settingsComplete && !sending;
+  const isSending = sending || sendingLatest;
+  const canSend = title.trim().length > 0 && body.trim().length > 0 && title.length <= 80 && body.length <= 240 && settingsComplete && !isSending;
 
   async function loadNotificationStats() {
     setLoadingStats(true);
@@ -2740,14 +2766,108 @@ function NotificationsManager({
     }
   }
 
+  async function loadNotificationHistory() {
+    setLoadingHistory(true);
+    try {
+      const response = await fetch(`/api/notifications/history?refresh=${Date.now()}`, { cache: "no-store" });
+      const payload = await response.json().catch(() => null);
+      if (response.ok && Array.isArray(payload?.campaigns)) {
+        const campaigns: ManagedNotification[] = payload.campaigns.map((campaign: ManagedNotification & { target?: string }) => ({
+            id: campaign.id,
+            type: campaign.target === "latest" ? "Test" : "Push",
+            title: campaign.title,
+            body: campaign.body,
+            audience: campaign.target === "latest" ? "Latest active subscription" : "Notification subscribers",
+            status: "sent",
+            createdAt: campaign.createdAt,
+            total: campaign.total,
+            success: campaign.success,
+            failed: campaign.failed,
+            errorCodes: campaign.errorCodes || {},
+            firebaseAccepted: Boolean(campaign.firebaseAccepted)
+          }));
+        setHistory(campaigns);
+        const latest = campaigns[0];
+        if (latest) {
+          setLastSend({
+            total: Number(latest.total || 0),
+            success: Number(latest.success || 0),
+            failed: Number(latest.failed || 0),
+            errorCodes: latest.errorCodes || {},
+            firebaseAccepted: Boolean(latest.firebaseAccepted)
+          });
+        }
+      } else {
+        setHistory(notifications);
+      }
+    } catch {
+      setHistory(notifications);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
+
+  async function runDeviceDiagnostics() {
+    setCheckingDiagnostics(true);
+    try {
+      const base: NotificationDiagnostics = {
+        permission: typeof Notification === "undefined" ? "unsupported" : Notification.permission,
+        serviceWorkerRegistered: false,
+        serviceWorkerController: Boolean(navigator.serviceWorker?.controller),
+        serviceWorkerScriptUrl: "",
+        messagingSupported: false,
+        tokenGenerated: false
+      };
+
+      if (!("serviceWorker" in navigator)) {
+        setDiagnostics({ ...base, error: "Service Worker is not supported in this browser." });
+        return;
+      }
+
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      const registration =
+        registrations.find((item) => item.active?.scriptURL.includes("firebase-messaging-sw.js")) ||
+        registrations.find((item) => item.active);
+      base.serviceWorkerRegistered = Boolean(registration);
+      base.serviceWorkerScriptUrl = registration?.active?.scriptURL || registration?.installing?.scriptURL || registration?.waiting?.scriptURL || "";
+
+      try {
+        const { getMessaging, getToken, isSupported } = await import("firebase/messaging");
+        base.messagingSupported = await isSupported();
+        if (base.messagingSupported && firebaseApp && registration && Notification.permission === "granted") {
+          const configResponse = await fetch("/api/notifications/config", { cache: "no-store" });
+          const config = await configResponse.json().catch(() => null);
+          if (config?.settingsComplete && config?.vapidKey) {
+            const token = await getToken(getMessaging(firebaseApp), {
+              vapidKey: config.vapidKey,
+              serviceWorkerRegistration: registration
+            });
+            base.tokenGenerated = Boolean(token);
+          }
+        }
+      } catch (error) {
+        base.error = error instanceof Error ? error.message : "Unable to check Firebase Messaging.";
+      }
+
+      setDiagnostics(base);
+    } finally {
+      setCheckingDiagnostics(false);
+    }
+  }
+
   useEffect(() => {
     void loadNotificationStats();
+    void loadNotificationHistory();
   }, []);
 
-  async function sendPushNotification() {
+  async function sendPushNotification(options?: { latestOnly?: boolean }) {
     if (!canSend) return;
 
-    setSending(true);
+    if (options?.latestOnly) {
+      setSendingLatest(true);
+    } else {
+      setSending(true);
+    }
     setSendResult("");
 
     try {
@@ -2761,15 +2881,19 @@ function NotificationsManager({
       const response = await fetch("/api/notifications/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), body: body.trim() })
+        body: JSON.stringify({ title: title.trim(), body: body.trim(), latestOnly: options?.latestOnly === true })
       });
       const payload = await response.json().catch(() => null);
-      console.info("[WAHAJ_PUSH_DEBUG]", "Admin received send response", {
+      const sendStats = {
         total: Number(payload?.total || 0),
         success: Number(payload?.success || 0),
         failed: Number(payload?.failed || 0),
         errorCodes: payload?.errorCodes || {},
         firebaseAccepted: Boolean(payload?.firebaseAccepted)
+      };
+      console.info("[WAHAJ_PUSH_DEBUG]", "Admin received send response", {
+        ...sendStats,
+        latestOnly: options?.latestOnly === true
       });
 
       if (!response.ok) {
@@ -2781,25 +2905,29 @@ function NotificationsManager({
         throw new Error(payload?.message || "Notification send failed.");
       }
 
-      const success = Number(payload?.success || 0);
-      const total = Number(payload?.total || 0);
+      const success = sendStats.success;
+      const total = sendStats.total;
+      setLastSend(sendStats);
       setSendResult(`تم الإرسال إلى ${success} من ${total} مشترك.`);
       onCreate({
-        id: `push-${Date.now()}`,
-        type: "Push",
+        id: payload?.campaignId || `push-${Date.now()}`,
+        type: options?.latestOnly ? "Test" : "Push",
         title: title.trim(),
         body: body.trim(),
         audience: "مشتركات الإشعارات",
         status: "sent",
-        createdAt: new Date().toISOString().slice(0, 10)
+        createdAt: new Date().toISOString(),
+        ...sendStats
       });
       setTitle("");
       setBody("");
       void loadNotificationStats();
+      void loadNotificationHistory();
     } catch {
       setSendResult("تعذر إرسال الإشعار الآن.");
     } finally {
       setSending(false);
+      setSendingLatest(false);
     }
   }
 
@@ -2812,6 +2940,39 @@ function NotificationsManager({
             <p className="mt-2 font-thmanyah-display text-4xl font-medium text-wahaj-ink">
               {loadingStats ? "..." : subscriberCount.toLocaleString("ar-YE")}
             </p>
+          </div>
+
+          <div className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-4 text-xs leading-6 text-wahaj-text/70">
+            <p className="text-sm font-bold text-wahaj-ink">Notification diagnostics</p>
+            <div className="mt-2 grid gap-1">
+              <InfoRow label="settingsComplete" value={settingsComplete ? "true" : "false"} />
+              <InfoRow label="subscribers" value={subscriberCount.toLocaleString("ar-YE")} />
+              <InfoRow label="last firebaseAccepted" value={lastSend ? String(lastSend.firebaseAccepted) : "not sent"} />
+              <InfoRow label="last total/success/failed" value={lastSend ? `${lastSend.total}/${lastSend.success}/${lastSend.failed}` : "not sent"} />
+              <InfoRow label="last errorCodes" value={lastSend ? JSON.stringify(lastSend.errorCodes) : "{}"} />
+            </div>
+            <p className="mt-2 rounded-[8px] bg-white px-3 py-2 font-bold text-wahaj-text/65">
+              Firebase success means FCM accepted the message; it does not prove Android displayed a system notification.
+            </p>
+            <button
+              type="button"
+              onClick={runDeviceDiagnostics}
+              disabled={checkingDiagnostics}
+              className="mt-3 min-h-10 rounded-full border border-wahaj-border bg-white px-4 text-xs font-bold text-wahaj-rose disabled:opacity-50"
+            >
+              {checkingDiagnostics ? "Checking device..." : "Check this device"}
+            </button>
+            {diagnostics ? (
+              <div className="mt-3 grid gap-1 rounded-[8px] bg-white p-3">
+                <InfoRow label="Notification.permission" value={diagnostics.permission} />
+                <InfoRow label="serviceWorker registered" value={diagnostics.serviceWorkerRegistered ? "yes" : "no"} />
+                <InfoRow label="serviceWorker controller" value={diagnostics.serviceWorkerController ? "yes" : "no"} />
+                <InfoRow label="script URL" value={diagnostics.serviceWorkerScriptUrl || "not found"} />
+                <InfoRow label="messaging supported" value={diagnostics.messagingSupported ? "yes" : "no"} />
+                <InfoRow label="token generated" value={diagnostics.tokenGenerated ? "yes" : "no"} />
+                {diagnostics.error ? <p className="text-[11px] font-bold text-wahaj-rose">{diagnostics.error}</p> : null}
+              </div>
+            ) : null}
           </div>
 
           {!settingsComplete ? (
@@ -2845,12 +3006,22 @@ function NotificationsManager({
           </div>
 
           <button
-            onClick={sendPushNotification}
+            onClick={() => void sendPushNotification()}
             disabled={!canSend}
             className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-wahaj-rose font-bold text-white transition hover:bg-wahaj-ink disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Send className="h-5 w-5" />
             {sending ? "جاري الإرسال..." : "إرسال الإشعار"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void sendPushNotification({ latestOnly: true })}
+            disabled={!canSend}
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-wahaj-border bg-white font-bold text-wahaj-rose transition hover:bg-wahaj-soft disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <Send className="h-5 w-5" />
+            {sendingLatest ? "Sending test..." : "Send test to latest subscriber"}
           </button>
 
           {sendResult ? <p className="rounded-[8px] bg-wahaj-soft px-3 py-2 text-sm font-bold text-wahaj-rose">{sendResult}</p> : null}
@@ -2859,18 +3030,25 @@ function NotificationsManager({
 
       <Panel title="سجل الإشعارات المرسلة" icon={FileText}>
         <div className="grid gap-3 md:grid-cols-2">
-          {notifications.map((notification) => (
+          {(loadingHistory ? notifications : history).map((notification) => (
             <div key={notification.id} className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-bold text-wahaj-ink">{notification.title}</p>
                 <span className="rounded-full bg-wahaj-success/20 px-3 py-1 text-xs font-bold">مرسل</span>
               </div>
               <p className="mt-2 text-sm leading-7 text-wahaj-text/70">{notification.body}</p>
+              <p className="mt-2 text-xs font-bold text-wahaj-text/55">
+                {notification.total !== undefined ? `${notification.success || 0}/${notification.total || 0} sent` : notification.audience}
+                {notification.firebaseAccepted !== undefined ? ` · FCM accepted: ${notification.firebaseAccepted ? "yes" : "no"}` : ""}
+              </p>
+              {notification.errorCodes && Object.keys(notification.errorCodes).length > 0 ? (
+                <p className="mt-1 text-xs font-bold text-wahaj-rose">{JSON.stringify(notification.errorCodes)}</p>
+              ) : null}
               <p className="mt-3 text-xs font-bold text-wahaj-text/50">{notification.createdAt}</p>
             </div>
           ))}
         </div>
-        {notifications.length === 0 ? <EmptyState text="لا توجد إشعارات مرسلة بعد." /> : null}
+        {!loadingHistory && history.length === 0 ? <EmptyState text="لا توجد إشعارات مرسلة بعد." /> : null}
       </Panel>
     </div>
   );

@@ -52,6 +52,11 @@ export type ManagedNotification = {
   audience: string;
   status: "draft" | "sent";
   createdAt: string;
+  total?: number;
+  success?: number;
+  failed?: number;
+  errorCodes?: Record<string, number>;
+  firebaseAccepted?: boolean;
 };
 
 export const defaultSiteContent: SiteContent = {

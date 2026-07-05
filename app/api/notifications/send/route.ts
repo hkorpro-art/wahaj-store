@@ -1,7 +1,12 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
-import { sanitizeNotificationText, sendNotificationToActiveSubscribers } from "@/lib/notifications";
+import {
+  sanitizeNotificationText,
+  saveNotificationCampaign,
+  sendNotificationToActiveSubscribers,
+  sendNotificationToLatestActiveSubscriber
+} from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 const PUSH_DEBUG_PREFIX = "[WAHAJ_PUSH_DEBUG]";
@@ -17,12 +22,14 @@ export async function POST(request: Request) {
   const payload = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   const title = sanitizeNotificationText(payload.title, 80);
   const body = sanitizeNotificationText(payload.body, 240);
+  const latestOnly = payload.latestOnly === true;
 
   console.info(PUSH_DEBUG_PREFIX, "API received notification send request", {
     title,
     body,
     titleLength: title.length,
-    bodyLength: body.length
+    bodyLength: body.length,
+    latestOnly
   });
 
   if (!title || !body) {
@@ -33,7 +40,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "عنوان الإشعار ونصه مطلوبان." }, { status: 400 });
   }
 
-  const result = await sendNotificationToActiveSubscribers(title, body);
+  const result = latestOnly
+    ? await sendNotificationToLatestActiveSubscriber(title, body)
+    : await sendNotificationToActiveSubscribers(title, body);
+  const sentBy = typeof admin.email === "string" ? admin.email : undefined;
+  const campaign = result.settingsComplete
+    ? await saveNotificationCampaign({
+        title,
+        body,
+        result,
+        sentBy,
+        target: latestOnly ? "latest" : "all"
+      })
+    : null;
 
   console.info(PUSH_DEBUG_PREFIX, "API completed notification send request", {
     total: result.total,
@@ -41,7 +60,9 @@ export async function POST(request: Request) {
     failed: result.failed,
     errorCodes: result.errorCodes,
     firebaseAccepted: result.firebaseAccepted,
-    settingsComplete: result.settingsComplete
+    settingsComplete: result.settingsComplete,
+    campaignId: campaign?.id,
+    latestOnly
   });
 
   if (!result.settingsComplete) {
@@ -51,5 +72,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json(result);
+  return NextResponse.json({ ...result, campaignId: campaign?.id, latestOnly });
 }
