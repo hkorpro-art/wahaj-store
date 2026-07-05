@@ -1,21 +1,7 @@
 importScripts("https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging-compat.js");
 
-let messagingReady = null;
 const PUSH_DEBUG_PREFIX = "[WAHAJ_PUSH_DEBUG]";
-
-function payloadSummary(payload) {
-  const data = payload && payload.data ? payload.data : {};
-
-  return {
-    dataKeys: Object.keys(data),
-    title: data.title || "(missing)",
-    bodyLength: (data.body || "").length,
-    url: data.url || "/",
-    tag: data.tag || "none",
-    campaignId: data.campaignId || "none"
-  };
-}
 
 function resolveNotificationUrl(event) {
   const data = event.notification && event.notification.data ? event.notification.data : {};
@@ -29,41 +15,60 @@ function uniqueTag() {
   return "wahaj-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
 }
 
-function initializeMessaging() {
-  if (messagingReady) {
-    return messagingReady;
-  }
+self.addEventListener("install", () => {
+  console.info(PUSH_DEBUG_PREFIX, "Service worker installed");
+  self.skipWaiting();
+});
 
-  messagingReady = fetch("/api/notifications/config", { cache: "no-store" })
-    .then((response) => response.json())
-    .then((config) => {
-      if (!config || !config.settingsComplete || !config.firebaseConfig) {
-        return null;
-      }
+self.addEventListener("activate", () => {
+  console.info(PUSH_DEBUG_PREFIX, "Service worker activated");
+  self.clients.claim();
+});
 
-      if (!firebase.apps.length) {
-        firebase.initializeApp(config.firebaseConfig);
-      }
+self.addEventListener("push", (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        if (!event.data) {
+          console.warn(PUSH_DEBUG_PREFIX, "Push event with no data");
+          return;
+        }
 
-      const messaging = firebase.messaging();
-
-      messaging.onBackgroundMessage((payload) => {
-        console.info(PUSH_DEBUG_PREFIX, "Service worker received background payload", payloadSummary(payload));
-
+        const payload = event.data.json();
         const data = payload && payload.data ? payload.data : {};
+
+        console.info(PUSH_DEBUG_PREFIX, "Push handler received payload", {
+          dataKeys: Object.keys(data),
+          title: data.title || "(missing)",
+          bodyLength: (data.body || "").length,
+          url: data.url || "/",
+          tag: data.tag || "none",
+          campaignId: data.campaignId || "none"
+        });
+
+        const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+        const hasVisibleClient = clients.some(
+          (c) => c.visibilityState === "visible" && !c.url.startsWith("chrome-extension://")
+        );
+
+        if (hasVisibleClient) {
+          console.info(PUSH_DEBUG_PREFIX, "Push handler: visible client found, skipping (Firebase will relay via onMessage)");
+          return;
+        }
+
         const title = data.title || "Wahaj";
         const body = data.body || "";
         const url = data.url || "/";
         const tag = data.tag || (data.campaignId ? "wahaj-" + data.campaignId : uniqueTag());
 
-        console.info(PUSH_DEBUG_PREFIX, "Service worker calling showNotification", {
+        console.info(PUSH_DEBUG_PREFIX, "Push handler showing notification", {
           title,
           bodyLength: body.length,
           url,
           tag
         });
 
-        self.registration.showNotification(title, {
+        await self.registration.showNotification(title, {
           body,
           icon: "/icon-192.png",
           badge: "/icon-192.png",
@@ -72,23 +77,11 @@ function initializeMessaging() {
           requireInteraction: false,
           data: { url, campaignId: data.campaignId }
         });
-      });
-
-      return messaging;
-    })
-    .catch(() => null);
-
-  return messagingReady;
-}
-
-self.addEventListener("install", (event) => {
-  console.info(PUSH_DEBUG_PREFIX, "Service worker installed");
-  event.waitUntil(initializeMessaging().then(() => self.skipWaiting()));
-});
-
-self.addEventListener("activate", (event) => {
-  console.info(PUSH_DEBUG_PREFIX, "Service worker activated");
-  event.waitUntil(initializeMessaging().then(() => self.clients.claim()));
+      } catch (error) {
+        console.error(PUSH_DEBUG_PREFIX, "Push handler error:", error);
+      }
+    })()
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {
@@ -116,5 +109,3 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
-
-initializeMessaging();
