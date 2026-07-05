@@ -171,25 +171,20 @@ async function sendNotificationToSubscriptions({
     const tag = campaignId ? `wahaj-${campaignId}` : `wahaj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const response = await messaging.sendEachForMulticast({
       tokens: chunk.map((item) => item.token),
-      notification: { title, body },
       data: {
         title,
         body,
         url,
+        tag,
         ...(campaignId ? { campaignId } : {})
       },
       webpush: {
-        notification: {
-          title,
-          body,
-          icon: "/icon-192.png",
-          badge: "/icon-192.png",
-          tag,
-          renotify: true,
-          data: { url, campaignId }
-        },
         fcmOptions: {
           link: url
+        },
+        headers: {
+          Urgency: "high",
+          "TTL": "86400"
         }
       }
     });

@@ -47,11 +47,9 @@ import {
   type ManagedCollection,
   type ManagedNotification,
   type ManagedProduct,
-  type ManagedStory,
-  type SiteContent,
-  type StoryTarget
+  type SiteContent
 } from "@/lib/admin-local";
-import { categories, formatPrice, orders as seedOrders, products as seedProducts, stories as seedStories } from "@/lib/data";
+import { categories, formatPrice, orders as seedOrders, products as seedProducts } from "@/lib/data";
 import {
   imageUrl,
   MENU_ICON_IDS,
@@ -110,15 +108,6 @@ const productStatusOptions: Array<{ value: ProductStatus; label: string }> = [
   { value: "featured", label: "مميز" }
 ];
 
-const storyTargets: Array<{ value: StoryTarget; label: string }> = [
-  { value: "new", label: "منتجات جديدة" },
-  { value: "offers", label: "منتجات عليها عرض" },
-  { value: "trend", label: "منتجات ترند" },
-  { value: "sets", label: "الأطقم" },
-  { value: "clients", label: "عرض ستوري فقط" },
-  { value: "all", label: "كل المنتجات" }
-];
-
 const notificationTypes = ["عروض", "تخفيضات", "رجوع المخزون", "وصل حديثًا"];
 
 const initialNotifications: ManagedNotification[] = [
@@ -149,18 +138,12 @@ type NotificationLastSend = {
   failed: number;
   errorCodes: Record<string, number>;
   firebaseAccepted: boolean;
+  campaignId?: string;
+  tag?: string;
 };
 
 function seedManagedProducts(): ManagedProduct[] {
   return seedProducts.map((product) => ({ ...product, visible: true }));
-}
-
-function seedManagedStories(): ManagedStory[] {
-  return seedStories.map((story) => ({
-    ...story,
-    visible: true,
-    target: story.id as StoryTarget
-  }));
 }
 
 function readStored<T>(key: string, fallback: T): T {
@@ -191,7 +174,6 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<Order[]>(seedOrders);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [content, setContent] = useState<SiteContent>(defaultSiteContent);
-  const [stories, setStories] = useState<ManagedStory[]>(seedManagedStories);
   const [notifications, setNotifications] = useState<ManagedNotification[]>(initialNotifications);
   const [vipPhones, setVipPhones] = useState<string[]>([]);
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
@@ -285,7 +267,6 @@ export default function AdminDashboard() {
       })
       .catch(() => {});
 
-    setStories(readStored(adminStorageKeys.stories, seedManagedStories()));
     setNotifications(readStored(adminStorageKeys.notifications, initialNotifications));
     setVipPhones(readStored(adminStorageKeys.vipPhones, []));
     setHeroSlides(readStored(adminStorageKeys.heroSlides, []));
@@ -303,10 +284,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (hydrated) writeStored(adminStorageKeys.content, content);
   }, [hydrated, content]);
-
-  useEffect(() => {
-    if (hydrated) writeStored(adminStorageKeys.stories, stories);
-  }, [hydrated, stories]);
 
   useEffect(() => {
     if (hydrated) writeStored(adminStorageKeys.notifications, notifications);
@@ -619,19 +596,6 @@ export default function AdminDashboard() {
     showToast("تم حذف الكوبون.");
   }
 
-  function updateStory(storyId: string, patch: Partial<ManagedStory>) {
-    setStories((current) => current.map((story) => (story.id === storyId ? { ...story, ...patch } : story)));
-  }
-
-  function addStory(story: ManagedStory) {
-    setStories((current) => [story, ...current]);
-    showToast("تمت إضافة الستوري وربطها بواجهة المتجر.");
-  }
-
-  function deleteStory(storyId: string) {
-    setStories((current) => current.filter((story) => story.id !== storyId));
-  }
-
   function createNotification(notification: ManagedNotification) {
     setNotifications((current) => [notification, ...current]);
     showToast("تم حفظ الإشعار في السجل المحلي.");
@@ -827,10 +791,6 @@ export default function AdminDashboard() {
                 }}
                 products={products}
                 onMoveProduct={moveProduct}
-                stories={stories}
-                onUpdateStory={updateStory}
-                onAddStory={addStory}
-                onDeleteStory={deleteStory}
                 productSyncLabel={productSyncLabel[productSyncState]}
               />
             ) : null}
@@ -2191,59 +2151,24 @@ function ContentManager({
   onContentChange,
   products,
   onMoveProduct,
-  stories,
-  onUpdateStory,
-  onAddStory,
-  onDeleteStory,
   productSyncLabel
 }: {
   content: SiteContent;
   onContentChange: (content: SiteContent) => void;
   products: ManagedProduct[];
   onMoveProduct: (productId: string, direction: -1 | 1) => void;
-  stories: ManagedStory[];
-  onUpdateStory: (storyId: string, patch: Partial<ManagedStory>) => void;
-  onAddStory: (story: ManagedStory) => void;
-  onDeleteStory: (storyId: string) => void;
   productSyncLabel: string;
 }) {
   const [draft, setDraft] = useState(content);
-  const [newStoryTitle, setNewStoryTitle] = useState("");
-  const [newStoryImage, setNewStoryImage] = useState("https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=420&q=80");
-  const [newStoryTarget, setNewStoryTarget] = useState<StoryTarget>("all");
 
   useEffect(() => {
     setDraft(content);
   }, [content]);
 
-  function submitStory() {
-    if (!newStoryTitle.trim() || !newStoryImage.trim()) return;
-    onAddStory({
-      id: `story-${Date.now()}`,
-      title: newStoryTitle.trim(),
-      image: newStoryImage.trim(),
-      color: "#D89CA4",
-      visible: true,
-      target: newStoryTarget
-    });
-    setNewStoryTitle("");
-  }
-
   return (
     <div className="grid gap-5 xl:grid-cols-2">
-      <div className="xl:col-span-2">
-        <MenuIconsManager />
-      </div>
-
       <Panel title="البنرات والنصوص" icon={FileText}>
         <div className="space-y-3">
-          <input className="AdminInput" value={draft.heroBadge} onChange={(event) => setDraft({ ...draft, heroBadge: event.target.value })} placeholder="وسم الهيرو" />
-          <input className="AdminInput" value={draft.heroTitle} onChange={(event) => setDraft({ ...draft, heroTitle: event.target.value })} placeholder="عنوان الهيرو" />
-          <textarea className="AdminInput min-h-28 py-3" value={draft.heroDescription} onChange={(event) => setDraft({ ...draft, heroDescription: event.target.value })} placeholder="وصف الهيرو" />
-          <div className="grid grid-cols-2 gap-2">
-            <input className="AdminInput" value={draft.primaryCta} onChange={(event) => setDraft({ ...draft, primaryCta: event.target.value })} placeholder="زر رئيسي" />
-            <input className="AdminInput" value={draft.secondaryCta} onChange={(event) => setDraft({ ...draft, secondaryCta: event.target.value })} placeholder="زر ثانوي" />
-          </div>
           <textarea
             className="AdminInput min-h-32 py-3"
             value={draft.offerMessages.join("\n")}
@@ -2337,59 +2262,6 @@ function ContentManager({
         </div>
       </Panel>
 
-      <Panel title="Stories" icon={ImageIcon}>
-        <div className="space-y-3">
-          <div className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <input className="AdminInput" value={newStoryTitle} onChange={(event) => setNewStoryTitle(event.target.value)} placeholder="عنوان Story" />
-              <select className="AdminInput" value={newStoryTarget} onChange={(event) => setNewStoryTarget(event.target.value as StoryTarget)}>
-                {storyTargets.map((target) => (
-                  <option key={target.value} value={target.value}>
-                    {target.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <input className="AdminInput mt-2" value={newStoryImage} onChange={(event) => setNewStoryImage(event.target.value)} placeholder="رابط الصورة" />
-            <button onClick={submitStory} className="mt-3 min-h-10 rounded-full bg-wahaj-rose px-4 text-sm font-bold text-white">
-              إضافة Story
-            </button>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {stories.map((story) => (
-              <div key={story.id} className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
-                <input className="AdminInput" value={story.title} onChange={(event) => onUpdateStory(story.id, { title: event.target.value })} />
-                <input className="AdminInput mt-2" value={story.image} onChange={(event) => onUpdateStory(story.id, { image: event.target.value })} />
-                <select
-                  className="AdminInput mt-2"
-                  value={story.target || (story.id as StoryTarget)}
-                  onChange={(event) => onUpdateStory(story.id, { target: event.target.value as StoryTarget })}
-                >
-                  {storyTargets.map((target) => (
-                    <option key={target.value} value={target.value}>
-                      {target.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={() => onUpdateStory(story.id, { visible: story.visible === false })}
-                    className={`rounded-full px-3 py-1 text-xs font-bold ${
-                      story.visible === false ? "bg-red-50 text-red-600" : "bg-wahaj-success/20 text-wahaj-ink"
-                    }`}
-                  >
-                    {story.visible === false ? "مخفية" : "ظاهرة"}
-                  </button>
-                  <button onClick={() => onDeleteStory(story.id)} className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-600">
-                    حذف
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Panel>
 
       <Panel title="حالة الربط" icon={ShieldCheck}>
         <div className="grid gap-2">
@@ -2884,12 +2756,15 @@ function NotificationsManager({
         body: JSON.stringify({ title: title.trim(), body: body.trim(), latestOnly: options?.latestOnly === true })
       });
       const payload = await response.json().catch(() => null);
+      const campaignId = payload?.campaignId || "";
       const sendStats = {
         total: Number(payload?.total || 0),
         success: Number(payload?.success || 0),
         failed: Number(payload?.failed || 0),
         errorCodes: payload?.errorCodes || {},
-        firebaseAccepted: Boolean(payload?.firebaseAccepted)
+        firebaseAccepted: Boolean(payload?.firebaseAccepted),
+        campaignId: campaignId || undefined,
+        tag: campaignId ? `wahaj-${campaignId}` : undefined
       };
       console.info("[WAHAJ_PUSH_DEBUG]", "Admin received send response", {
         ...sendStats,
@@ -2950,6 +2825,8 @@ function NotificationsManager({
               <InfoRow label="last firebaseAccepted" value={lastSend ? String(lastSend.firebaseAccepted) : "not sent"} />
               <InfoRow label="last total/success/failed" value={lastSend ? `${lastSend.total}/${lastSend.success}/${lastSend.failed}` : "not sent"} />
               <InfoRow label="last errorCodes" value={lastSend ? JSON.stringify(lastSend.errorCodes) : "{}"} />
+              {lastSend?.campaignId ? <InfoRow label="last campaignId" value={lastSend.campaignId} /> : null}
+              {lastSend?.tag ? <InfoRow label="last tag" value={lastSend.tag} /> : null}
             </div>
             <p className="mt-2 rounded-[8px] bg-white px-3 py-2 font-bold text-wahaj-text/65">
               Firebase success means FCM accepted the message; it does not prove Android displayed a system notification.

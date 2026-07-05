@@ -5,16 +5,14 @@ let messagingReady = null;
 const PUSH_DEBUG_PREFIX = "[WAHAJ_PUSH_DEBUG]";
 
 function payloadSummary(payload) {
-  const notification = payload && payload.notification ? payload.notification : {};
   const data = payload && payload.data ? payload.data : {};
-  const fcmOptions = payload && payload.fcmOptions ? payload.fcmOptions : {};
 
   return {
-    hasNotification: Boolean(payload && payload.notification),
     dataKeys: Object.keys(data),
-    titleSource: notification.title ? "notification" : data.title ? "data" : "fallback",
-    bodySource: notification.body ? "notification" : data.body ? "data" : "empty",
-    url: fcmOptions.link || data.url || "/",
+    title: data.title || "(missing)",
+    bodyLength: (data.body || "").length,
+    url: data.url || "/",
+    tag: data.tag || "none",
     campaignId: data.campaignId || "none"
   };
 }
@@ -52,13 +50,11 @@ function initializeMessaging() {
       messaging.onBackgroundMessage((payload) => {
         console.info(PUSH_DEBUG_PREFIX, "Service worker received background payload", payloadSummary(payload));
 
-        const notification = payload.notification || {};
-        const data = payload.data || {};
-        const fcmOptions = payload.fcmOptions || {};
-        const title = notification.title || data.title || "Wahaj";
-        const body = notification.body || data.body || "";
-        const url = fcmOptions.link || data.url || "/";
-        const tag = data.campaignId ? "wahaj-" + data.campaignId : uniqueTag();
+        const data = payload && payload.data ? payload.data : {};
+        const title = data.title || "Wahaj";
+        const body = data.body || "";
+        const url = data.url || "/";
+        const tag = data.tag || (data.campaignId ? "wahaj-" + data.campaignId : uniqueTag());
 
         console.info(PUSH_DEBUG_PREFIX, "Service worker calling showNotification", {
           title,
