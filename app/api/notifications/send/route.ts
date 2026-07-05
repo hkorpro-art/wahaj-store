@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { verifyAdminToken } from "@/lib/auth";
@@ -23,13 +24,15 @@ export async function POST(request: Request) {
   const title = sanitizeNotificationText(payload.title, 80);
   const body = sanitizeNotificationText(payload.body, 240);
   const latestOnly = payload.latestOnly === true;
+  const campaignId = randomUUID();
 
   console.info(PUSH_DEBUG_PREFIX, "API received notification send request", {
     title,
     body,
     titleLength: title.length,
     bodyLength: body.length,
-    latestOnly
+    latestOnly,
+    campaignId
   });
 
   if (!title || !body) {
@@ -41,8 +44,8 @@ export async function POST(request: Request) {
   }
 
   const result = latestOnly
-    ? await sendNotificationToLatestActiveSubscriber(title, body)
-    : await sendNotificationToActiveSubscribers(title, body);
+    ? await sendNotificationToLatestActiveSubscriber(title, body, campaignId)
+    : await sendNotificationToActiveSubscribers(title, body, campaignId);
   const sentBy = typeof admin.email === "string" ? admin.email : undefined;
   const campaign = result.settingsComplete
     ? await saveNotificationCampaign({
@@ -50,6 +53,7 @@ export async function POST(request: Request) {
         body,
         result,
         sentBy,
+        campaignId,
         target: latestOnly ? "latest" : "all"
       })
     : null;

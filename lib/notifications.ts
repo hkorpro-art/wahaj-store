@@ -129,10 +129,12 @@ function incrementErrorCode(errorCodes: Record<string, number>, code: string) {
 async function sendNotificationToSubscriptions({
   title,
   body,
+  campaignId,
   latestOnly = false
 }: {
   title: string;
   body: string;
+  campaignId?: string;
   latestOnly?: boolean;
 }): Promise<NotificationSendResult> {
   const db = getFirebaseFirestoreAdmin();
@@ -166,13 +168,15 @@ async function sendNotificationToSubscriptions({
   for (let index = 0; index < subscriptions.length; index += MAX_MULTICAST_TOKENS) {
     const chunk = subscriptions.slice(index, index + MAX_MULTICAST_TOKENS);
     const url = SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://wahaj0.vercel.app";
+    const tag = campaignId ? `wahaj-${campaignId}` : `wahaj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const response = await messaging.sendEachForMulticast({
       tokens: chunk.map((item) => item.token),
       notification: { title, body },
       data: {
         title,
         body,
-        url
+        url,
+        ...(campaignId ? { campaignId } : {})
       },
       webpush: {
         notification: {
@@ -180,7 +184,9 @@ async function sendNotificationToSubscriptions({
           body,
           icon: "/icon-192.png",
           badge: "/icon-192.png",
-          tag: "wahaj-notification"
+          tag,
+          renotify: true,
+          data: { url, campaignId }
         },
         fcmOptions: {
           link: url
@@ -238,12 +244,12 @@ async function sendNotificationToSubscriptions({
   };
 }
 
-export function sendNotificationToActiveSubscribers(title: string, body: string) {
-  return sendNotificationToSubscriptions({ title, body });
+export function sendNotificationToActiveSubscribers(title: string, body: string, campaignId?: string) {
+  return sendNotificationToSubscriptions({ title, body, campaignId });
 }
 
-export function sendNotificationToLatestActiveSubscriber(title: string, body: string) {
-  return sendNotificationToSubscriptions({ title, body, latestOnly: true });
+export function sendNotificationToLatestActiveSubscriber(title: string, body: string, campaignId?: string) {
+  return sendNotificationToSubscriptions({ title, body, campaignId, latestOnly: true });
 }
 
 export async function saveNotificationCampaign({
@@ -251,12 +257,14 @@ export async function saveNotificationCampaign({
   body,
   result,
   sentBy,
+  campaignId,
   target = "all"
 }: {
   title: string;
   body: string;
   result: NotificationSendResult;
   sentBy?: string;
+  campaignId?: string;
   target?: "all" | "latest";
 }) {
   const db = getFirebaseFirestoreAdmin();
@@ -278,8 +286,10 @@ export async function saveNotificationCampaign({
     createdAt: FieldValue.serverTimestamp()
   };
 
-  const doc = await db.collection(CAMPAIGNS_COLLECTION).add(payload);
-  return { ok: true, settingsComplete: true, id: doc.id };
+  const doc = campaignId
+    ? await db.collection(CAMPAIGNS_COLLECTION).doc(campaignId).set({ ...payload, campaignId }).then(() => campaignId)
+    : (await db.collection(CAMPAIGNS_COLLECTION).add(payload)).id;
+  return { ok: true, settingsComplete: true, id: String(doc) };
 }
 
 function serializeDate(value: unknown) {

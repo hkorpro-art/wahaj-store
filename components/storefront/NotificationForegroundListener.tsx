@@ -58,11 +58,13 @@ export default function NotificationForegroundListener() {
           const body = messageText(payload.notification?.body) || messageText(payload.data?.body);
           const url = messageText(payload.fcmOptions?.link) || messageText(payload.data?.url) || "/";
 
-          const options: NotificationOptions = {
+          const tag = "wahaj-foreground-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+          const options: NotificationOptions & { renotify?: boolean } = {
             body,
             icon: "/icon-192.png",
             badge: "/icon-192.png",
-            tag: "wahaj-notification",
+            tag,
+            renotify: true,
             requireInteraction: false,
             data: { url }
           };

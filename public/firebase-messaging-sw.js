@@ -14,8 +14,21 @@ function payloadSummary(payload) {
     dataKeys: Object.keys(data),
     titleSource: notification.title ? "notification" : data.title ? "data" : "fallback",
     bodySource: notification.body ? "notification" : data.body ? "data" : "empty",
-    url: fcmOptions.link || data.url || "/"
+    url: fcmOptions.link || data.url || "/",
+    campaignId: data.campaignId || "none"
   };
+}
+
+function resolveNotificationUrl(event) {
+  const data = event.notification && event.notification.data ? event.notification.data : {};
+  if (data.url) return data.url;
+  if (data.FCM_MSG && data.FCM_MSG.data && data.FCM_MSG.data.url) return data.FCM_MSG.data.url;
+  if (data.FCM_MSG && data.FCM_MSG.fcmOptions && data.FCM_MSG.fcmOptions.link) return data.FCM_MSG.fcmOptions.link;
+  return "/";
+}
+
+function uniqueTag() {
+  return "wahaj-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
 }
 
 function initializeMessaging() {
@@ -45,20 +58,23 @@ function initializeMessaging() {
         const title = notification.title || data.title || "Wahaj";
         const body = notification.body || data.body || "";
         const url = fcmOptions.link || data.url || "/";
+        const tag = data.campaignId ? "wahaj-" + data.campaignId : uniqueTag();
 
         console.info(PUSH_DEBUG_PREFIX, "Service worker calling showNotification", {
           title,
           bodyLength: body.length,
-          url
+          url,
+          tag
         });
 
         self.registration.showNotification(title, {
           body,
           icon: "/icon-192.png",
           badge: "/icon-192.png",
-          tag: "wahaj-notification",
+          tag,
+          renotify: true,
           requireInteraction: false,
-          data: { url }
+          data: { url, campaignId: data.campaignId }
         });
       });
 
@@ -80,12 +96,12 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("notificationclick", (event) => {
+  const targetUrl = resolveNotificationUrl(event);
   console.info(PUSH_DEBUG_PREFIX, "Notification click event fired", {
     tag: event.notification.tag,
-    url: event.notification.data && event.notification.data.url ? event.notification.data.url : "/"
+    url: targetUrl
   });
   event.notification.close();
-  const targetUrl = event.notification.data && event.notification.data.url ? event.notification.data.url : "/";
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
