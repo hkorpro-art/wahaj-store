@@ -325,3 +325,28 @@ export async function getNotificationCampaignHistory(limit = 50) {
 
   return { campaigns, settingsComplete: true };
 }
+
+export async function resetAllNotificationSubscriptions() {
+  const db = getFirebaseFirestoreAdmin();
+  if (!db) {
+    return { ok: false, settingsComplete: false, disabled: 0 };
+  }
+
+  const snapshot = await db.collection(COLLECTION).where("active", "==", true).get();
+  const batch = db.batch();
+  snapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, {
+      active: false,
+      deactivatedAt: FieldValue.serverTimestamp(),
+      deactivationReason: "admin-reset",
+      updatedAt: FieldValue.serverTimestamp()
+    });
+  });
+  await batch.commit();
+
+  console.info(PUSH_DEBUG_PREFIX, "Reset notification subscriptions", {
+    disabled: snapshot.size
+  });
+
+  return { ok: true, settingsComplete: true, disabled: snapshot.size };
+}

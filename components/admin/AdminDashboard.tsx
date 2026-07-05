@@ -2614,6 +2614,7 @@ function NotificationsManager({
   const [lastSend, setLastSend] = useState<NotificationLastSend | null>(null);
   const [diagnostics, setDiagnostics] = useState<NotificationDiagnostics | null>(null);
   const [checkingDiagnostics, setCheckingDiagnostics] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendingLatest, setSendingLatest] = useState(false);
   const [sendResult, setSendResult] = useState("");
@@ -2724,6 +2725,25 @@ function NotificationsManager({
       setDiagnostics(base);
     } finally {
       setCheckingDiagnostics(false);
+    }
+  }
+
+  async function resetSubscriptions() {
+    if (!confirm("Disable all active push subscriptions? Users will need to re-subscribe.")) return;
+    setResetting(true);
+    try {
+      const response = await fetch("/api/notifications/reset-subscriptions", { method: "POST" });
+      const payload = await response.json().catch(() => null);
+      if (response.ok) {
+        alert(`Disabled ${payload?.disabled || 0} subscriptions. Users must re-subscribe from the storefront.`);
+        void loadNotificationStats();
+      } else {
+        alert(payload?.message || "Reset failed.");
+      }
+    } catch {
+      alert("Reset failed.");
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -2838,6 +2858,14 @@ function NotificationsManager({
               className="mt-3 min-h-10 rounded-full border border-wahaj-border bg-white px-4 text-xs font-bold text-wahaj-rose disabled:opacity-50"
             >
               {checkingDiagnostics ? "Checking device..." : "Check this device"}
+            </button>
+            <button
+              type="button"
+              onClick={resetSubscriptions}
+              disabled={resetting}
+              className="mt-2 min-h-10 rounded-full border border-wahaj-warning/50 bg-wahaj-warning/10 px-4 text-xs font-bold text-wahaj-warning disabled:opacity-50"
+            >
+              {resetting ? "Resetting..." : "Reset notification subscriptions"}
             </button>
             {diagnostics ? (
               <div className="mt-3 grid gap-1 rounded-[8px] bg-white p-3">
