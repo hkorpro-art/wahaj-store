@@ -7,6 +7,7 @@ import Footer from "@/components/storefront/Footer";
 import { CartProvider } from "@/lib/cart-context";
 import { PHProvider } from "@/lib/posthog";
 import PostHogPageView from "@/components/PostHogPageView";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const thmanyahDisplay = localFont({
@@ -172,6 +173,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
                 </ErrorBoundary>
               </div>
             </WahajLoader>
+            <SpeedInsights />
           </PHProvider>
         </CartProvider>
       </body>
