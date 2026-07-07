@@ -30,16 +30,27 @@ type ProductPageProps = {
   }>;
 };
 
+function unavailableProductMetadata(slug: string): Metadata {
+  return {
+    title: "المنتج غير متوفر | وهاج",
+    description: "هذا المنتج غير متوفر حاليًا في متجر وهاج.",
+    robots: {
+      index: false,
+      follow: true
+    },
+    alternates: {
+      canonical: `${SITE_URL}/product/${slug}`
+    }
+  };
+}
+
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
   const { products: managedProducts } = await getCachedProducts();
   const product = managedProducts.find((item) => matchesProductRoute(item, slug));
 
-  if (!product) {
-    return {
-      title: "منتج وهاج | WAHAJ",
-      description: "تفاصيل المنتج يتم تحديثها مباشرة من Firestore."
-    };
+  if (!product || product.visible === false) {
+    return unavailableProductMetadata(slug);
   }
 
   const ogImage = productCoverUrl(product.images, { width: 1200 });
@@ -87,9 +98,9 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 function normalizeSlug(value: string) {
   try {
-    return decodeURIComponent(value).trim().toLowerCase();
+    return decodeURIComponent(value).normalize("NFC").trim().toLowerCase();
   } catch {
-    return value.trim().toLowerCase();
+    return value.normalize("NFC").trim().toLowerCase();
   }
 }
 
