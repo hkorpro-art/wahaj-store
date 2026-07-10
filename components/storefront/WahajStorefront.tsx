@@ -17,8 +17,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { usePostHog } from "posthog-js/react";
+import { useEffect, useMemo, useState } from "react";
 import {
   defaultSiteContent,
   type ManagedCollection,
@@ -57,7 +56,6 @@ export default function WahajStorefront({
   initialSiteContent,
   initialActiveCoupons
 }: WahajStorefrontProps) {
-  const posthog = usePostHog();
   const router = useRouter();
   const { cartItems, cartTotal, cartCount, addToCart: contextAddToCart, updateQuantity, removeFromCart, clearCart } = useCart();
   const [storeProducts, setStoreProducts] = useState<ManagedProduct[]>(initialProducts);
@@ -65,7 +63,6 @@ export default function WahajStorefront({
   const [siteContent, setSiteContent] = useState<SiteContent>(initialSiteContent);
   const [activeCoupons, setActiveCoupons] = useState<Coupon[]>(initialActiveCoupons);
   const [query, setQuery] = useState("");
-  const prevQuery = useRef("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [addedToast, setAddedToast] = useState<{ visible: boolean; productName: string }>({ visible: false, productName: "" });
   const [heroContrasts, setHeroContrasts] = useState<ElementContrasts>({ logo: "dark", menu: "dark", cart: "dark", search: "dark" });
@@ -81,14 +78,6 @@ export default function WahajStorefront({
       return matchesVisibility && matchesQuery;
     });
   }, [storeProducts, query]);
-
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (trimmed && trimmed !== prevQuery.current) {
-      posthog?.capture("search", { query: trimmed, $current_url: window.location.href });
-    }
-    prevQuery.current = trimmed;
-  }, [query, posthog]);
 
   function handleAddToCart(product: Product) {
     contextAddToCart(product);
@@ -469,7 +458,6 @@ function BottomNavigation({
    ═══════════════════════════════════════════════════════════ */
 
 function FloatingWhatsApp({ items }: { items: CartItem[] }) {
-  const posthog = usePostHog();
   const href =
     items.length > 0
       ? whatsappUrl(buildCartMessage(items))
@@ -488,15 +476,6 @@ function FloatingWhatsApp({ items }: { items: CartItem[] }) {
         productNames: items.map((i) => `${i.product.name} (x${i.quantity})`).join(" | ")
       })
     }).catch(() => {});
-
-    posthog?.capture("whatsapp_click", {
-      source: "floating_button",
-      item_count: items.length,
-      total: items.reduce((sum, i) => sum + i.product.price * i.quantity, 0),
-      product_ids: items.map((i) => i.product.id),
-      product_names: items.map((i) => `${i.product.name} (x${i.quantity})`),
-      $current_url: window.location.href,
-    });
   }
 
   return (

@@ -5,7 +5,6 @@ import { ChevronRight, CreditCard, Gift, MessageCircle, Minus, ShoppingBag, Tras
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/data";
@@ -15,7 +14,6 @@ import type { Coupon } from "@/lib/types";
 
 export default function CartPageClient() {
   const router = useRouter();
-  const posthog = usePostHog();
   const { cartItems, cartTotal, cartCount, updateQuantity, removeFromCart, clearCart } = useCart();
 
   const [couponCode, setCouponCode] = useState("");
@@ -162,14 +160,6 @@ export default function CartPageClient() {
         productNames: cartItems.map((i) => `${i.product.name} (x${i.quantity})`).join(" | ")
       })
     }).catch(() => {});
-    posthog?.capture("whatsapp_click", {
-      source: "cart_page",
-      item_count: cartItems.length,
-      total: finalTotal,
-      product_ids: cartItems.map((i) => i.product.id),
-      product_names: cartItems.map((i) => `${i.product.name} (x${i.quantity})`),
-      $current_url: window.location.href,
-    });
 
     let message = buildCartMessage(cartItems);
 

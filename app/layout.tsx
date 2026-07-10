@@ -1,12 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
-import WahajLoader from "@/components/storefront/WahajLoader";
 import MotionShell from "@/components/storefront/MotionShell";
 import Footer from "@/components/storefront/Footer";
 import { CartProvider } from "@/lib/cart-context";
-import { PHProvider } from "@/lib/posthog";
-import PostHogPageView from "@/components/PostHogPageView";
 import "./globals.css";
 
 const thmanyahDisplay = localFont({
@@ -54,21 +51,40 @@ const thmanyahText = localFont({
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import JsonLd from "@/components/JsonLd";
-import { SITE_URL, SITE_NAME, SITE_NAME_EN, SITE_OG_IMAGE, SITE_TWITTER_CARD } from "@/lib/site-config";
+import {
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_NAME_AR,
+  SITE_NAME_EN,
+  SITE_OG_IMAGE,
+  SITE_TWITTER_CARD,
+  SITE_URL
+} from "@/lib/site-config";
 
 const siteUrl = SITE_URL;
-const ogImage = SITE_OG_IMAGE;
-const brandDescription =
-  "وهاج علامة عربية متخصصة في الإكسسوارات النسائية الفاخرة. اكتشفي خواتم، أساور، سلاسل وأقراط مختارة بعناية مع تجربة شراء سهلة وطلب مباشر عبر واتساب.";
+const brandTitle = "وهاج | Wahaj - إكسسوارات نسائية فاخرة";
+const ogImage = new URL(SITE_OG_IMAGE, siteUrl).toString();
+const twitterCard = new URL(SITE_TWITTER_CARD, siteUrl).toString();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "وهاج | Wahaj - إكسسوارات نسائية فاخرة",
-    template: "%s | وهاج"
+    default: brandTitle,
+    template: `%s | ${SITE_NAME_AR}`
   },
-  description: brandDescription,
-  keywords: ["وهاج", "Wahaj", "WAHAJ", "إكسسوارات نسائية", "خواتم", "أساور", "سلاسل", "أقراط", "هدايا نسائية", "إكسسوارات فاخرة"],
+  description: SITE_DESCRIPTION,
+  keywords: [
+    SITE_NAME_AR,
+    SITE_NAME_EN,
+    "WAHAJ",
+    "إكسسوارات نسائية",
+    "خواتم",
+    "أساور",
+    "سلاسل",
+    "أقراط",
+    "هدايا نسائية",
+    "إكسسوارات فاخرة"
+  ],
   authors: [{ name: SITE_NAME_EN }],
   applicationName: SITE_NAME,
   category: "shopping",
@@ -83,19 +99,19 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   openGraph: {
-    title: "وهاج | Wahaj - إكسسوارات نسائية فاخرة",
-    description: brandDescription,
+    title: brandTitle,
+    description: SITE_DESCRIPTION,
     url: siteUrl,
     siteName: SITE_NAME,
     locale: "ar_YE",
     type: "website",
-    images: [{ url: ogImage, width: 1200, height: 630, alt: "وهاج | Wahaj" }]
+    images: [{ url: ogImage, width: 1200, height: 630, alt: SITE_NAME }]
   },
   twitter: {
     card: "summary_large_image",
-    title: "وهاج | Wahaj - إكسسوارات نسائية فاخرة",
-    description: brandDescription,
-    images: [SITE_TWITTER_CARD]
+    title: brandTitle,
+    description: SITE_DESCRIPTION,
+    images: [twitterCard]
   },
   robots: {
     index: true,
@@ -106,7 +122,7 @@ export const metadata: Metadata = {
   },
   other: {
     "application-name": SITE_NAME,
-    "apple-mobile-web-app-title": "وهاج",
+    "apple-mobile-web-app-title": SITE_NAME_AR,
     "apple-mobile-web-app-capable": "yes"
   }
 };
@@ -125,17 +141,15 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         className={`${thmanyahDisplay.variable} ${thmanyahText.variable} font-thmanyah-text font-normal antialiased`}
       >
         <CartProvider>
-          <PHProvider>
-            <PostHogPageView />
-            <JsonLd
+          <JsonLd
               data={{
                 "@context": "https://schema.org",
                 "@type": "Organization",
-                name: "وهاج | Wahaj",
-                alternateName: ["وهاج", "Wahaj", "WAHAJ"],
+                name: SITE_NAME,
+                alternateName: [SITE_NAME_AR, SITE_NAME_EN, "WAHAJ"],
                 url: siteUrl,
                 logo: `${siteUrl}/icon-512.png`,
-                description: brandDescription,
+                description: SITE_DESCRIPTION,
                 sameAs: [`https://wa.me/967781679899`, siteUrl],
                 contactPoint: {
                   "@type": "ContactPoint",
@@ -150,8 +164,8 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
               data={{
                 "@context": "https://schema.org",
                 "@type": "WebSite",
-                name: "وهاج | Wahaj",
-                alternateName: ["وهاج", "Wahaj", "WAHAJ"],
+                name: SITE_NAME,
+                alternateName: [SITE_NAME_AR, SITE_NAME_EN, "WAHAJ"],
                 url: siteUrl,
                 inLanguage: "ar",
                 potentialAction: {
@@ -164,15 +178,12 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
                 }
               }}
             />
-            <WahajLoader>
-              <div className="wahaj-app-shell">
-                <ErrorBoundary>
-                  <MotionShell>{children}</MotionShell>
-                  <Footer />
-                </ErrorBoundary>
-              </div>
-            </WahajLoader>
-          </PHProvider>
+            <div className="wahaj-app-shell">
+              <ErrorBoundary>
+                <MotionShell>{children}</MotionShell>
+                <Footer />
+              </ErrorBoundary>
+            </div>
         </CartProvider>
       </body>
     </html>

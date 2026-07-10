@@ -5,7 +5,6 @@ import { ArrowLeft, ChevronDown, Gem, Minus, Plus, RefreshCw, Share2, ShoppingBa
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { usePostHog } from "posthog-js/react";
 import { useCart } from "@/lib/cart-context";
 import type { ManagedProduct, SiteContent } from "@/lib/admin-local";
 import type { TrustMessage } from "@/lib/types";
@@ -90,7 +89,6 @@ function formatPriceLatin(value: number) {
 }
 
 export default function ProductDetailClient({ slug, initialProduct, initialSimilarProducts, siteContentDefaults }: ProductDetailClientProps) {
-  const posthog = usePostHog();
   const [product, setProduct] = useState<ManagedProduct | null>(
     initialProduct
       ? {
@@ -132,12 +130,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       body: JSON.stringify({ type: "product_view", productId: product.id, productName: product.name })
     }).catch(() => {});
 
-    posthog?.capture("product_view", {
-      product_id: product.id,
-      product_name: product.name,
-      $current_url: window.location.href,
-    });
-  }, [product?.id, posthog]);
+  }, [product?.id]);
 
   const trustMessages: TrustMessage[] = useMemo(
     () => product?.trustMessages && product.trustMessages.length > 0
@@ -180,13 +173,6 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "whatsapp_click", productId: product.id, productName: product.name, source: "product_detail" })
     }).catch(() => {});
-
-    posthog?.capture("whatsapp_click", {
-      product_id: product.id,
-      product_name: product.name,
-      source: "product_detail",
-      $current_url: window.location.href,
-    });
 
     const link = window.location.href;
     let message = `مرحباً وهاج ✨\nأرغب بطلب القطعة التالية:\n\nالمنتج: ${product.name}\n`;
