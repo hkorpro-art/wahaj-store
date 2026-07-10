@@ -1,4 +1,5 @@
 import type { ManagedProduct } from "./admin-local";
+import { ensureProductCategoryIds } from "./category-mapping";
 import { products as seedProducts } from "./data";
 import { getFirebaseFirestoreAdmin } from "./firebase-admin";
 import { FIRESTORE_PRODUCTS_COLLECTION, productToRow, rowSortOrder, rowToManagedProduct } from "./product-record";
@@ -6,7 +7,7 @@ import { FIRESTORE_PRODUCTS_COLLECTION, productToRow, rowSortOrder, rowToManaged
 type ProductSource = "firebase" | "seed";
 
 export function seedManagedProducts(): ManagedProduct[] {
-  return seedProducts.map((product) => ({ ...product, visible: true }));
+  return seedProducts.map((product) => ensureProductCategoryIds({ ...product, visible: true }));
 }
 
 export async function getManagedProducts(): Promise<{ products: ManagedProduct[]; source: ProductSource }> {

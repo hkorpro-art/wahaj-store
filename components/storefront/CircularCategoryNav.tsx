@@ -12,7 +12,6 @@ export default function CircularCategoryNav() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isInteracting = useRef(false);
   const lastActiveTime = useRef(Date.now());
-  const animationFrameId = useRef<number | null>(null);
 
   // Load from API + Firestore realtime listener
   useEffect(() => {
@@ -82,10 +81,19 @@ export default function CircularCategoryNav() {
     const el = scrollRef.current;
     if (!el) return;
 
-    let driftDir = 1; // 1 = scroll right, -1 = scroll left
+    let driftDir = 1;
+    let isVisible = true;
+    let frameId: number | null = null;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     const animate = () => {
-      if (!isInteracting.current && Date.now() - lastActiveTime.current > 3000) {
+      if (
+        isVisible &&
+        !document.hidden &&
+        !mediaQuery.matches &&
+        !isInteracting.current &&
+        Date.now() - lastActiveTime.current > 3000
+      ) {
         // Safe check for horizontal boundaries
         if (el.scrollLeft >= el.scrollWidth - el.clientWidth) {
           driftDir = -1;
@@ -94,14 +102,23 @@ export default function CircularCategoryNav() {
         }
         el.scrollLeft += 0.4 * driftDir;
       }
-      animationFrameId.current = requestAnimationFrame(animate);
+      frameId = requestAnimationFrame(animate);
     };
 
-    animationFrameId.current = requestAnimationFrame(animate);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+      },
+      { threshold: 0 }
+    );
+
+    observer.observe(el);
+    frameId = requestAnimationFrame(animate);
 
     return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
+      observer.disconnect();
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
       }
     };
   }, [categories]);

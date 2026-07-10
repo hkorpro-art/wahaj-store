@@ -10,3 +10,14 @@ dist
 
 .vercel
 .netlify
+
+# Development artifacts
+scratch/
+.playwright-mcp/
+PERFORMANCE_AUDIT_REPORT.md
+FULL-AUDIT-REPORT.md
+ARCHITECTURE_AUDIT.md
+ACTION-PLAN.md
+*.snapshot.md
+*.snapshot.txt
+test-results/

@@ -13,7 +13,6 @@ export default function CircularCollections() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isInteracting = useRef(false);
   const lastActiveTime = useRef(Date.now());
-  const animationFrameId = useRef<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -95,8 +94,18 @@ export default function CircularCollections() {
     const el = scrollRef.current;
     if (!el || collections.length === 0) return;
 
+    let isVisible = true;
+    let frameId: number | null = null;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
     const animate = () => {
-      if (!isInteracting.current && Date.now() - lastActiveTime.current > 3000) {
+      if (
+        isVisible &&
+        !document.hidden &&
+        !mediaQuery.matches &&
+        !isInteracting.current &&
+        Date.now() - lastActiveTime.current > 3000
+      ) {
         const oneSet = el.scrollWidth / 3;
         el.scrollLeft += 0.4;
 
@@ -105,14 +114,23 @@ export default function CircularCollections() {
           el.scrollLeft -= oneSet;
         }
       }
-      animationFrameId.current = requestAnimationFrame(animate);
+      frameId = requestAnimationFrame(animate);
     };
 
-    animationFrameId.current = requestAnimationFrame(animate);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+      },
+      { threshold: 0 }
+    );
+
+    observer.observe(el);
+    frameId = requestAnimationFrame(animate);
 
     return () => {
-      if (animationFrameId.current) {
-        cancelAnimationFrame(animationFrameId.current);
+      observer.disconnect();
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
       }
     };
   }, [collections]);
@@ -158,6 +176,7 @@ export default function CircularCollections() {
               <Link
                 key={`${collection.id}-${index}`}
                 href={`/collections/${collection.slug}`}
+                aria-label={`عرض مجموعة ${collection.name}`}
                 className="group flex flex-col items-center gap-2 shrink-0 transition-transform duration-300 hover:scale-105"
               >
                 <div className="relative h-20 w-20 overflow-hidden rounded-full border-2 border-wahaj-border bg-white/70 p-[2px] shadow-sm backdrop-blur-sm transition-all duration-300 group-hover:border-wahaj-rose group-hover:shadow-[0_0_12px_rgba(183,110,121,0.2)]">

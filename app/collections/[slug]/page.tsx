@@ -21,6 +21,14 @@ const getCachedPageData = cache(async () => {
 
 export const revalidate = 300;
 
+function normalizeSlug(value: string) {
+  try {
+    return decodeURIComponent(value).trim().toLowerCase();
+  } catch {
+    return value.trim().toLowerCase();
+  }
+}
+
 type Props = {
   params: Promise<{ slug: string }>;
 };
@@ -28,7 +36,8 @@ type Props = {
 export async function generateMetadata(props: Props) {
   const params = await props.params;
   const { collections } = await getCachedPageData();
-  const collection = collections.find((c) => c.slug === params.slug && c.visible !== false);
+  const routeSlug = normalizeSlug(params.slug);
+  const collection = collections.find((c) => normalizeSlug(c.slug) === routeSlug && c.visible !== false);
 
   if (!collection) {
     return {
@@ -71,8 +80,9 @@ export async function generateMetadata(props: Props) {
 export default async function CollectionPage(props: Props) {
   const params = await props.params;
   const { collections, products } = await getCachedPageData();
+  const routeSlug = normalizeSlug(params.slug);
 
-  const collection = collections.find((c) => c.slug === params.slug && c.visible !== false);
+  const collection = collections.find((c) => normalizeSlug(c.slug) === routeSlug && c.visible !== false);
 
   if (!collection) {
     notFound();

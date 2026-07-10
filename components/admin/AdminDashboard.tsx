@@ -61,6 +61,11 @@ import {
 } from "@/lib/imagekit";
 import { firebaseApp } from "@/lib/firebase";
 import type { Coupon, Order, OrderStatus, ProductBadge, ProductStatus, TrustMessage } from "@/lib/types";
+import { ensureProductCategoryIds } from "@/lib/category-mapping";
+import { AdminBrand, EmptyState, InfoPill, Panel } from "./admin-ui";
+import { orderStatuses, statusClass } from "@/lib/order-config";
+import { normalizePhone, OrdersTable } from "./orders-table";
+import { OrdersManager } from "./orders-manager";
 
 const tabs = [
   { id: "overview", label: "الرئيسية", icon: LayoutDashboard },
@@ -88,16 +93,6 @@ type CustomerRecord = {
   vip: boolean;
   inspiration: string[];
   lastOrder: string;
-};
-
-const orderStatuses: OrderStatus[] = ["جديد", "تم التواصل", "مؤكد", "تم التسليم", "ملغي"];
-
-const statusClass: Record<OrderStatus, string> = {
-  جديد: "bg-wahaj-warning/16 text-wahaj-ink border-wahaj-warning/35",
-  "تم التواصل": "bg-wahaj-soft text-wahaj-rose border-wahaj-primary/40",
-  مؤكد: "bg-wahaj-success/18 text-wahaj-ink border-wahaj-success/35",
-  "تم التسليم": "bg-emerald-50 text-emerald-700 border-emerald-200",
-  ملغي: "bg-red-50 text-red-700 border-red-200"
 };
 
 const productBadges: ProductBadge[] = ["جديد", "ترند", "الأكثر مبيعًا", "محدود", "مميز"];
@@ -233,7 +228,6 @@ export default function AdminDashboard() {
 
           if (shouldUseRemote) {
             setProducts(remoteProducts);
-            writeStored(adminStorageKeys.products, remoteProducts);
           } else {
             setProducts(localProducts);
           }
@@ -404,8 +398,7 @@ export default function AdminDashboard() {
         throw new Error(payload?.message || "Unable to save products.");
       }
 
-      if (payload?.saved === false) {
-        throw new Error("Firestore save failed.");
+      if (payload?.saved !== true) {
         showToast("تم حفظ التغيير محليًا فقط. لن يظهر للعملاء حتى تضيف مفاتيح Supabase أو Firebase في إعدادات الموقع.");
         return;
       }
@@ -419,6 +412,10 @@ export default function AdminDashboard() {
   }
 
   function upsertProduct(product: ManagedProduct) {
+    if (productSyncState !== "shared") {
+      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
+      return;
+    }
     setProducts((current) => {
       const exists = current.some((item) => item.id === product.id);
       const next = exists ? current.map((item) => (item.id === product.id ? product : item)) : [product, ...current];
@@ -429,6 +426,10 @@ export default function AdminDashboard() {
   }
 
   function duplicateProduct(product: ManagedProduct) {
+    if (productSyncState !== "shared") {
+      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
+      return;
+    }
     const timestamp = Date.now();
     setProducts((current) => {
       const next = [
@@ -449,6 +450,10 @@ export default function AdminDashboard() {
   }
 
   function updateProductStock(productId: string, delta: number) {
+    if (productSyncState !== "shared") {
+      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
+      return;
+    }
     setProducts((current) => {
       const next: ManagedProduct[] = current.map((product) => {
         if (product.id !== productId) return product;
@@ -461,6 +466,10 @@ export default function AdminDashboard() {
   }
 
   function toggleProductVisibility(productId: string) {
+    if (productSyncState !== "shared") {
+      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
+      return;
+    }
     setProducts((current) => {
       const next = current.map((product) => (product.id === productId ? { ...product, visible: product.visible === false } : product));
       void persistProducts(next, "Product visibility updated for customers.");
@@ -469,6 +478,10 @@ export default function AdminDashboard() {
   }
 
   function deleteProduct(productId: string) {
+    if (productSyncState !== "shared") {
+      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
+      return;
+    }
     setProducts((current) => {
       const next = current.filter((product) => product.id !== productId);
       void persistProducts(next, "Product deleted from customer storefront.");
@@ -478,6 +491,10 @@ export default function AdminDashboard() {
   }
 
   function moveProduct(productId: string, direction: -1 | 1) {
+    if (productSyncState !== "shared") {
+      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
+      return;
+    }
     setProducts((current) => {
       const index = current.findIndex((product) => product.id === productId);
       const nextIndex = index + direction;
@@ -816,22 +833,6 @@ export default function AdminDashboard() {
         </section>
       </div>
     </main>
-  );
-}
-
-function AdminBrand() {
-  return (
-    <div className="rounded-[8px] bg-wahaj-ink p-4 text-white shadow-soft">
-      <div className="flex items-center gap-3">
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/12">
-          <Sparkles className="h-6 w-6 text-wahaj-stars" />
-        </span>
-        <div>
-          <p className="font-thmanyah-text text-2xl font-bold">وهاج</p>
-          <p className="text-xs text-white/68">WAHAJ Admin OS</p>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -1494,7 +1495,7 @@ function ProductsManager({
       discountEndsAt: form.discountEndsAt || undefined
     };
 
-    onUpsert(product);
+    onUpsert(ensureProductCategoryIds(product));
     setForm(emptyProductForm());
     setMessage("تم حفظ المنتج بنجاح.");
   }
@@ -1724,216 +1725,6 @@ function ProductsManager({
           </div>
         </Panel>
       </div>
-    </div>
-  );
-}
-
-function OrdersManager({
-  orders,
-  products,
-  onCreate,
-  onStatus,
-  onDelete
-}: {
-  orders: Order[];
-  products: ManagedProduct[];
-  onCreate: (order: Order) => void;
-  onStatus: (orderId: string, status: OrderStatus) => void;
-  onDelete: (orderId: string) => void;
-}) {
-  const [customer, setCustomer] = useState("");
-  const [phone, setPhone] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [notes, setNotes] = useState("");
-  const [manualTotal, setManualTotal] = useState("");
-  const [status, setStatus] = useState<OrderStatus>("جديد");
-  const [isGift, setIsGift] = useState(false);
-  const [giftMessage, setGiftMessage] = useState("");
-  const [message, setMessage] = useState("");
-
-  const selectedProducts = products.filter((product) => selected.includes(product.id));
-  const autoTotal = selectedProducts.reduce((sum, product) => sum + product.price, 0);
-
-  function submitOrder() {
-    const total = manualTotal ? Number(manualTotal) : autoTotal;
-
-    if (!customer.trim() || !phone.trim() || selectedProducts.length === 0 || !Number.isFinite(total)) {
-      setMessage("اكتبي اسم العميلة، الهاتف، واختاري منتجًا واحدًا على الأقل.");
-      return;
-    }
-
-    const timestamp = Date.now();
-    onCreate({
-      id: `WH-${String(timestamp).slice(-6)}`,
-      customer: customer.trim(),
-      phone: phone.trim(),
-      products: selectedProducts.map((product) => product.name),
-      total,
-      notes: notes.trim() || "بدون ملاحظات",
-      status,
-      createdAt: new Date().toISOString().slice(0, 10),
-      isGift,
-      giftMessage: isGift ? giftMessage.trim() : ""
-    });
-    setCustomer("");
-    setPhone("");
-    setSelected([]);
-    setNotes("");
-    setManualTotal("");
-    setStatus("جديد");
-    setIsGift(false);
-    setGiftMessage("");
-    setMessage("تمت إضافة الطلب.");
-  }
-
-  return (
-    <div className="grid gap-5 xl:grid-cols-[1fr_370px]">
-      <Panel title="إدارة الطلبات" icon={ShoppingBag}>
-        <OrdersTable orders={orders} onStatus={onStatus} onDelete={onDelete} />
-      </Panel>
-
-      <Panel title="إضافة طلب يدوي" icon={PackageCheck}>
-        <div className="space-y-3">
-          <input className="AdminInput" value={customer} onChange={(event) => setCustomer(event.target.value)} placeholder="اسم العميلة" />
-          <input className="AdminInput" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="رقم الهاتف" inputMode="tel" />
-          <div className="max-h-64 space-y-2 overflow-y-auto rounded-[8px] border border-wahaj-border bg-wahaj-bg p-2 admin-scrollbar">
-            {products.map((product) => (
-              <label key={product.id} className="flex items-center justify-between gap-3 rounded-[8px] bg-white px-3 py-2 text-sm">
-                <span className="line-clamp-1 font-bold">{product.name}</span>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(product.id)}
-                  onChange={() => setSelected((current) => toggleArray(current, product.id))}
-                />
-              </label>
-            ))}
-          </div>
-          <div className="rounded-[8px] bg-wahaj-card p-3 text-sm font-bold text-wahaj-ink">
-            الإجمالي التلقائي: {formatPrice(autoTotal)}
-          </div>
-          <input className="AdminInput" value={manualTotal} onChange={(event) => setManualTotal(event.target.value)} placeholder="إجمالي مخصص اختياري" inputMode="numeric" />
-          <textarea className="AdminInput min-h-24 py-3" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="ملاحظات الطلب" />
-          <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
-            إرسال كهدية وتغليف فاخر 🎁
-            <input type="checkbox" checked={isGift} onChange={(event) => setIsGift(event.target.checked)} />
-          </label>
-          {isGift ? (
-            <input className="AdminInput" value={giftMessage} onChange={(event) => setGiftMessage(event.target.value)} placeholder="رسالة الإهداء" />
-          ) : null}
-          <select className="AdminInput" value={status} onChange={(event) => setStatus(event.target.value as OrderStatus)}>
-            {orderStatuses.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-          {message ? <p className="rounded-[8px] bg-wahaj-card p-3 text-sm font-bold">{message}</p> : null}
-          <button onClick={submitOrder} className="min-h-11 w-full rounded-full bg-wahaj-rose px-4 font-bold text-white">
-            حفظ الطلب
-          </button>
-        </div>
-      </Panel>
-    </div>
-  );
-}
-
-function OrdersTable({
-  orders,
-  compact,
-  onStatus,
-  onDelete
-}: {
-  orders: Order[];
-  compact?: boolean;
-  onStatus?: (orderId: string, status: OrderStatus) => void;
-  onDelete?: (orderId: string) => void;
-}) {
-  return (
-    <div className="overflow-x-auto admin-scrollbar">
-      <table className="w-full min-w-[900px] text-sm">
-        <thead>
-          <tr className="border-b border-wahaj-border text-right text-wahaj-text/62">
-            <th className="py-3">الطلب</th>
-            <th>العميلة</th>
-            <th>المنتجات</th>
-            <th>الإجمالي</th>
-            <th>الملاحظات</th>
-            <th>الحالة</th>
-            {!compact ? <th>إجراءات</th> : null}
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.id} className="border-b border-wahaj-border/70">
-              <td className="py-3 font-bold text-wahaj-ink">
-                <p>{order.id}</p>
-                <p className="text-xs font-normal text-wahaj-text/55">{order.createdAt}</p>
-              </td>
-              <td>
-                <p className="font-bold">{order.customer}</p>
-                <p className="text-xs text-wahaj-text/55">{order.phone}</p>
-              </td>
-              <td className="max-w-72">
-                <p className="line-clamp-2">{order.products.join("، ")}</p>
-              </td>
-              <td className="font-bold text-wahaj-rose">{formatPrice(order.total)}</td>
-              <td>
-                <p className="line-clamp-2">{order.notes}</p>
-                {order.isGift ? (
-                  <div className="mt-1 flex flex-col gap-1 rounded bg-wahaj-rose/10 p-1.5 text-xs text-wahaj-rose border border-wahaj-rose/20">
-                    <span className="font-bold">🎁 هدية وتغليف فاخر</span>
-                    {order.giftMessage ? (
-                      <span className="italic">"{order.giftMessage}"</span>
-                    ) : (
-                      <span className="text-[10px] text-wahaj-rose/60">(بدون رسالة إهداء)</span>
-                    )}
-                  </div>
-                ) : null}
-              </td>
-              <td>
-                {onStatus ? (
-                  <select
-                    value={order.status}
-                    onChange={(event) => onStatus(order.id, event.target.value as OrderStatus)}
-                    className={`rounded-full border px-3 py-2 text-xs font-bold outline-none ${statusClass[order.status]}`}
-                  >
-                    {orderStatuses.map((status) => (
-                      <option key={status}>{status}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass[order.status]}`}>
-                    {order.status}
-                  </span>
-                )}
-              </td>
-              {!compact ? (
-                <td>
-                  <div className="flex gap-2">
-                    <a
-                      href={`https://wa.me/${normalizePhone(order.phone)}?text=${encodeURIComponent(buildOrderMessage(order))}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-wahaj-success text-white"
-                      aria-label="رسالة واتساب"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                    </a>
-                    {onDelete ? (
-                      <button
-                        onClick={() => onDelete(order.id)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600"
-                        aria-label="حذف الطلب"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    ) : null}
-                  </div>
-                </td>
-              ) : null}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {orders.length === 0 ? <EmptyState text="لا توجد طلبات بعد." /> : null}
     </div>
   );
 }
@@ -4015,57 +3806,12 @@ function ToggleChip({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
-function InfoPill({ label, value, tone }: { label: string; value: string; tone: "warning" | "rose" | "success" }) {
-  const toneClass = {
-    warning: "bg-wahaj-warning/18 text-wahaj-ink",
-    rose: "bg-wahaj-soft text-wahaj-rose",
-    success: "bg-wahaj-success/18 text-wahaj-ink"
-  }[tone];
-
-  return (
-    <div className="flex items-center justify-between rounded-[8px] bg-wahaj-card px-3 py-2 text-sm font-bold">
-      <span>{label}</span>
-      <span className={`rounded-full px-3 py-1 ${toneClass}`}>{value}</span>
-    </div>
-  );
-}
-
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-wahaj-text/64">{label}</span>
       <span className="font-bold text-wahaj-ink">{value}</span>
     </div>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return (
-    <div className="rounded-[8px] border border-dashed border-wahaj-border bg-wahaj-bg p-5 text-center text-sm font-bold text-wahaj-text/70">
-      {text}
-    </div>
-  );
-}
-
-function Panel({
-  title,
-  icon: Icon,
-  children
-}: {
-  title: string;
-  icon: ComponentType<{ className?: string }>;
-  children: ReactNode;
-}) {
-  return (
-    <section className="rounded-[8px] border border-wahaj-border bg-white p-4 shadow-soft">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="font-thmanyah-text text-xl font-bold text-wahaj-ink">{title}</h2>
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-wahaj-soft text-wahaj-rose">
-          <Icon className="h-5 w-5" />
-        </span>
-      </div>
-      {children}
-    </section>
   );
 }
 
@@ -4097,28 +3843,6 @@ function inventoryFromStock(stock: number) {
 
 function getCategoryName(categoryId: string) {
   return categories.find((category) => category.id === categoryId)?.name || categoryId;
-}
-
-function normalizePhone(phone: string) {
-  const digits = phone.replace(/\D/g, "");
-  if (digits.startsWith("967")) return digits;
-  return `967${digits.replace(/^0+/, "")}`;
-}
-
-function buildOrderMessage(order: Order) {
-  return [
-    `مرحبًا ${order.customer}`,
-    `معك وهاج بخصوص طلبك ${order.id}.`,
-    "",
-    "المنتجات:",
-    ...order.products.map((product) => `- ${product}`),
-    "",
-    `الإجمالي: ${formatPrice(order.total)}`,
-    `الحالة: ${order.status}`,
-    order.notes ? `الملاحظات: ${order.notes}` : ""
-  ]
-    .filter(Boolean)
-    .join("\n");
 }
 
 function buildCustomerRecords(orders: Order[], vipPhones: string[]): CustomerRecord[] {

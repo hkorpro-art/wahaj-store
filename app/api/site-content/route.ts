@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { verifyAdminToken } from "@/lib/auth";
@@ -27,6 +28,10 @@ export async function GET() {
   });
 }
 
+function revalidateSiteContentPages() {
+  revalidatePath("/", "page");
+}
+
 export async function PUT(request: Request) {
   const token = (await cookies()).get("wahaj_admin")?.value;
   const admin = await verifyAdminToken(token);
@@ -44,6 +49,7 @@ export async function PUT(request: Request) {
 
   try {
     const saved = await saveSiteContent(parsed.data);
+    revalidateSiteContentPages();
     return NextResponse.json({
       message: "تم حفظ محتوى الموقع.",
       content: parsed.data,

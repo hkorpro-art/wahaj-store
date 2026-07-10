@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { SITE_URL } from "@/lib/site-config";
+import { SITE_URL, SITE_OG_IMAGE } from "@/lib/site-config";
 import InfoPage from "@/components/storefront/InfoPage";
 import JsonLd from "@/components/JsonLd";
 
-const ogImage = "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&h=630&q=85";
-
 export const metadata: Metadata = {
-  title: "من نحن | وهاج",
+  title: "من نحن",
   description:
     "وهاج براند إكسسوارات نسائية يختار القطع الهادئة ذات الحضور الواضح، مع تجربة طلب بسيطة وسريعة عبر واتساب. لمسات فاخرة تصنع الفرق.",
   keywords: ["وهاج", "WAHAJ", "من نحن", "إكسسوارات نسائية", "زركون فاخر", "براند يمني", "مجوهرات نسائية"],
@@ -15,13 +13,13 @@ export const metadata: Metadata = {
     description: "وهاج براند إكسسوارات نسائية فاخرة - لمسات فاخرة تصنع الفرق.",
     url: `${SITE_URL}/about`,
     type: "website",
-    images: [{ url: ogImage, width: 1200, height: 630 }]
+    images: [{ url: SITE_OG_IMAGE, width: 1200, height: 630 }]
   },
   twitter: {
     card: "summary_large_image",
     title: "من نحن | وهاج",
     description: "وهاج براند إكسسوارات نسائية فاخرة - لمسات فاخرة تصنع الفرق.",
-    images: [ogImage]
+    images: [SITE_OG_IMAGE]
   },
   alternates: {
     canonical: `${SITE_URL}/about`
@@ -69,5 +67,4 @@ export default function AboutPage() {
     </>
   );
 }
-
 

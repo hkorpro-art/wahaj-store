@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { SITE_URL } from "@/lib/site-config";
+import { SITE_URL, SITE_OG_IMAGE } from "@/lib/site-config";
 import InfoPage from "@/components/storefront/InfoPage";
 import JsonLd from "@/components/JsonLd";
 
-const ogImage = "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&h=630&q=85";
-
 export const metadata: Metadata = {
-  title: "سياسة الطلب | وهاج",
+  title: "سياسة الطلب",
   description:
     "سياسة طلب وهاج: الطلب عبر واتساب مع تأكيد التوفر والتفاصيل قبل تجهيز القطعة. حجز القطع المحدودة والتوصيل.",
   keywords: ["وهاج", "WAHAJ", "سياسة الطلب", "طلب واتساب", "توصيل", "شحن", "إكسسوارات نسائية", "حجز قطع محدودة"],
@@ -15,13 +13,13 @@ export const metadata: Metadata = {
     description: "سياسة طلب وهاج: الطلب عبر واتساب مع تأكيد التوفر والتفاصيل قبل تجهيز القطعة.",
     url: `${SITE_URL}/order-policy`,
     type: "website",
-    images: [{ url: ogImage, width: 1200, height: 630 }]
+    images: [{ url: SITE_OG_IMAGE, width: 1200, height: 630 }]
   },
   twitter: {
     card: "summary_large_image",
     title: "سياسة الطلب | وهاج",
     description: "سياسة طلب وهاج: الطلب عبر واتساب مع تأكيد التوفر والتفاصيل قبل تجهيز القطعة.",
-    images: [ogImage]
+    images: [SITE_OG_IMAGE]
   },
   alternates: {
     canonical: `${SITE_URL}/order-policy`

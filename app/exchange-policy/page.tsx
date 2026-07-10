@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { SITE_URL } from "@/lib/site-config";
+import { SITE_URL, SITE_OG_IMAGE } from "@/lib/site-config";
 import InfoPage from "@/components/storefront/InfoPage";
 import JsonLd from "@/components/JsonLd";
 
-const ogImage = "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&h=630&q=85";
-
 export const metadata: Metadata = {
-  title: "سياسة الاستبدال | وهاج",
+  title: "سياسة الاستبدال",
   description:
     "سياسة استبدال وهاج: مراجعة كل طلب قبل التسليم، تعديل القطعة أو اللون أو الكمية، وشروط استبدال القطع الخاصة.",
   keywords: ["وهاج", "WAHAJ", "سياسة الاستبدال", "استرجاع", "تبديل", "ضمان الرضا", "إكسسوارات نسائية"],
@@ -15,13 +13,13 @@ export const metadata: Metadata = {
     description: "سياسة استبدال وهاج: مراجعة قبل التسليم وشروط استبدال القطع.",
     url: `${SITE_URL}/exchange-policy`,
     type: "website",
-    images: [{ url: ogImage, width: 1200, height: 630 }]
+    images: [{ url: SITE_OG_IMAGE, width: 1200, height: 630 }]
   },
   twitter: {
     card: "summary_large_image",
     title: "سياسة الاستبدال | وهاج",
     description: "سياسة استبدال وهاج: مراجعة قبل التسليم وشروط استبدال القطع.",
-    images: [ogImage]
+    images: [SITE_OG_IMAGE]
   },
   alternates: {
     canonical: `${SITE_URL}/exchange-policy`

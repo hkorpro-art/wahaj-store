@@ -11,7 +11,11 @@ export async function GET() {
 
   return NextResponse.json(
     { slides: slidesResult.slides, source: slidesResult.source, settings },
-    { headers: { "Cache-Control": "no-store" } }
+    {
+      headers: {
+        "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600"
+      }
+    }
   );
 }
 

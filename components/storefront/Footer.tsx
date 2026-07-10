@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { useMemo } from "react";
-import { seedCollections } from "@/lib/collections";
-import { seedCategories } from "@/lib/categories";
+import { getManagedCollections } from "@/lib/collection-management";
+import { getManagedCategories } from "@/lib/category-management";
 
 const infoLinks = [
   { label: "من نحن", href: "/about" },
@@ -11,9 +10,14 @@ const infoLinks = [
   { label: "تواصل معنا", href: "/contact" }
 ] as const;
 
-export default function Footer() {
-  const visibleCollections = useMemo(() => seedCollections.filter((c) => c.visible), []);
-  const visibleCategories = useMemo(() => seedCategories.filter((c) => c.visible), []);
+export default async function Footer() {
+  const [{ collections }, { categories }] = await Promise.all([
+    getManagedCollections(),
+    getManagedCategories()
+  ]);
+
+  const visibleCollections = collections.filter((collection) => collection.visible !== false);
+  const visibleCategories = categories.filter((category) => category.visible !== false);
 
   return (
     <footer className="border-t border-wahaj-border bg-white/60 backdrop-blur-sm" role="contentinfo">
@@ -75,10 +79,10 @@ export default function Footer() {
               نبذة
             </h3>
             <p>
-              وهاج متجر إكسسوارات نسائية فاخرة. نقدم تشكيلة منتقاة من الزركون الناعم والتصاميم العصرية بجودة عالية.
+              وهاج متجر إكسسوارات نسائية فاخرة وهدايا راقية؛ نختار خواتم، أساور، أقراط وسلاسل بتصاميم ناعمة وجودة موثوقة.
             </p>
             <p className="mt-4 text-xs text-wahaj-text/50">
-              &copy; {new Date().getFullYear()} WAHAJ &mdash; كل الحقوق محفوظة.
+              &copy; {new Date().getFullYear()} وهاج | Wahaj &mdash; كل الحقوق محفوظة.
             </p>
           </div>
         </div>

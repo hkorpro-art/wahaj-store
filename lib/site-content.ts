@@ -3,6 +3,7 @@ import { getFirebaseFirestoreAdmin } from "./firebase-admin";
 import { defaultSiteContent } from "./admin-local";
 import type { SiteContent } from "./admin-local";
 import { getCoupons } from "./coupons";
+import { repairDeepText } from "./text-repair";
 import type { Coupon } from "./types";
 
 const SITE_CONTENT_COLLECTION = "store_settings";
@@ -25,7 +26,7 @@ export async function getSiteContent(): Promise<{ content: SiteContent; source: 
       const doc = await firestore.collection(SITE_CONTENT_COLLECTION).doc(SITE_CONTENT_DOC).get();
       if (doc.exists) {
         const data = doc.data() as Partial<SiteContent>;
-        content = { ...defaultSiteContent, ...data };
+        content = repairDeepText({ ...defaultSiteContent, ...data });
         source = "firebase";
       } else {
         content = defaultSiteContent;
@@ -61,6 +62,6 @@ export async function saveSiteContent(content: SiteContent) {
     throw new Error("Firebase Firestore Admin is not configured.");
   }
 
-  await firestore.collection(SITE_CONTENT_COLLECTION).doc(SITE_CONTENT_DOC).set(content, { merge: true });
+  await firestore.collection(SITE_CONTENT_COLLECTION).doc(SITE_CONTENT_DOC).set(repairDeepText(content), { merge: true });
   return { saved: true as const };
 }

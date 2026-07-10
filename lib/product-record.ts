@@ -1,5 +1,6 @@
 import type { ManagedProduct } from "./admin-local";
 import { parseStoredImages, storeImage } from "./imagekit";
+import { repairBrokenArabicText, repairDeepText } from "./text-repair";
 
 export const FIRESTORE_PRODUCTS_COLLECTION = "production_products";
 
@@ -65,7 +66,7 @@ export function rowToManagedProduct(row: ProductRow): ManagedProduct | null {
 }
 
 export function productToRow(product: ManagedProduct) {
-  return {
+  return repairDeepText({
     id: product.id,
     slug: product.slug,
     name: product.name,
@@ -106,7 +107,7 @@ export function productToRow(product: ManagedProduct) {
     videos: product.videos ?? [],
     created_at: product.createdAt ?? new Date().toISOString(),
     updated_at: product.updatedAt ?? new Date().toISOString()
-  };
+  });
 }
 
 export function rowSortOrder(row: ProductRow, fallback: number) {
@@ -117,30 +118,30 @@ function jsonArrayValue<T>(value: unknown): T | undefined {
   if (!value) return undefined;
   if (typeof value === "string") {
     try {
-      return JSON.parse(value) as T;
+      return repairDeepText(JSON.parse(value) as T);
     } catch {
       return undefined;
     }
   }
-  if (Array.isArray(value)) return value as T;
+  if (Array.isArray(value)) return repairDeepText(value as T);
   return undefined;
 }
 
 function arrayValue(value: unknown): string[] {
   if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean);
+    return value.map((item) => repairBrokenArabicText(String(item).trim())).filter(Boolean);
   }
 
   if (typeof value === "string") {
     try {
       const parsed = JSON.parse(value);
       if (Array.isArray(parsed)) {
-        return parsed.map((item) => String(item).trim()).filter(Boolean);
+        return parsed.map((item) => repairBrokenArabicText(String(item).trim())).filter(Boolean);
       }
     } catch {
       return value
         .split(/[\n,،]+/)
-        .map((item) => item.trim())
+        .map((item) => repairBrokenArabicText(item.trim()))
         .filter(Boolean);
     }
   }
@@ -149,7 +150,7 @@ function arrayValue(value: unknown): string[] {
 }
 
 function stringValue(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
+  return typeof value === "string" ? repairBrokenArabicText(value.trim()) : "";
 }
 
 function numberValue(value: unknown, fallback: number) {

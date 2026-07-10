@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cache } from "react";
-import { SITE_URL, SITE_OG_IMAGE, SITE_TWITTER_CARD } from "@/lib/site-config";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_TWITTER_CARD, SITE_URL } from "@/lib/site-config";
 import WahajStorefront from "@/components/storefront/WahajStorefront";
 import JsonLd from "@/components/JsonLd";
 import { getManagedProducts } from "@/lib/products";
@@ -9,33 +9,34 @@ import { getSiteContent } from "@/lib/site-content";
 
 export const revalidate = 3600;
 
-const homeTitle = "إكسسوارات نسائية فاخرة بتصاميم راقية";
-const homeDescription =
-  "اكتشفي تشكيلة وهاج من الخواتم، الأساور، السلاسل والأقراط بتصاميم راقية وجودة عالية. اطلبي الآن بسهولة عبر واتساب.";
+const homeTitle = "وهاج | إكسسوارات نسائية فاخرة وهدايا راقية";
+const ogImage = new URL(SITE_OG_IMAGE, SITE_URL).toString();
+const twitterCard = new URL(SITE_TWITTER_CARD, SITE_URL).toString();
 
 export const metadata: Metadata = {
   title: homeTitle,
-  description: homeDescription,
+  description: SITE_DESCRIPTION,
   keywords: ["وهاج", "Wahaj", "WAHAJ", "إكسسوارات نسائية", "خواتم نسائية", "أساور فاخرة", "سلاسل نسائية", "أقراط راقية", "هدايا نسائية"],
   openGraph: {
-    title: `وهاج | Wahaj - ${homeTitle}`,
-    description: homeDescription,
+    title: homeTitle,
+    description: SITE_DESCRIPTION,
     url: SITE_URL,
     type: "website",
+    siteName: SITE_NAME,
     images: [
       {
-        url: SITE_OG_IMAGE,
+        url: ogImage,
         width: 1200,
         height: 630,
-        alt: "وهاج | Wahaj"
+        alt: SITE_NAME
       }
     ]
   },
   twitter: {
     card: "summary_large_image",
-    title: `وهاج | Wahaj - ${homeTitle}`,
-    description: homeDescription,
-    images: [SITE_TWITTER_CARD]
+    title: homeTitle,
+    description: SITE_DESCRIPTION,
+    images: [twitterCard]
   },
   alternates: {
     canonical: SITE_URL
@@ -57,8 +58,8 @@ export default async function HomePage() {
         data={{
           "@context": "https://schema.org",
           "@type": "WebPage",
-          name: `وهاج | Wahaj - ${homeTitle}`,
-          description: homeDescription,
+          name: homeTitle,
+          description: SITE_DESCRIPTION,
           url: SITE_URL,
           breadcrumb: {
             "@type": "BreadcrumbList",

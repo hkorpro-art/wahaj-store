@@ -25,14 +25,12 @@ export async function getManagedCategories(): Promise<{ categories: ManagedCateg
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((item) => item.category as ManagedCategory);
 
-      // If firebase has categories, return them, otherwise seed them to Firestore
       if (managedCategories.length > 0) {
         return {
           categories: managedCategories,
           source: "firebase"
         };
       } else {
-        // Auto seed
         console.log("No categories in Firestore. Seeding default categories...");
         await saveManagedCategories(seedCategories);
         return {

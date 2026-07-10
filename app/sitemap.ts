@@ -6,17 +6,20 @@ import { SITE_URL } from "@/lib/site-config";
 
 export const revalidate = 86400;
 
+/* هذا التاريخ يُحدّث يدويًا عند تعديل محتوى الصفحات الثابتة */
+const STATIC_PAGES_LAST_MODIFIED = new Date("2026-07-06");
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_URL;
 
   const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl, changeFrequency: "weekly", priority: 1 },
-    { url: `${baseUrl}/about`, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${baseUrl}/contact`, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${baseUrl}/faq`, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${baseUrl}/order-policy`, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${baseUrl}/exchange-policy`, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${baseUrl}/cart`, changeFrequency: "monthly", priority: 0.2 }
+    { url: baseUrl, lastModified: STATIC_PAGES_LAST_MODIFIED, changeFrequency: "weekly", priority: 1 },
+    { url: `${baseUrl}/about`, lastModified: STATIC_PAGES_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${baseUrl}/contact`, lastModified: STATIC_PAGES_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${baseUrl}/faq`, lastModified: STATIC_PAGES_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${baseUrl}/order-policy`, lastModified: STATIC_PAGES_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${baseUrl}/exchange-policy`, lastModified: STATIC_PAGES_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${baseUrl}/cart`, lastModified: STATIC_PAGES_LAST_MODIFIED, changeFrequency: "monthly", priority: 0.2 }
   ];
 
   const [productsResult, collectionsResult, categoriesResult] = await Promise.all([

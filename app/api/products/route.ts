@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { verifyAdminToken } from "@/lib/auth";
 import { getManagedProducts, saveManagedProducts } from "@/lib/products";
 import { managedProductsInputSchema, productInputSchema } from "@/lib/validation";
@@ -24,31 +25,47 @@ export async function PUT(request: Request) {
   return saveProductsRequest(request);
 }
 
+function revalidateProductPages() {
+  revalidatePath("/", "page");
+  revalidatePath("/product/[slug]", "page");
+  revalidatePath("/collections/[slug]", "page");
+  revalidatePath("/category/[slug]", "page");
+  revalidatePath("/sitemap.xml");
+}
+
 async function saveProductsRequest(request: Request) {
   const token = (await cookies()).get("wahaj_admin")?.value;
   const admin = await verifyAdminToken(token);
 
   if (!admin) {
-    return NextResponse.json({ message: "ط؛ظٹط± ظ…طµط±ط­." }, { status: 401 });
+    return NextResponse.json({ message: "غير مصرح." }, { status: 401 });
   }
 
   const json = await request.json();
   const collectionPayload = managedProductsInputSchema.safeParse(json);
 
   if (collectionPayload.success) {
-    const saved = await saveManagedProducts(collectionPayload.data.products);
+    try {
+      const saved = await saveManagedProducts(collectionPayload.data.products);
+      revalidateProductPages();
 
-    return NextResponse.json({
-      message: saved.saved ? "طھظ… ط­ظپط¸ ط§ظ„ظ…ظ†طھط¬ط§طھ ظ„ظ„ط¹ظ…ظ„ط§ط،." : "ظ„ظ… ظٹطھظ… ط¶ط¨ط· shared database ط¨ط¹ط¯طŒ ظپط¨ظ‚ظٹ ط§ظ„ط­ظپط¸ ظ…ط­ظ„ظٹط§.",
-      products: collectionPayload.data.products,
-      saved: saved.saved
-    });
+      return NextResponse.json({
+        message: "تم حفظ المنتجات للعملاء.",
+        products: collectionPayload.data.products,
+        saved: saved.saved
+      });
+    } catch {
+      return NextResponse.json(
+        { message: "قاعدة بيانات المنتجات غير مفعلة. لم يتم حفظ التغيير.", saved: false },
+        { status: 503 }
+      );
+    }
   }
 
   const productPayload = productInputSchema.safeParse(json);
 
   if (!productPayload.success) {
-    return NextResponse.json({ message: "ط¨ظٹط§ظ†ط§طھ ط§ظ„ظ…ظ†طھط¬ ط؛ظٹط± طµط§ظ„ط­ط©." }, { status: 400 });
+    return NextResponse.json({ message: "بيانات المنتج غير صالحة." }, { status: 400 });
   }
 
   const current = await getManagedProducts();
@@ -57,16 +74,24 @@ async function saveProductsRequest(request: Request) {
     ? current.products.map((product) => (product.id === nextProduct.id ? nextProduct : product))
     : [nextProduct, ...current.products];
 
-  const saved = await saveManagedProducts(products);
+  try {
+    const saved = await saveManagedProducts(products);
+    revalidateProductPages();
 
-  return NextResponse.json(
-    {
-      message: saved.saved ? "طھظ… ط­ظپط¸ ط§ظ„ظ…ظ†طھط¬ ظ„ظ„ط¹ظ…ظ„ط§ط،." : "ظ„ظ… ظٹطھظ… ط¶ط¨ط· shared database ط¨ط¹ط¯طŒ ظپط¨ظ‚ظٹ ط§ظ„ط­ظپط¸ ظ…ط­ظ„ظٹط§.",
-      product: nextProduct,
-      products,
-      saved: saved.saved
-    },
-    { status: 201 }
-  );
+    return NextResponse.json(
+      {
+        message: "تم حفظ المنتج للعملاء.",
+        product: nextProduct,
+        products,
+        saved: saved.saved
+      },
+      { status: 201 }
+    );
+  } catch {
+    return NextResponse.json(
+      { message: "قاعدة بيانات المنتجات غير مفعلة. لم يتم حفظ التغيير.", saved: false },
+      { status: 503 }
+    );
+  }
 }
 

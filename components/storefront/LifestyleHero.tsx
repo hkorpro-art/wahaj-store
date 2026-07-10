@@ -49,8 +49,13 @@ function resolveDestination(slide: HeroSlide, products: ManagedProduct[]): strin
 
 export default function LifestyleHero({ products, onContrastChange, searchQuery = "", onSearchChange }: LifestyleHeroProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [slides, setSlides] = useState<HeroSlide[] | null>(null);
-  const [settings, setSettings] = useState<HeroAnimationSettings>(defaultHeroAnimationSettings);
+  // Batched into one state to prevent double re-renders causing interval race conditions
+  const [heroData, setHeroData] = useState<{ slides: HeroSlide[] | null; settings: HeroAnimationSettings }>({
+    slides: null,
+    settings: defaultHeroAnimationSettings
+  });
+  const slides = heroData.slides;
+  const settings = heroData.settings;
   const [topContrast, setTopContrast] = useState<Contrast>("dark");
   const [bottomContrast, setBottomContrast] = useState<Contrast>("dark");
   const [menuContrast, setMenuContrast] = useState<Contrast>("dark");
@@ -65,18 +70,21 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
     let active = true;
     async function load() {
       try {
-        const res = await fetch(`/api/hero-slides?refresh=${Date.now()}`, { cache: "no-store" });
+        const res = await fetch("/api/hero-slides");
         const payload = await res.json().catch(() => null);
         if (active && res.ok && payload) {
-          if (Array.isArray(payload.slides) && payload.slides.length > 0) {
-            setSlides(payload.slides);
-          }
-          if (payload.settings) {
-            setSettings(payload.settings);
-          }
+          // Batch slides + settings into ONE setState to avoid double-render race
+          // where total changes before autoPlayInterval, causing the interval to be
+          // created with stale settings then immediately cleared and re-created.
+          setHeroData({
+            slides: Array.isArray(payload.slides) && payload.slides.length > 0
+              ? payload.slides
+              : [],
+            settings: payload.settings ?? defaultHeroAnimationSettings
+          });
         }
       } catch {
-        setSlides([]);
+        setHeroData(prev => ({ ...prev, slides: [] }));
       }
     }
     void load();
@@ -157,17 +165,40 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
   }, [logoContrast, menuContrast, cartContrast, searchContrast, onContrastChange]);
 
   const goTo = useCallback((i: number) => setActiveIndex(i), []);
-  const next = useCallback(() => setActiveIndex((p) => (p + 1) % total), [total]);
-  const prev = useCallback(() => setActiveIndex((p) => (p - 1 + total) % total), [total]);
+  // FIX 1: Guard against zero total to prevent (p+1) % 0 = NaN
+  const next = useCallback(() => {
+    setActiveIndex((p) => total > 0 ? (p + 1) % total : 0);
+  }, [total]);
+  const prev = useCallback(() => {
+    setActiveIndex((p) => total > 0 ? (p - 1 + total) % total : 0);
+  }, [total]);
 
   useEffect(() => {
     if (reduceMotion || !settings.autoPlay || total <= 1) return;
-    timerRef.current = setInterval(next, settings.autoPlayInterval);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    // FIX 5: Small startup delay to let the initial render settle before
+    // starting the timer, avoiding races with contrast detection state updates.
+    const startTimer = setTimeout(() => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(next, settings.autoPlayInterval);
+    }, 100);
+    return () => {
+      clearTimeout(startTimer);
+      // FIX 2: Always null out the ref after clearing so pause/resume stay consistent
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [next, reduceMotion, settings.autoPlay, settings.autoPlayInterval, total]);
 
-  const pause = () => { if (timerRef.current) clearInterval(timerRef.current); };
+  const pause = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;  // FIX 2: Reset to null so resume() knows state is clean
+    }
+  };
   const resume = () => {
+    if (timerRef.current) return;  // FIX 3: Prevent duplicate intervals
     if (reduceMotion || !settings.autoPlay || total <= 1) return;
     timerRef.current = setInterval(next, settings.autoPlayInterval);
   };

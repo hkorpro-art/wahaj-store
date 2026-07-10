@@ -5,7 +5,7 @@ import { ArrowRight, Gem, MessageCircle, Search } from "lucide-react";
 import { whatsappUrl } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
-  title: "الصفحة غير موجودة | وهاج",
+  title: "الصفحة غير موجودة",
   description: "الصفحة التي تبحثين عنها غير متوفرة. تصفحي تشكيلتنا الفاخرة من الإكسسوارات والزركون.",
   robots: { index: false, follow: true }
 };
@@ -69,7 +69,7 @@ export default function NotFoundPage() {
             <p className="mt-1 text-sm text-wahaj-text/70">تشكيلة العقود الفاخرة</p>
           </Link>
           <Link
-            href="/collections/aqrat"
+            href="/category/aqrat"
             className="rounded-[8px] border border-wahaj-border bg-white/76 p-5 text-center shadow-soft transition hover:shadow-glow"
           >
             <p className="font-display text-lg font-medium text-wahaj-ink">أقراط</p>
