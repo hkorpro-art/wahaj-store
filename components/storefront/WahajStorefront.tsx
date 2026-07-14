@@ -31,6 +31,7 @@ import LifestyleHero from "@/components/storefront/LifestyleHero";
 import CircularCollections from "@/components/storefront/CircularCollections";
 import NotificationOptIn from "@/components/storefront/NotificationOptIn";
 import NotificationForegroundListener from "@/components/storefront/NotificationForegroundListener";
+import NotificationMenuItem from "@/components/storefront/NotificationMenuItem";
 import { formatPrice } from "@/lib/data";
 import { imageUrl } from "@/lib/imagekit";
 import { buildCartMessage, whatsappUrl } from "@/lib/whatsapp";
@@ -112,7 +113,7 @@ export default function WahajStorefront({
             <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">مجموعات وهاج</p>
             <h2 className="type-section text-wahaj-ink">اختاري بحسب مجموعتك</h2>
           </div>
-          <CircularCollections />
+          <CircularCollections collections={storeCollections} />
         </div>
 
         <motion.section id="products" {...fadeUp} className="lux-section">
@@ -566,6 +567,9 @@ function MenuSheet({ open, onClose, collections }: { open: boolean; onClose: () 
                   <ChevronLeft className="h-4 w-4 text-wahaj-rose" />
                 </Link>
               ))}
+            </div>
+            <div className="mt-3">
+              <NotificationMenuItem />
             </div>
             <Link
               href="/admin"

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import type { ManagedCollection } from "./admin-local";
 import { seedCollections } from "./collections";
 import { getFirebaseFirestoreAdmin } from "./firebase-admin";
@@ -7,7 +8,7 @@ import { FIRESTORE_COLLECTIONS_COLLECTION, collectionToRow, rowSortOrder, rowToM
 
 type CollectionSource = "firebase" | "seed";
 
-export async function getManagedCollections(): Promise<{ collections: ManagedCollection[]; source: CollectionSource }> {
+export const getManagedCollections = cache(async (): Promise<{ collections: ManagedCollection[]; source: CollectionSource }> => {
   const firestore = getFirebaseFirestoreAdmin();
 
   if (firestore) {
@@ -45,7 +46,7 @@ export async function getManagedCollections(): Promise<{ collections: ManagedCol
   }
 
   return { collections: seedCollections, source: "seed" };
-}
+});
 
 export async function saveManagedCollections(collections: ManagedCollection[]) {
   const firestore = getFirebaseFirestoreAdmin();

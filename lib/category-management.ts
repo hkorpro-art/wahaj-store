@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import type { ManagedCategory } from "./admin-local";
 import { seedCategories } from "./categories";
 import { getFirebaseFirestoreAdmin } from "./firebase-admin";
@@ -7,7 +8,7 @@ import { FIRESTORE_CATEGORIES_COLLECTION, categoryToRow, rowSortOrder, rowToMana
 
 type CategorySource = "firebase" | "seed";
 
-export async function getManagedCategories(): Promise<{ categories: ManagedCategory[]; source: CategorySource }> {
+export const getManagedCategories = cache(async (): Promise<{ categories: ManagedCategory[]; source: CategorySource }> => {
   const firestore = getFirebaseFirestoreAdmin();
 
   if (firestore) {
@@ -45,7 +46,7 @@ export async function getManagedCategories(): Promise<{ categories: ManagedCateg
   }
 
   return { categories: seedCategories, source: "seed" };
-}
+});
 
 export async function saveManagedCategories(categories: ManagedCategory[]) {
   const firestore = getFirebaseFirestoreAdmin();

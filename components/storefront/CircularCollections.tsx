@@ -3,78 +3,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { collection, onSnapshot } from "firebase/firestore";
-import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl } from "@/lib/imagekit";
 import type { ManagedCollection } from "@/lib/admin-local";
 
-export default function CircularCollections() {
-  const [collections, setCollections] = useState<ManagedCollection[]>([]);
+export default function CircularCollections({ collections: initialCollections = [] }: { collections?: ManagedCollection[] }) {
+  const [collections] = useState<ManagedCollection[]>(() =>
+    initialCollections
+      .filter((c) => c.visible !== false)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
   const isInteracting = useRef(false);
   const lastActiveTime = useRef(Date.now());
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadFallback() {
-      try {
-        const res = await fetch("/api/collections");
-        if (res.ok && active) {
-          const data = await res.json();
-          if (data.collections) {
-            setCollections(
-              data.collections
-                .filter((c: ManagedCollection) => c.visible !== false)
-                .sort((a: ManagedCollection, b: ManagedCollection) => a.sortOrder - b.sortOrder)
-            );
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load collections fallback:", err);
-      }
-    }
-
-    const unsubscribe =
-      db && isFirebaseClientConfigured
-        ? onSnapshot(
-            collection(db, "collections"),
-            (snapshot) => {
-              if (!active) return;
-              const cats: ManagedCollection[] = [];
-              snapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.visible !== false) {
-                  cats.push({
-                    id: doc.id,
-                    name: data.name || "",
-                    slug: data.slug || doc.id,
-                    image: data.image,
-                    description: data.description,
-                    sortOrder: data.sort_order ?? data.sortOrder ?? 0,
-                    visible: data.visible !== false,
-                    linkedProducts: data.linked_products ?? data.linkedProducts ?? []
-                  });
-                }
-              });
-              cats.sort((a, b) => a.sortOrder - b.sortOrder);
-              setCollections(cats);
-            },
-            () => {
-              void loadFallback();
-            }
-          )
-        : null;
-
-    if (!unsubscribe) {
-      void loadFallback();
-    }
-
-    return () => {
-      active = false;
-      unsubscribe?.();
-    };
-  }, []);
 
   /* triple the items for seamless infinite scrolling */
   const extended = useMemo(() => {
