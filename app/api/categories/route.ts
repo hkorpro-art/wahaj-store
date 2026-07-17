@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyAdminToken } from "@/lib/auth";
+import { getCachedCategories, invalidateCategoriesCache } from "@/lib/catalog-cache";
 import { getManagedCategories, saveManagedCategories } from "@/lib/category-management";
 import { managedCategoriesInputSchema, categoryInputSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const result = await getManagedCategories();
+  const token = (await cookies()).get("wahaj_admin")?.value;
+  const admin = await verifyAdminToken(token);
+  const result = admin ? await getManagedCategories() : await getCachedCategories();
 
   return NextResponse.json(result, {
     headers: {
@@ -37,6 +40,7 @@ async function saveCategoriesRequest(request: Request) {
 
   if (collectionPayload.success) {
     const saved = await saveManagedCategories(collectionPayload.data.categories);
+    invalidateCategoriesCache();
 
     return NextResponse.json({
       message: saved.saved ? "تم حفظ التصنيفات." : "فشل في حفظ التصنيفات.",
@@ -58,6 +62,7 @@ async function saveCategoriesRequest(request: Request) {
     : [...current.categories, nextCategory];
 
   const saved = await saveManagedCategories(categories);
+  invalidateCategoriesCache();
 
   return NextResponse.json(
     {

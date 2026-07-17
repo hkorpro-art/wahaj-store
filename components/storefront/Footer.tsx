@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { getManagedCollections } from "@/lib/collection-management";
-import { getManagedCategories } from "@/lib/category-management";
+import { getCachedFooterNavigation } from "@/lib/catalog-cache";
 
 const infoLinks = [
   { label: "من نحن", href: "/about" },
@@ -11,10 +10,7 @@ const infoLinks = [
 ] as const;
 
 export default async function Footer() {
-  const [{ collections }, { categories }] = await Promise.all([
-    getManagedCollections(),
-    getManagedCategories()
-  ]);
+  const { collections, categories } = await getCachedFooterNavigation();
 
   const visibleCollections = collections.filter((collection) => collection.visible !== false);
   const visibleCategories = categories.filter((category) => category.visible !== false);

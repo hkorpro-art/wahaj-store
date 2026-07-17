@@ -22,6 +22,33 @@ export async function getCoupons(): Promise<{ coupons: Coupon[]; source: "fireba
   return { coupons: [], source: "empty" };
 }
 
+export async function getCouponByCode(code: string): Promise<Coupon | null> {
+  const firestore = getFirebaseFirestoreAdmin();
+  const normalizedCode = code.toUpperCase();
+
+  if (!firestore) {
+    return null;
+  }
+
+  try {
+    const snapshot = await firestore
+      .collection(COUPONS_COLLECTION)
+      .where("code", "==", normalizedCode)
+      .limit(1)
+      .get();
+
+    if (!snapshot.empty) {
+      return snapshot.docs[0].data() as Coupon;
+    }
+  } catch (error) {
+    console.error("Unable to query coupon by code from Firebase:", error);
+  }
+
+  // Preserve the existing case-insensitive behavior for legacy mixed-case coupon records.
+  const { coupons } = await getCoupons();
+  return coupons.find((coupon) => coupon.code.toUpperCase() === normalizedCode) ?? null;
+}
+
 export async function saveCoupons(coupons: Coupon[]) {
   const firestore = getFirebaseFirestoreAdmin();
 
@@ -58,8 +85,9 @@ export async function incrementCouponUsage(code: string): Promise<{ ok: true; us
   }
 
   try {
+    const couponQuery = firestore.collection(COUPONS_COLLECTION).where("code", "==", code).limit(1);
     const result = await firestore.runTransaction(async (transaction) => {
-      const snapshot = await firestore.collection(COUPONS_COLLECTION).where("code", "==", code).limit(1).get();
+      const snapshot = await transaction.get(couponQuery);
 
       if (snapshot.empty) {
         return { ok: false as const, reason: "not_found" as const };

@@ -4,12 +4,12 @@ import { SITE_URL } from "@/lib/site-config";
 import ProductDetailClient from "@/components/storefront/ProductDetailClient";
 import JsonLd from "@/components/JsonLd";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
-import { getManagedProducts } from "@/lib/products";
+import { getCachedProducts as getCachedCatalogProducts } from "@/lib/catalog-cache";
 import { seedCategories } from "@/lib/categories";
 import { getSiteContent } from "@/lib/site-content";
 import type { Collection } from "@/lib/types";
 
-const getCachedProducts = cache(() => getManagedProducts());
+const getCachedProducts = cache(() => getCachedCatalogProducts());
 
 const legacyCategoryToId: Record<string, string> = {
   sets: "atqam",

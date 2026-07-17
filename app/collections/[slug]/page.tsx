@@ -4,8 +4,7 @@ import Image from "next/image";
 import { cache } from "react";
 import { ChevronRight } from "lucide-react";
 import { SITE_URL } from "@/lib/site-config";
-import { getManagedCollections } from "@/lib/collection-management";
-import { getManagedProducts } from "@/lib/products";
+import { getCachedCollections, getCachedProducts } from "@/lib/catalog-cache";
 import { formatPrice } from "@/lib/data";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { TrackCollectionVisit } from "@/components/storefront/TrackVisit";
@@ -13,8 +12,8 @@ import JsonLd from "@/components/JsonLd";
 
 const getCachedPageData = cache(async () => {
   const [collectionsResult, productsResult] = await Promise.all([
-    getManagedCollections(),
-    getManagedProducts()
+    getCachedCollections(),
+    getCachedProducts()
   ]);
   return { collections: collectionsResult.collections, products: productsResult.products };
 });

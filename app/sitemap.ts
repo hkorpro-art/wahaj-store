@@ -1,7 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getManagedProducts } from "@/lib/products";
-import { getManagedCollections } from "@/lib/collection-management";
-import { getManagedCategories } from "@/lib/category-management";
+import { getCachedCategories, getCachedCollections, getCachedProducts } from "@/lib/catalog-cache";
 import { SITE_URL } from "@/lib/site-config";
 
 export const revalidate = 86400;
@@ -23,9 +21,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const [productsResult, collectionsResult, categoriesResult] = await Promise.all([
-    getManagedProducts(),
-    getManagedCollections(),
-    getManagedCategories()
+    getCachedProducts(),
+    getCachedCollections(),
+    getCachedCategories()
   ]);
 
   const productPages: MetadataRoute.Sitemap = productsResult.products

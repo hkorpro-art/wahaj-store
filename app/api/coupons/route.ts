@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getFirebaseFirestoreAdmin } from "@/lib/firebase-admin";
 import { verifyAdminToken } from "@/lib/auth";
-import { getCoupons, saveCoupons } from "@/lib/coupons";
+import { getCouponByCode, getCoupons, saveCoupons } from "@/lib/coupons";
 import type { Coupon } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -11,12 +11,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
-  const { coupons } = await getCoupons();
-
   if (code) {
-    const coupon = coupons.find(
-      (c) => c.code.toUpperCase() === code.toUpperCase()
-    );
+    const coupon = await getCouponByCode(code);
 
     if (!coupon) {
       return NextResponse.json({ ok: false, reason: "not_found", message: "كود الخصم غير صحيح" });
@@ -41,6 +37,7 @@ export async function GET(request: Request) {
   const admin = await verifyAdminToken(token);
 
   if (admin) {
+    const { coupons } = await getCoupons();
     return NextResponse.json({ coupons });
   }
 

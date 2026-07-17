@@ -4,16 +4,15 @@ import Image from "next/image";
 import { cache } from "react";
 import { ChevronRight } from "lucide-react";
 import { SITE_URL } from "@/lib/site-config";
-import { getManagedCategories } from "@/lib/category-management";
-import { getManagedProducts } from "@/lib/products";
+import { getCachedCategories, getCachedProducts } from "@/lib/catalog-cache";
 import { formatPrice } from "@/lib/data";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import JsonLd from "@/components/JsonLd";
 
 const getCachedPageData = cache(async () => {
   const [categoriesResult, productsResult] = await Promise.all([
-    getManagedCategories(),
-    getManagedProducts()
+    getCachedCategories(),
+    getCachedProducts()
   ]);
   return { categories: categoriesResult.categories, products: productsResult.products };
 });

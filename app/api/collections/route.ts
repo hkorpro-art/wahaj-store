@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyAdminToken } from "@/lib/auth";
+import { getCachedCollections, invalidateCollectionsCache } from "@/lib/catalog-cache";
 import { getManagedCollections, saveManagedCollections } from "@/lib/collection-management";
 import { managedCollectionsInputSchema, collectionInputSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const result = await getManagedCollections();
+  const token = (await cookies()).get("wahaj_admin")?.value;
+  const admin = await verifyAdminToken(token);
+  const result = admin ? await getManagedCollections() : await getCachedCollections();
 
   return NextResponse.json(result, {
     headers: {
@@ -37,6 +40,7 @@ async function saveCollectionsRequest(request: Request) {
 
   if (collectionPayload.success) {
     const saved = await saveManagedCollections(collectionPayload.data.collections);
+    invalidateCollectionsCache();
 
     return NextResponse.json({
       message: saved.saved ? "تم حفظ المجموعات." : "فشل في حفظ المجموعات.",
@@ -58,6 +62,7 @@ async function saveCollectionsRequest(request: Request) {
     : [...current.collections, nextCollection];
 
   const saved = await saveManagedCollections(collections);
+  invalidateCollectionsCache();
 
   return NextResponse.json(
     {

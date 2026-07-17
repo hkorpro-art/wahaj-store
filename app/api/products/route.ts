@@ -2,13 +2,16 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { verifyAdminToken } from "@/lib/auth";
+import { getCachedProducts, invalidateProductsCache } from "@/lib/catalog-cache";
 import { getManagedProducts, saveManagedProducts } from "@/lib/products";
 import { managedProductsInputSchema, productInputSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const result = await getManagedProducts();
+  const token = (await cookies()).get("wahaj_admin")?.value;
+  const admin = await verifyAdminToken(token);
+  const result = admin ? await getManagedProducts() : await getCachedProducts();
 
   return NextResponse.json(result, {
     headers: {
@@ -26,6 +29,7 @@ export async function PUT(request: Request) {
 }
 
 function revalidateProductPages() {
+  invalidateProductsCache();
   revalidatePath("/", "page");
   revalidatePath("/product/[slug]", "page");
   revalidatePath("/collections/[slug]", "page");

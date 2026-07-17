@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyAdminToken } from "@/lib/auth";
+import { invalidateCollectionsCache } from "@/lib/catalog-cache";
 import { getManagedCollections, saveManagedCollections } from "@/lib/collection-management";
 import { collectionInputSchema } from "@/lib/validation";
 
@@ -32,6 +33,7 @@ export async function PUT(request: Request, props: { params: Promise<{ id: strin
 
   const collections = current.collections.map((cat) => (cat.id === id ? nextCollection : cat));
   const saved = await saveManagedCollections(collections);
+  invalidateCollectionsCache();
 
   return NextResponse.json({
     message: saved.saved ? "تم تحديث المجموعة بنجاح." : "فشل في التحديث.",
@@ -53,6 +55,7 @@ export async function DELETE(request: Request, props: { params: Promise<{ id: st
   const current = await getManagedCollections();
   const collections = current.collections.filter((cat) => cat.id !== id);
   const saved = await saveManagedCollections(collections);
+  invalidateCollectionsCache();
 
   return NextResponse.json({
     message: saved.saved ? "تم حذف المجموعة بنجاح." : "فشل في الحذف.",
