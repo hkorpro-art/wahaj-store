@@ -4,9 +4,11 @@ out
 dist
 *.tsbuildinfo
 *.log
+*.err
 .env
 .env.local
 .env.*.local
+.env.prod
 
 .vercel
 .netlify
@@ -21,3 +23,8 @@ ACTION-PLAN.md
 *.snapshot.md
 *.snapshot.txt
 test-results/
+INVESTIGATION.md
+app/debug/
+opencode.jsonc
+stagehand-cart-result.txt
+stagehand-cart.mjs

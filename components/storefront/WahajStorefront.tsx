@@ -318,10 +318,12 @@ function ProductCard({ product, priority, loading, onCart }: ProductCardProps) {
       initial={{ opacity: 0, scale: 0.95, y: 12 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="group overflow-hidden rounded-xl border border-wahaj-border/50 bg-white/85 shadow-[0_2px_16px_rgba(69,0,6,0.05)] transition-all duration-400 hover:shadow-[0_8px_30px_rgba(69,0,6,0.10)]"
+      className="group border border-wahaj-border/50 bg-white/85 shadow-[0_2px_16px_rgba(69,0,6,0.05)] transition-all duration-400 hover:shadow-[0_8px_30px_rgba(69,0,6,0.10)]"
       whileHover={{ y: -4 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1], layout: { duration: 0.3 } }}
     >
+      {/* Keep rounded clipping off the transformed Motion node to avoid Android Chrome GPU corruption. */}
+      <div className="overflow-hidden rounded-xl">
       <div className="relative">
         <Link href={productHref} className="relative block aspect-[3/4] overflow-hidden bg-wahaj-card">
           <Image
@@ -367,6 +369,7 @@ function ProductCard({ product, priority, loading, onCart }: ProductCardProps) {
           <ShoppingBag className="h-3.5 w-3.5" />
           أضيفي للسلة
         </motion.button>
+      </div>
       </div>
     </motion.article>
   );
