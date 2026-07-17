@@ -1,98 +1,45 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { collection, onSnapshot } from "firebase/firestore";
-import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl } from "@/lib/imagekit";
 import type { ManagedCollection } from "@/lib/admin-local";
 
-export default function CircularCollections() {
-  const [collections, setCollections] = useState<ManagedCollection[]>([]);
+type CircularCollectionsProps = {
+  collections: ManagedCollection[];
+};
+
+export default function CircularCollections({ collections }: CircularCollectionsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isInteracting = useRef(false);
   const lastActiveTime = useRef(Date.now());
 
-  useEffect(() => {
-    let active = true;
-
-    async function loadFallback() {
-      try {
-        const res = await fetch("/api/collections");
-        if (res.ok && active) {
-          const data = await res.json();
-          if (data.collections) {
-            setCollections(
-              data.collections
-                .filter((c: ManagedCollection) => c.visible !== false)
-                .sort((a: ManagedCollection, b: ManagedCollection) => a.sortOrder - b.sortOrder)
-            );
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load collections fallback:", err);
-      }
-    }
-
-    const unsubscribe =
-      db && isFirebaseClientConfigured
-        ? onSnapshot(
-            collection(db, "collections"),
-            (snapshot) => {
-              if (!active) return;
-              const cats: ManagedCollection[] = [];
-              snapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.visible !== false) {
-                  cats.push({
-                    id: doc.id,
-                    name: data.name || "",
-                    slug: data.slug || doc.id,
-                    image: data.image,
-                    description: data.description,
-                    sortOrder: data.sort_order ?? data.sortOrder ?? 0,
-                    visible: data.visible !== false,
-                    linkedProducts: data.linked_products ?? data.linkedProducts ?? []
-                  });
-                }
-              });
-              cats.sort((a, b) => a.sortOrder - b.sortOrder);
-              setCollections(cats);
-            },
-            () => {
-              void loadFallback();
-            }
-          )
-        : null;
-
-    if (!unsubscribe) {
-      void loadFallback();
-    }
-
-    return () => {
-      active = false;
-      unsubscribe?.();
-    };
-  }, []);
+  const visibleCollections = useMemo(
+    () =>
+      collections
+        .filter((collection) => collection.visible !== false)
+        .sort((a, b) => a.sortOrder - b.sortOrder),
+    [collections]
+  );
 
   /* triple the items for seamless infinite scrolling */
   const extended = useMemo(() => {
-    if (collections.length === 0) return [];
-    return [...collections, ...collections, ...collections];
-  }, [collections]);
+    if (visibleCollections.length === 0) return [];
+    return [...visibleCollections, ...visibleCollections, ...visibleCollections];
+  }, [visibleCollections]);
 
   /* initialise scroll position to the start of the 2nd copy */
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el || collections.length === 0) return;
+    if (!el || visibleCollections.length === 0) return;
     el.scrollLeft = el.scrollWidth / 3;
-  }, [collections]);
+  }, [visibleCollections]);
 
   /* continuous auto-scroll with seamless loop reset */
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el || collections.length === 0) return;
+    if (!el || visibleCollections.length === 0) return;
 
     let isVisible = true;
     let frameId: number | null = null;
@@ -133,7 +80,7 @@ export default function CircularCollections() {
         cancelAnimationFrame(frameId);
       }
     };
-  }, [collections]);
+  }, [visibleCollections]);
 
   const handleInteractionStart = () => {
     isInteracting.current = true;
@@ -146,7 +93,7 @@ export default function CircularCollections() {
 
   return (
     <div className="w-full py-4 select-none min-h-[130px]">
-      {collections.length === 0 ? (
+      {visibleCollections.length === 0 ? (
         <div className="no-scrollbar flex gap-5 overflow-x-auto px-4 py-2" dir="ltr">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex shrink-0 flex-col items-center gap-2">

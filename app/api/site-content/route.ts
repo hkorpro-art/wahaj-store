@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 import { verifyAdminToken } from "@/lib/auth";
 import { getSiteContent, saveSiteContent } from "@/lib/site-content";
+import { getCachedSiteContent, invalidateSiteContentCache } from "@/lib/site-content-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -22,13 +23,17 @@ const siteContentSchema = z.object({
 });
 
 export async function GET() {
-  const result = await getSiteContent();
+  const token = (await cookies()).get("wahaj_admin")?.value;
+  const admin = await verifyAdminToken(token);
+  const result = admin ? await getSiteContent() : await getCachedSiteContent();
+
   return NextResponse.json(result, {
     headers: { "Cache-Control": "no-store" }
   });
 }
 
 function revalidateSiteContentPages() {
+  invalidateSiteContentCache();
   revalidatePath("/", "page");
 }
 

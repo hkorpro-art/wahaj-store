@@ -1,11 +1,10 @@
 ﻿import type { Metadata } from "next";
-import { cache } from "react";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_OG_IMAGE, SITE_TWITTER_CARD, SITE_URL } from "@/lib/site-config";
 import WahajStorefront from "@/components/storefront/WahajStorefront";
 import JsonLd from "@/components/JsonLd";
-import { getManagedProducts } from "@/lib/products";
-import { getManagedCollections } from "@/lib/collection-management";
-import { getSiteContent } from "@/lib/site-content";
+import { getCachedCollections, getCachedProducts } from "@/lib/catalog-cache";
+import { getActiveCoupons } from "@/lib/coupons";
+import { getCachedSiteContent } from "@/lib/site-content-cache";
 
 export const revalidate = 3600;
 
@@ -43,14 +42,15 @@ export const metadata: Metadata = {
   }
 };
 
-const getCachedProducts = cache(() => getManagedProducts());
-
 export default async function HomePage() {
-  const [{ products }, { collections }, { content, activeCoupons }] = await Promise.all([
+  const [{ products }, { collections }, { content, source }] = await Promise.all([
     getCachedProducts(),
-    getManagedCollections(),
-    getSiteContent()
+    getCachedCollections(),
+    getCachedSiteContent()
   ]);
+  const activeCoupons = content.showActiveCoupons && source === "firebase"
+    ? await getActiveCoupons()
+    : [];
 
   return (
     <>

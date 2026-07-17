@@ -59,7 +59,6 @@ export default function WahajStorefront({
   const router = useRouter();
   const { cartItems, cartTotal, cartCount, addToCart: contextAddToCart, updateQuantity, removeFromCart, clearCart } = useCart();
   const [storeProducts, setStoreProducts] = useState<ManagedProduct[]>(initialProducts);
-  const [storeCollections, setStoreCollections] = useState<ManagedCollection[]>(initialCollections);
   const [siteContent, setSiteContent] = useState<SiteContent>(initialSiteContent);
   const [activeCoupons, setActiveCoupons] = useState<Coupon[]>(initialActiveCoupons);
   const [query, setQuery] = useState("");
@@ -112,7 +111,7 @@ export default function WahajStorefront({
             <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">مجموعات وهاج</p>
             <h2 className="type-section text-wahaj-ink">اختاري بحسب مجموعتك</h2>
           </div>
-          <CircularCollections />
+          <CircularCollections collections={initialCollections} />
         </div>
 
         <motion.section id="products" {...fadeUp} className="lux-section">
@@ -157,7 +156,7 @@ export default function WahajStorefront({
 
       <FloatingWhatsApp items={cartItems} />
 
-      <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} collections={storeCollections} />
+      <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} collections={initialCollections} />
 
       <AnimatePresence>
         {addedToast.visible ? (

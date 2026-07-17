@@ -4,6 +4,13 @@ import type { Coupon } from "./types";
 
 const COUPONS_COLLECTION = "coupons";
 
+function isCouponActive(coupon: Coupon): boolean {
+  if (!coupon.active) return false;
+  if (new Date(coupon.expiresAt) < new Date()) return false;
+  if (coupon.usageCount >= coupon.usageLimit) return false;
+  return true;
+}
+
 export async function getCoupons(): Promise<{ coupons: Coupon[]; source: "firebase" | "empty" }> {
   const firestore = getFirebaseFirestoreAdmin();
 
@@ -20,6 +27,16 @@ export async function getCoupons(): Promise<{ coupons: Coupon[]; source: "fireba
   }
 
   return { coupons: [], source: "empty" };
+}
+
+export async function getActiveCoupons(): Promise<Coupon[]> {
+  try {
+    const { coupons } = await getCoupons();
+    return coupons.filter(isCouponActive);
+  } catch (error) {
+    console.error("Unable to load coupons for offer bar:", error);
+    return [];
+  }
 }
 
 export async function getCouponByCode(code: string): Promise<Coupon | null> {

@@ -6,7 +6,7 @@ import JsonLd from "@/components/JsonLd";
 import { imageUrl, productCoverUrl } from "@/lib/imagekit";
 import { getCachedProducts as getCachedCatalogProducts } from "@/lib/catalog-cache";
 import { seedCategories } from "@/lib/categories";
-import { getSiteContent } from "@/lib/site-content";
+import { getCachedSiteContent } from "@/lib/site-content-cache";
 import type { Collection } from "@/lib/types";
 
 const getCachedProducts = cache(() => getCachedCatalogProducts());
@@ -112,7 +112,7 @@ function matchesProductRoute(product: { id: string; slug: string }, routeSlug: s
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
   const { products: managedProducts } = await getCachedProducts();
-  const siteContent = await getSiteContent();
+  const siteContent = await getCachedSiteContent();
   const initialProduct =
     managedProducts.find((item) => matchesProductRoute(item, slug) && item.visible !== false) ?? null;
   const initialSimilarProducts = initialProduct

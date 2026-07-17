@@ -1,6 +1,7 @@
 import "server-only";
 
-import { revalidateTag, unstable_cache } from "next/cache";
+import { unstable_cache } from "next/cache";
+import { invalidateCacheTag } from "./cache-invalidation";
 import { getManagedCategories } from "./category-management";
 import { getManagedCollections } from "./collection-management";
 import { getManagedProducts } from "./products";
@@ -44,15 +45,6 @@ export async function getCachedFooterNavigation() {
   ]);
 
   return { collections, categories };
-}
-
-function invalidateCacheTag(tag: string, label: string) {
-  try {
-    revalidateTag(tag, { expire: 0 });
-  } catch (error) {
-    // A cache failure must not turn an already-persisted admin change into a failed response.
-    console.error(`Unable to invalidate ${label} cache:`, error);
-  }
 }
 
 export function invalidateProductsCache() {

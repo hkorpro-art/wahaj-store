@@ -2,21 +2,12 @@ import "server-only";
 import { getFirebaseFirestoreAdmin } from "./firebase-admin";
 import { defaultSiteContent } from "./admin-local";
 import type { SiteContent } from "./admin-local";
-import { getCoupons } from "./coupons";
 import { repairDeepText } from "./text-repair";
-import type { Coupon } from "./types";
 
 const SITE_CONTENT_COLLECTION = "store_settings";
 const SITE_CONTENT_DOC = "site_content";
 
-function isCouponActive(coupon: Coupon): boolean {
-  if (!coupon.active) return false;
-  if (new Date(coupon.expiresAt) < new Date()) return false;
-  if (coupon.usageCount >= coupon.usageLimit) return false;
-  return true;
-}
-
-export async function getSiteContent(): Promise<{ content: SiteContent; source: "firebase" | "default"; activeCoupons: Coupon[] }> {
+export async function getSiteContent(): Promise<{ content: SiteContent; source: "firebase" | "default" }> {
   const firestore = getFirebaseFirestoreAdmin();
   let content: SiteContent;
   let source: "firebase" | "default";
@@ -42,17 +33,7 @@ export async function getSiteContent(): Promise<{ content: SiteContent; source: 
     source = "default";
   }
 
-  let activeCoupons: Coupon[] = [];
-  if (content.showActiveCoupons && source === "firebase") {
-    try {
-      const { coupons } = await getCoupons();
-      activeCoupons = coupons.filter(isCouponActive);
-    } catch (error) {
-      console.error("Unable to load coupons for offer bar:", error);
-    }
-  }
-
-  return { content, source, activeCoupons };
+  return { content, source };
 }
 
 export async function saveSiteContent(content: SiteContent) {
