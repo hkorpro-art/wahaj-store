@@ -137,6 +137,18 @@ type NotificationLastSend = {
   tag?: string;
 };
 
+type ProductCommand =
+  | { action: "update"; product: ManagedProduct }
+  | { action: "create"; product: ManagedProduct; sortOrder: number }
+  | { action: "delete"; id: string }
+  | { action: "reorder"; productId: string; adjacentProductId: string };
+
+type CollectionCommand =
+  | { action: "update"; collection: ManagedCollection }
+  | { action: "create"; collection: ManagedCollection; sortOrder: number }
+  | { action: "delete"; id: string }
+  | { action: "reorder"; collectionId: string; adjacentCollectionId: string };
+
 function seedManagedProducts(): ManagedProduct[] {
   return seedProducts.map((product) => ({ ...product, visible: true }));
 }
@@ -385,23 +397,22 @@ export default function AdminDashboard() {
     setToast(message);
   }
 
-  async function persistProducts(nextProducts: ManagedProduct[], successMessage: string) {
+  async function persistProductCommands(commands: ProductCommand[], successMessage: string) {
     try {
-      const response = await fetch("/api/products", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ products: nextProducts })
-      });
-      const payload = await response.json().catch(() => null);
+      await Promise.all(
+        commands.map(async (command) => {
+          const response = await fetch("/api/products", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(command)
+          });
+          const payload = await response.json().catch(() => null);
 
-      if (!response.ok) {
-        throw new Error(payload?.message || "Unable to save products.");
-      }
-
-      if (payload?.saved !== true) {
-        showToast("تم حفظ التغيير محليًا فقط. لن يظهر للعملاء حتى تضيف مفاتيح Supabase أو Firebase في إعدادات الموقع.");
-        return;
-      }
+          if (!response.ok || payload?.saved !== true) {
+            throw new Error(payload?.message || "Unable to save product.");
+          }
+        })
+      );
 
       setProductSyncState("shared");
       showToast(successMessage);
@@ -419,7 +430,10 @@ export default function AdminDashboard() {
     setProducts((current) => {
       const exists = current.some((item) => item.id === product.id);
       const next = exists ? current.map((item) => (item.id === product.id ? product : item)) : [product, ...current];
-      void persistProducts(next, "Product saved and synced for customers.");
+      const command: ProductCommand = exists
+        ? { action: "update", product }
+        : { action: "create", product, sortOrder: -Date.now() };
+      void persistProductCommands([command], "Product saved and synced for customers.");
       return next;
     });
     showToast("جاري حفظ المنتج ومزامنته مع واجهة العملاء...");
@@ -432,18 +446,22 @@ export default function AdminDashboard() {
     }
     const timestamp = Date.now();
     setProducts((current) => {
+      const duplicate: ManagedProduct = {
+        ...product,
+        id: `${product.id}-${timestamp}`,
+        slug: `${product.slug}-copy-${timestamp}`,
+        name: `${product.name} نسخة`,
+        visible: true,
+        stock: Math.max(product.stock, 1)
+      };
       const next = [
-        {
-          ...product,
-          id: `${product.id}-${timestamp}`,
-          slug: `${product.slug}-copy-${timestamp}`,
-          name: `${product.name} نسخة`,
-          visible: true,
-          stock: Math.max(product.stock, 1)
-        },
+        duplicate,
         ...current
       ];
-      void persistProducts(next, "Product duplicated and synced for customers.");
+      void persistProductCommands(
+        [{ action: "create", product: duplicate, sortOrder: -timestamp }],
+        "Product duplicated and synced for customers."
+      );
       return next;
     });
     showToast("تم نسخ المنتج ويمكن تعديله الآن من زر التعديل.");
@@ -455,12 +473,16 @@ export default function AdminDashboard() {
       return;
     }
     setProducts((current) => {
+      let updatedProduct: ManagedProduct | null = null;
       const next: ManagedProduct[] = current.map((product) => {
         if (product.id !== productId) return product;
         const stock = Math.max(0, product.stock + delta);
-        return { ...product, stock, inventoryStatus: inventoryFromStock(stock) as ManagedProduct["inventoryStatus"] };
+        updatedProduct = { ...product, stock, inventoryStatus: inventoryFromStock(stock) as ManagedProduct["inventoryStatus"] };
+        return updatedProduct;
       });
-      void persistProducts(next, "Stock updated and synced for customers.");
+      if (updatedProduct) {
+        void persistProductCommands([{ action: "update", product: updatedProduct }], "Stock updated and synced for customers.");
+      }
       return next;
     });
   }
@@ -471,8 +493,15 @@ export default function AdminDashboard() {
       return;
     }
     setProducts((current) => {
-      const next = current.map((product) => (product.id === productId ? { ...product, visible: product.visible === false } : product));
-      void persistProducts(next, "Product visibility updated for customers.");
+      let updatedProduct: ManagedProduct | null = null;
+      const next = current.map((product) => {
+        if (product.id !== productId) return product;
+        updatedProduct = { ...product, visible: product.visible === false };
+        return updatedProduct;
+      });
+      if (updatedProduct) {
+        void persistProductCommands([{ action: "update", product: updatedProduct }], "Product visibility updated for customers.");
+      }
       return next;
     });
   }
@@ -484,7 +513,7 @@ export default function AdminDashboard() {
     }
     setProducts((current) => {
       const next = current.filter((product) => product.id !== productId);
-      void persistProducts(next, "Product deleted from customer storefront.");
+      void persistProductCommands([{ action: "delete", id: productId }], "Product deleted from customer storefront.");
       return next;
     });
     showToast("تم حذف المنتج من لوحة التحكم ومن واجهة المتجر المحلية.");
@@ -499,9 +528,13 @@ export default function AdminDashboard() {
       const index = current.findIndex((product) => product.id === productId);
       const nextIndex = index + direction;
       if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+      const adjacentProduct = current[nextIndex];
       const next = [...current];
       [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-      void persistProducts(next, "Product order updated for customers.");
+      void persistProductCommands(
+        [{ action: "reorder", productId, adjacentProductId: adjacentProduct.id }],
+        "Product order updated for customers."
+      );
       return next;
     });
   }
@@ -558,12 +591,18 @@ export default function AdminDashboard() {
     setOrders((current) => [order, ...current]);
     void persistOrder(order);
     setProducts((current) => {
+      const updatedProducts: ManagedProduct[] = [];
       const next: ManagedProduct[] = current.map((product) => {
         if (!order.products.includes(product.name)) return product;
         const stock = Math.max(0, product.stock - 1);
-        return { ...product, stock, sold: product.sold + 1, inventoryStatus: inventoryFromStock(stock) as ManagedProduct["inventoryStatus"] };
+        const updatedProduct = { ...product, stock, sold: product.sold + 1, inventoryStatus: inventoryFromStock(stock) as ManagedProduct["inventoryStatus"] };
+        updatedProducts.push(updatedProduct);
+        return updatedProduct;
       });
-      void persistProducts(next, "Order saved and product stock synced.");
+      void persistProductCommands(
+        updatedProducts.map((product) => ({ action: "update", product })),
+        "Order saved and product stock synced."
+      );
       return next;
     });
     showToast("تم تسجيل الطلب وتحديث المخزون والمبيعات المرتبطة به.");
@@ -2088,58 +2127,49 @@ function CollectionsManager({
   const [form, setForm] = useState<ManagedCollection | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  async function saveCollection(collection: ManagedCollection) {
+  async function persistCollectionCommand(command: CollectionCommand, fallbackMessage: string): Promise<boolean> {
     try {
       const response = await fetch("/api/collections", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(collection)
+        body: JSON.stringify(command)
       });
       const payload = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(payload?.message || "فشل الحفظ");
-      showToast(payload?.message || "تم حفظ المجموعة.");
+      if (!response.ok || payload?.saved !== true) throw new Error(payload?.message || fallbackMessage);
+      showToast(payload?.message || fallbackMessage);
       onRefresh();
-      setForm(null);
+      return true;
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "فشل حفظ المجموعة.");
+      showToast(error instanceof Error ? error.message : fallbackMessage);
+      return false;
     }
   }
 
-  async function saveAllCollections(sorted: ManagedCollection[]) {
-    try {
-      const response = await fetch("/api/collections", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ collections: sorted })
-      });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(payload?.message || "فشل الحفظ");
-      showToast(payload?.message || "تم حفظ المجموعات.");
-      onRefresh();
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "فشل حفظ المجموعات.");
+  async function saveCollection(collection: ManagedCollection) {
+    const command: CollectionCommand = collections.some((item) => item.id === collection.id)
+      ? { action: "update", collection }
+      : { action: "create", collection, sortOrder: collection.sortOrder };
+
+    if (await persistCollectionCommand(command, "فشل حفظ المجموعة.")) {
+      setForm(null);
     }
   }
 
   async function deleteCollection(id: string) {
-    try {
-      const response = await fetch(`/api/collections/${id}`, { method: "DELETE" });
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(payload?.message || "فشل الحذف");
-      showToast(payload?.message || "تم حذف المجموعة.");
-      onRefresh();
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "فشل حذف المجموعة.");
-    }
+    await persistCollectionCommand({ action: "delete", id }, "فشل حذف المجموعة.");
   }
 
   function moveCollection(index: number, direction: -1 | 1) {
     const nextIndex = index + direction;
     if (nextIndex < 0 || nextIndex >= collections.length) return;
-    const next = [...collections];
-    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-    const reordered = next.map((c, i) => ({ ...c, sortOrder: i }));
-    void saveAllCollections(reordered);
+    void persistCollectionCommand(
+      {
+        action: "reorder",
+        collectionId: collections[index].id,
+        adjacentCollectionId: collections[nextIndex].id
+      },
+      "فشل تحديث ترتيب المجموعات."
+    );
   }
 
   async function uploadImage(file: File): Promise<StoredImage> {

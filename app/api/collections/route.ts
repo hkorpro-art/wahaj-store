@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyAdminToken } from "@/lib/auth";
 import { getCachedCollections, invalidateCollectionsCache } from "@/lib/catalog-cache";
-import { getManagedCollections, saveManagedCollections } from "@/lib/collection-management";
-import { managedCollectionsInputSchema, collectionInputSchema } from "@/lib/validation";
+import { getManagedCollections } from "@/lib/collection-management";
+import { collectionRepository } from "@/lib/collection-repository";
+import { collectionCommandSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -36,41 +37,66 @@ async function saveCollectionsRequest(request: Request) {
   }
 
   const json = await request.json();
-  const collectionPayload = managedCollectionsInputSchema.safeParse(json);
+  const commandPayload = collectionCommandSchema.safeParse(json);
 
-  if (collectionPayload.success) {
-    const saved = await saveManagedCollections(collectionPayload.data.collections);
-    invalidateCollectionsCache();
-
-    return NextResponse.json({
-      message: saved.saved ? "تم حفظ المجموعات." : "فشل في حفظ المجموعات.",
-      collections: collectionPayload.data.collections,
-      saved: saved.saved
-    });
-  }
-
-  const singlePayload = collectionInputSchema.safeParse(json);
-
-  if (!singlePayload.success) {
+  if (!commandPayload.success) {
     return NextResponse.json({ message: "بيانات المجموعة غير صالحة." }, { status: 400 });
   }
 
-  const current = await getManagedCollections();
-  const nextCollection = singlePayload.data;
-  const collections = current.collections.some((cat) => cat.id === nextCollection.id)
-    ? current.collections.map((cat) => (cat.id === nextCollection.id ? nextCollection : cat))
-    : [...current.collections, nextCollection];
+  try {
+    switch (commandPayload.data.action) {
+      case "update": {
+        const saved = await collectionRepository.update(commandPayload.data.collection);
+        invalidateCollectionsCache();
 
-  const saved = await saveManagedCollections(collections);
-  invalidateCollectionsCache();
+        return NextResponse.json({
+          message: "تم تحديث المجموعة بنجاح.",
+          collection: commandPayload.data.collection,
+          saved: saved.saved
+        });
+      }
+      case "create": {
+        const saved = await collectionRepository.create(commandPayload.data.collection, {
+          sortOrder: commandPayload.data.sortOrder
+        });
+        invalidateCollectionsCache();
 
-  return NextResponse.json(
-    {
-      message: saved.saved ? "تم حفظ المجموعة بنجاح." : "فشل في حفظ المجموعة.",
-      collection: nextCollection,
-      collections,
-      saved: saved.saved
-    },
-    { status: 201 }
-  );
+        return NextResponse.json(
+          {
+            message: "تم حفظ المجموعة بنجاح.",
+            collection: commandPayload.data.collection,
+            saved: saved.saved
+          },
+          { status: 201 }
+        );
+      }
+      case "delete": {
+        const deleted = await collectionRepository.delete(commandPayload.data.id);
+        invalidateCollectionsCache();
+
+        return NextResponse.json({
+          message: "تم حذف المجموعة بنجاح.",
+          deleted: deleted.deleted,
+          saved: true
+        });
+      }
+      case "reorder": {
+        const saved = await collectionRepository.reorder({
+          collectionId: commandPayload.data.collectionId,
+          adjacentCollectionId: commandPayload.data.adjacentCollectionId
+        });
+        invalidateCollectionsCache();
+
+        return NextResponse.json({
+          message: "تم تحديث ترتيب المجموعات بنجاح.",
+          saved: saved.saved
+        });
+      }
+    }
+  } catch {
+    return NextResponse.json(
+      { message: "قاعدة بيانات المجموعات غير مفعلة. لم يتم حفظ التغيير.", saved: false },
+      { status: 503 }
+    );
+  }
 }

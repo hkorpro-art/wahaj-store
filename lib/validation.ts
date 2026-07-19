@@ -33,9 +33,26 @@ export const productInputSchema = z.object({
   categoryIds: z.array(z.string()).optional()
 });
 
-export const managedProductsInputSchema = z.object({
-  products: z.array(productInputSchema)
-});
+export const productCommandSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("update"),
+    product: productInputSchema
+  }),
+  z.object({
+    action: z.literal("create"),
+    product: productInputSchema,
+    sortOrder: z.number().int().optional()
+  }),
+  z.object({
+    action: z.literal("delete"),
+    id: z.string().min(1).max(120)
+  }),
+  z.object({
+    action: z.literal("reorder"),
+    productId: z.string().min(1).max(120),
+    adjacentProductId: z.string().min(1).max(120)
+  })
+]);
 
 export const orderInputSchema = z.object({
   id: z.string().optional(),
@@ -108,14 +125,46 @@ export const collectionInputSchema = z.object({
   updatedAt: z.string().optional()
 });
 
-export const managedCollectionsInputSchema = z.object({
-  collections: z.array(collectionInputSchema)
-});
-
-/** @deprecated Use collectionInputSchema */
 export const categoryInputSchema = collectionInputSchema;
-/** @deprecated Use managedCollectionsInputSchema */
-export const managedCategoriesInputSchema = z.object({
-  categories: z.array(categoryInputSchema)
-});
 
+export const categoryCommandSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("update"),
+    category: categoryInputSchema
+  }),
+  z.object({
+    action: z.literal("create"),
+    category: categoryInputSchema,
+    sortOrder: z.number().int().optional()
+  }),
+  z.object({
+    action: z.literal("delete"),
+    id: z.string().min(1).max(120)
+  }),
+  z.object({
+    action: z.literal("reorder"),
+    categoryId: z.string().min(1).max(120),
+    adjacentCategoryId: z.string().min(1).max(120)
+  })
+]);
+
+export const collectionCommandSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("update"),
+    collection: collectionInputSchema
+  }),
+  z.object({
+    action: z.literal("create"),
+    collection: collectionInputSchema,
+    sortOrder: z.number().int().optional()
+  }),
+  z.object({
+    action: z.literal("delete"),
+    id: z.string().min(1).max(120)
+  }),
+  z.object({
+    action: z.literal("reorder"),
+    collectionId: z.string().min(1).max(120),
+    adjacentCollectionId: z.string().min(1).max(120)
+  })
+]);

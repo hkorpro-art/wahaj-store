@@ -2,13 +2,14 @@
 
 import { motion } from "framer-motion";
 import { Bell, BellRing, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { firebaseApp } from "@/lib/firebase";
 
 const STORAGE_KEY = "wahaj_notifications_status";
 const TOKEN_RETRY_DELAY_MS = 750;
 
-type OptInState = "checking" | "hidden" | "ready" | "loading" | "success" | "error";
+export type NotificationOptInState = "checking" | "hidden" | "ready" | "loading" | "success" | "error";
+export type BrowserNotificationPermission = NotificationPermission | "unsupported";
 
 function delay(ms: number) {
   return new Promise((resolve) => {
@@ -31,19 +32,31 @@ async function getTokenWithRetry(
   return getToken(options);
 }
 
-export default function NotificationOptIn() {
-  const [state, setState] = useState<OptInState>("checking");
+export function useNotificationSubscription() {
+  const [state, setState] = useState<NotificationOptInState>("checking");
   const [message, setMessage] = useState("");
+  const [permission, setPermission] = useState<BrowserNotificationPermission>("default");
+
+  const refreshPermission = useCallback(() => {
+    const nextPermission: BrowserNotificationPermission =
+      typeof window === "undefined" || !("Notification" in window) ? "unsupported" : Notification.permission;
+
+    setPermission(nextPermission);
+    return nextPermission;
+  }, []);
 
   useEffect(() => {
     async function checkAvailability() {
       if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) {
+        setPermission("unsupported");
         setState("hidden");
         return;
       }
 
+      const browserPermission = refreshPermission();
+
       const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored === "subscribed" || stored === "denied" || Notification.permission === "denied") {
+      if (stored === "subscribed" || stored === "denied" || browserPermission === "denied") {
         setState("hidden");
         return;
       }
@@ -65,20 +78,41 @@ export default function NotificationOptIn() {
     }
 
     void checkAvailability();
-  }, []);
+  }, [refreshPermission]);
 
-  async function subscribe() {
-    if (!firebaseApp || state === "loading") return;
+  async function subscribe(): Promise<boolean> {
+    if (state === "loading") return false;
+
+    if (refreshPermission() === "unsupported") {
+      setState("error");
+      setMessage("الإشعارات غير مدعومة في هذا المتصفح.");
+      return false;
+    }
+
+    if (Notification.permission === "denied") {
+      setPermission("denied");
+      return false;
+    }
+
+    if (!firebaseApp) {
+      setState("error");
+      setMessage("تعذر تفعيل الإشعارات الآن.");
+      return false;
+    }
 
     setState("loading");
     setMessage("");
 
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        window.localStorage.setItem(STORAGE_KEY, "denied");
+      const grantedPermission = await Notification.requestPermission();
+      setPermission(grantedPermission);
+
+      if (grantedPermission !== "granted") {
+        if (grantedPermission === "denied") {
+          window.localStorage.setItem(STORAGE_KEY, "denied");
+        }
         setState("hidden");
-        return;
+        return false;
       }
 
       const [messagingModule, configResponse] = await Promise.all([
@@ -123,12 +157,20 @@ export default function NotificationOptIn() {
       setState("success");
       setMessage("تم تفعيل إشعارات وهاج.");
       window.setTimeout(() => setState("hidden"), 2500);
+      return true;
     } catch (error) {
       console.error("Notification subscription failed:", error);
       setState("error");
       setMessage("تعذر تفعيل الإشعارات الآن.");
+      return false;
     }
   }
+
+  return { state, message, permission, refreshPermission, subscribe };
+}
+
+export default function NotificationOptIn() {
+  const { state, message, subscribe } = useNotificationSubscription();
 
   if (state === "checking" || state === "hidden") {
     return null;

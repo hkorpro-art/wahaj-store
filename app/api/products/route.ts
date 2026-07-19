@@ -3,8 +3,9 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { verifyAdminToken } from "@/lib/auth";
 import { getCachedProducts, invalidateProductsCache } from "@/lib/catalog-cache";
-import { getManagedProducts, saveManagedProducts } from "@/lib/products";
-import { managedProductsInputSchema, productInputSchema } from "@/lib/validation";
+import { getManagedProducts } from "@/lib/products";
+import { productRepository } from "@/lib/product-repository";
+import { productCommandSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -46,51 +47,59 @@ async function saveProductsRequest(request: Request) {
   }
 
   const json = await request.json();
-  const collectionPayload = managedProductsInputSchema.safeParse(json);
+  const commandPayload = productCommandSchema.safeParse(json);
 
-  if (collectionPayload.success) {
-    try {
-      const saved = await saveManagedProducts(collectionPayload.data.products);
-      revalidateProductPages();
-
-      return NextResponse.json({
-        message: "تم حفظ المنتجات للعملاء.",
-        products: collectionPayload.data.products,
-        saved: saved.saved
-      });
-    } catch {
-      return NextResponse.json(
-        { message: "قاعدة بيانات المنتجات غير مفعلة. لم يتم حفظ التغيير.", saved: false },
-        { status: 503 }
-      );
-    }
-  }
-
-  const productPayload = productInputSchema.safeParse(json);
-
-  if (!productPayload.success) {
+  if (!commandPayload.success) {
     return NextResponse.json({ message: "بيانات المنتج غير صالحة." }, { status: 400 });
   }
 
-  const current = await getManagedProducts();
-  const nextProduct = productPayload.data;
-  const products = current.products.some((product) => product.id === nextProduct.id)
-    ? current.products.map((product) => (product.id === nextProduct.id ? nextProduct : product))
-    : [nextProduct, ...current.products];
-
   try {
-    const saved = await saveManagedProducts(products);
-    revalidateProductPages();
+    switch (commandPayload.data.action) {
+      case "update": {
+        const saved = await productRepository.updateProduct(commandPayload.data.product);
+        revalidateProductPages();
 
-    return NextResponse.json(
-      {
-        message: "تم حفظ المنتج للعملاء.",
-        product: nextProduct,
-        products,
-        saved: saved.saved
-      },
-      { status: 201 }
-    );
+        return NextResponse.json({
+          message: "تم حفظ المنتج للعملاء.",
+          product: commandPayload.data.product,
+          saved: saved.saved
+        });
+      }
+      case "create": {
+        const saved = await productRepository.createProduct(commandPayload.data.product, {
+          sortOrder: commandPayload.data.sortOrder
+        });
+        revalidateProductPages();
+
+        return NextResponse.json({
+          message: "تم حفظ المنتج للعملاء.",
+          product: commandPayload.data.product,
+          saved: saved.saved
+        });
+      }
+      case "delete": {
+        const deleted = await productRepository.deleteProduct(commandPayload.data.id);
+        revalidateProductPages();
+
+        return NextResponse.json({
+          message: "تم حذف المنتج من العملاء.",
+          deleted: deleted.deleted,
+          saved: true
+        });
+      }
+      case "reorder": {
+        const saved = await productRepository.reorderProducts({
+          productId: commandPayload.data.productId,
+          adjacentProductId: commandPayload.data.adjacentProductId
+        });
+        revalidateProductPages();
+
+        return NextResponse.json({
+          message: "تم تحديث ترتيب المنتجات للعملاء.",
+          saved: saved.saved
+        });
+      }
+    }
   } catch {
     return NextResponse.json(
       { message: "قاعدة بيانات المنتجات غير مفعلة. لم يتم حفظ التغيير.", saved: false },

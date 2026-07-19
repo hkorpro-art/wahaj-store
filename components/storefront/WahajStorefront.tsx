@@ -31,6 +31,7 @@ import LifestyleHero from "@/components/storefront/LifestyleHero";
 import CircularCollections from "@/components/storefront/CircularCollections";
 import NotificationOptIn from "@/components/storefront/NotificationOptIn";
 import NotificationForegroundListener from "@/components/storefront/NotificationForegroundListener";
+import NotificationSettingsEntry from "@/components/storefront/NotificationSettingsEntry";
 import { formatPrice } from "@/lib/data";
 import { imageUrl } from "@/lib/imagekit";
 import { buildCartMessage, whatsappUrl } from "@/lib/whatsapp";
@@ -567,6 +568,7 @@ function MenuSheet({ open, onClose, collections }: { open: boolean; onClose: () 
                 </Link>
               ))}
             </div>
+            <NotificationSettingsEntry />
             <Link
               href="/admin"
               onClick={onClose}

@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyAdminToken } from "@/lib/auth";
 import { getCachedCategories, invalidateCategoriesCache } from "@/lib/catalog-cache";
-import { getManagedCategories, saveManagedCategories } from "@/lib/category-management";
-import { managedCategoriesInputSchema, categoryInputSchema } from "@/lib/validation";
+import { getManagedCategories } from "@/lib/category-management";
+import { categoryRepository } from "@/lib/category-repository";
+import { categoryCommandSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -36,41 +37,66 @@ async function saveCategoriesRequest(request: Request) {
   }
 
   const json = await request.json();
-  const collectionPayload = managedCategoriesInputSchema.safeParse(json);
+  const commandPayload = categoryCommandSchema.safeParse(json);
 
-  if (collectionPayload.success) {
-    const saved = await saveManagedCategories(collectionPayload.data.categories);
-    invalidateCategoriesCache();
-
-    return NextResponse.json({
-      message: saved.saved ? "تم حفظ التصنيفات." : "فشل في حفظ التصنيفات.",
-      categories: collectionPayload.data.categories,
-      saved: saved.saved
-    });
-  }
-
-  const categoryPayload = categoryInputSchema.safeParse(json);
-
-  if (!categoryPayload.success) {
+  if (!commandPayload.success) {
     return NextResponse.json({ message: "بيانات التصنيف غير صالحة." }, { status: 400 });
   }
 
-  const current = await getManagedCategories();
-  const nextCategory = categoryPayload.data;
-  const categories = current.categories.some((cat) => cat.id === nextCategory.id)
-    ? current.categories.map((cat) => (cat.id === nextCategory.id ? nextCategory : cat))
-    : [...current.categories, nextCategory];
+  try {
+    switch (commandPayload.data.action) {
+      case "update": {
+        const saved = await categoryRepository.update(commandPayload.data.category);
+        invalidateCategoriesCache();
 
-  const saved = await saveManagedCategories(categories);
-  invalidateCategoriesCache();
+        return NextResponse.json({
+          message: "تم تحديث التصنيف بنجاح.",
+          category: commandPayload.data.category,
+          saved: saved.saved
+        });
+      }
+      case "create": {
+        const saved = await categoryRepository.create(commandPayload.data.category, {
+          sortOrder: commandPayload.data.sortOrder
+        });
+        invalidateCategoriesCache();
 
-  return NextResponse.json(
-    {
-      message: saved.saved ? "تم حفظ التصنيف بنجاح." : "فشل في حفظ التصنيف.",
-      category: nextCategory,
-      categories,
-      saved: saved.saved
-    },
-    { status: 201 }
-  );
+        return NextResponse.json(
+          {
+            message: "تم حفظ التصنيف بنجاح.",
+            category: commandPayload.data.category,
+            saved: saved.saved
+          },
+          { status: 201 }
+        );
+      }
+      case "delete": {
+        const deleted = await categoryRepository.delete(commandPayload.data.id);
+        invalidateCategoriesCache();
+
+        return NextResponse.json({
+          message: "تم حذف التصنيف بنجاح.",
+          deleted: deleted.deleted,
+          saved: true
+        });
+      }
+      case "reorder": {
+        const saved = await categoryRepository.reorder({
+          categoryId: commandPayload.data.categoryId,
+          adjacentCategoryId: commandPayload.data.adjacentCategoryId
+        });
+        invalidateCategoriesCache();
+
+        return NextResponse.json({
+          message: "تم تحديث ترتيب التصنيفات بنجاح.",
+          saved: saved.saved
+        });
+      }
+    }
+  } catch {
+    return NextResponse.json(
+      { message: "قاعدة بيانات التصنيفات غير مفعلة. لم يتم حفظ التغيير.", saved: false },
+      { status: 503 }
+    );
+  }
 }
