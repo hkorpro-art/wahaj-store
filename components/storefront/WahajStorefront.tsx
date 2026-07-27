@@ -11,7 +11,6 @@ import {
   Settings,
   ShoppingBag,
   Sparkles,
-  Star,
   X
 } from "lucide-react";
 import Image from "next/image";
@@ -350,11 +349,6 @@ function ProductCard({ product, priority, loading, onCart }: ProductCardProps) {
         <Link href={productHref}>
           <h3 className="line-clamp-2 text-sm font-bold leading-snug text-wahaj-ink transition-colors duration-300 group-hover:text-wahaj-rose">{product.name}</h3>
         </Link>
-        <div className="mt-1.5 flex items-center gap-1 text-[11px] text-wahaj-stars">
-          <Star className="h-3.5 w-3.5" fill="currentColor" />
-          <span className="font-bold">{product.rating}</span>
-          <span className="text-wahaj-text/55">({product.reviews})</span>
-        </div>
         <div className="mt-1.5 flex flex-wrap items-end gap-2">
           <p className="text-sm font-semibold text-brand-burgundy">{formatPrice(product.price)}</p>
           {product.compareAt ? (

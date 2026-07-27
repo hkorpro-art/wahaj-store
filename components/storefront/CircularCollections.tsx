@@ -13,7 +13,7 @@ type CircularCollectionsProps = {
 export default function CircularCollections({ collections }: CircularCollectionsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isInteracting = useRef(false);
-  const lastActiveTime = useRef(Date.now());
+  const resumeAt = useRef(0);
 
   const visibleCollections = useMemo(
     () =>
@@ -41,26 +41,32 @@ export default function CircularCollections({ collections }: CircularCollections
     const el = scrollRef.current;
     if (!el || visibleCollections.length === 0) return;
 
-    let isVisible = true;
+    let isVisible = false;
     let frameId: number | null = null;
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let scrollPosition = el.scrollLeft;
+    let previousFrameTime: number | null = null;
+    const pixelsPerMillisecond = 19 / 1000;
 
-    const animate = () => {
+    const animate = (frameTime: number) => {
       if (
         isVisible &&
         !document.hidden &&
-        !mediaQuery.matches &&
         !isInteracting.current &&
-        Date.now() - lastActiveTime.current > 3000
+        Date.now() >= resumeAt.current
       ) {
         const oneSet = el.scrollWidth / 3;
-        el.scrollLeft += 0.4;
+        const elapsed = previousFrameTime === null ? 0 : Math.min(frameTime - previousFrameTime, 50);
+        scrollPosition += elapsed * pixelsPerMillisecond;
 
         /* past the 3rd copy → jump back one set (identical visuals) */
-        if (el.scrollLeft >= oneSet * 2) {
-          el.scrollLeft -= oneSet;
+        if (oneSet > 0 && scrollPosition >= oneSet * 2) {
+          scrollPosition -= oneSet;
         }
+        el.scrollLeft = scrollPosition;
+      } else {
+        scrollPosition = el.scrollLeft;
       }
+      previousFrameTime = frameTime;
       frameId = requestAnimationFrame(animate);
     };
 
@@ -88,7 +94,7 @@ export default function CircularCollections({ collections }: CircularCollections
 
   const handleInteractionEnd = () => {
     isInteracting.current = false;
-    lastActiveTime.current = Date.now();
+    resumeAt.current = Date.now() + 3000;
   };
 
   return (
@@ -107,9 +113,11 @@ export default function CircularCollections({ collections }: CircularCollections
           ref={scrollRef}
           onPointerDown={handleInteractionStart}
           onPointerUp={handleInteractionEnd}
+          onPointerCancel={handleInteractionEnd}
           onPointerLeave={handleInteractionEnd}
           onTouchStart={handleInteractionStart}
           onTouchEnd={handleInteractionEnd}
+          onTouchCancel={handleInteractionEnd}
           className="no-scrollbar flex gap-5 overflow-x-auto px-4 py-2"
           style={{ scrollBehavior: "auto" }}
           dir="ltr"

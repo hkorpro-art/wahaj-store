@@ -1,13 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, Gem, Minus, Plus, RefreshCw, Share2, ShoppingBag, Sparkles, Star, Tag, Truck } from "lucide-react";
+import { ArrowLeft, ChevronDown, Gem, RefreshCw, Share2, ShoppingBag, Sparkles, Tag, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/lib/cart-context";
 import type { ManagedProduct, SiteContent } from "@/lib/admin-local";
-import type { TrustMessage } from "@/lib/types";
 import { imageUrl, productCoverUrl, resolveImageSrc } from "@/lib/imagekit";
 import { whatsappUrl } from "@/lib/whatsapp";
 
@@ -66,13 +65,6 @@ const colorMap: Record<string, string> = {
   لؤلؤي: "#F7EFEA"
 };
 
-const defaultTrustMessages: TrustMessage[] = [
-  { icon: "✨", text: "لمعة تدوم", visible: true },
-  { icon: "💎", text: "مقاوم للبهتان", visible: true },
-  { icon: "🎁", text: "تغليف فاخر", visible: true },
-  { icon: "🛡️", text: "جودة مختارة", visible: true }
-];
-
 const accordionConfig = [
   { id: "details", title: "تفاصيل القطعة", Icon: Sparkles },
   { id: "care", title: "العناية بالقطعة", Icon: Gem },
@@ -101,9 +93,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [color, setColor] = useState(initialProduct?.colors[0] ?? "");
   const [size, setSize] = useState(initialProduct?.sizes[0] ?? "");
-  const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
-  const [trustIndex, setTrustIndex] = useState(0);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
 
@@ -131,21 +121,6 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     }).catch(() => {});
 
   }, [product?.id]);
-
-  const trustMessages: TrustMessage[] = useMemo(
-    () => product?.trustMessages && product.trustMessages.length > 0
-      ? product.trustMessages.filter((m) => m.visible !== false)
-      : defaultTrustMessages,
-    [product?.trustMessages]
-  );
-
-  useEffect(() => {
-    if (trustMessages.length <= 1 || reducedMotion) return;
-    const timer = setInterval(() => {
-      setTrustIndex((i) => (i + 1) % trustMessages.length);
-    }, 2000);
-    return () => clearInterval(timer);
-  }, [trustMessages.length, reducedMotion]);
 
   useEffect(() => {
     if (!product || product.images.length <= 1 || reducedMotion) return;
@@ -178,7 +153,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     let message = `مرحباً وهاج ✨\nأرغب بطلب القطعة التالية:\n\nالمنتج: ${product.name}\n`;
     if (color) message += `اللون: ${color}\n`;
     if (size) message += `المقاس: ${size}\n`;
-    message += `الكمية: ${quantity}\n\n`;
+    message += "الكمية: 1\n\n";
     message += `رابط القطعة: ${link}`;
 
     window.open(whatsappUrl(message), "_blank", "noopener,noreferrer");
@@ -222,10 +197,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
     );
   }
 
-  const whatsappText = product.whatsappCtaText || "✨ احجزي قطعتك الفاخرة";
-  const showQuantity = product.showQuantity !== false;
-
-  const hasAnyOption = product.colors.length > 0 || product.sizes.length > 0 || showQuantity;
+  const hasAnyOption = product.colors.length > 0 || product.sizes.length > 0;
 
   return (
     <main className="min-h-screen bg-wahaj-bg text-wahaj-text">
@@ -358,62 +330,21 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             </div>
           </div>
 
-          {/* Brand + Rating row */}
-          <div className="mt-4 flex items-center gap-3">
-            {product.brand ? (
+          {/* Brand */}
+          {product.brand ? (
+            <div className="mt-4">
               <span className="inline-flex items-center gap-1.5 text-sm font-bold text-wahaj-rose">
                 <Tag className="h-4 w-4" />
                 <span>{product.brand}</span>
               </span>
-            ) : null}
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-wahaj-stars/70">
-              <Star className="h-3.5 w-3.5" fill="currentColor" />
-              <span>{product.rating}</span>
-            </span>
-          </div>
+            </div>
+          ) : null}
 
           {/* Description */}
           <p className="mt-3 leading-7 text-wahaj-text/78 line-clamp-2 text-base">
             {product.description}
           </p>
         </section>
-
-        {/* ─── TRUST BAR ─── */}
-        {trustMessages.length > 0 ? (
-          <section className="mt-5 flex flex-col items-center justify-center">
-              <div className="flex items-center gap-2 min-h-[1.75rem]">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={trustIndex}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: reducedMotion ? 0 : 0.3, ease: "easeInOut" }}
-                    className="flex items-center gap-2"
-                  >
-                    <span className="text-lg">{trustMessages[trustIndex]?.icon}</span>
-                    <span className="text-sm font-bold text-wahaj-ink">
-                      {trustMessages[trustIndex]?.text}
-                    </span>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-              {trustMessages.length > 1 ? (
-                <div className="mt-2 flex items-center gap-1.5">
-                  {trustMessages.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setTrustIndex(i)}
-                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                        i === trustIndex ? "w-4 bg-wahaj-rose" : "w-1.5 bg-wahaj-border/60"
-                      }`}
-                      aria-label={`الرسالة ${i + 1}`}
-                    />
-                  ))}
-                </div>
-              ) : null}
-          </section>
-        ) : null}
 
         {/* ─── OPTIONS ─── */}
         {hasAnyOption ? (
@@ -465,42 +396,20 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
               </div>
             ) : null}
 
-            {showQuantity ? (
-              <div className="py-3.5">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-sm font-bold text-wahaj-ink">الكمية</p>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-wahaj-border/60 transition hover:bg-wahaj-soft"
-                      aria-label="تقليل الكمية"
-                    >
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="min-w-8 text-center font-thmanyah-text text-lg font-medium">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity((value) => value + 1)}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-wahaj-border/60 transition hover:bg-wahaj-soft"
-                      aria-label="زيادة الكمية"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
           </section>
         ) : null}
 
         {/* ─── PURCHASE ACTIONS ─── */}
         <section className="mt-6 space-y-3">
+          <p className="whitespace-nowrap text-center font-thmanyah-text text-[14px] text-wahaj-text/60 sm:text-[15px]">
+            فحص قبل التسليم • دفع عند الاستلام • استبدال واسترجاع
+          </p>
           <button
             onClick={handleDirectCheckout}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-wahaj-rose px-4 font-bold text-white shadow-glow transition-transform active:scale-[0.98]"
           >
             <Sparkles className="h-5 w-5 shrink-0" />
-            <span className="truncate">{whatsappText}</span>
+            <span className="truncate">اطلبي الآن</span>
           </button>
           <div className="flex gap-2">
             <button

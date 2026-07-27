@@ -1,7 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -62,8 +62,8 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
   const [logoContrast, setLogoContrast] = useState<Contrast>("dark");
   const [cartContrast, setCartContrast] = useState<Contrast>("dark");
   const [searchContrast, setSearchContrast] = useState<Contrast>("dark");
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const reduceMotion = useReducedMotion();
+  const [isHoverPaused, setIsHoverPaused] = useState(false);
+  const [isPageVisible, setIsPageVisible] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -174,34 +174,17 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
   }, [total]);
 
   useEffect(() => {
-    if (reduceMotion || !settings.autoPlay || total <= 1) return;
-    // FIX 5: Small startup delay to let the initial render settle before
-    // starting the timer, avoiding races with contrast detection state updates.
-    const startTimer = setTimeout(() => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(next, settings.autoPlayInterval);
-    }, 100);
-    return () => {
-      clearTimeout(startTimer);
-      // FIX 2: Always null out the ref after clearing so pause/resume stay consistent
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [next, reduceMotion, settings.autoPlay, settings.autoPlayInterval, total]);
+    const handleVisibilityChange = () => setIsPageVisible(!document.hidden);
+    handleVisibilityChange();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
 
-  const pause = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;  // FIX 2: Reset to null so resume() knows state is clean
-    }
-  };
-  const resume = () => {
-    if (timerRef.current) return;  // FIX 3: Prevent duplicate intervals
-    if (reduceMotion || !settings.autoPlay || total <= 1) return;
-    timerRef.current = setInterval(next, settings.autoPlayInterval);
-  };
+  useEffect(() => {
+    if (!isPageVisible || isHoverPaused || !settings.autoPlay || total <= 1) return;
+    const timer = window.setTimeout(next, settings.autoPlayInterval);
+    return () => window.clearTimeout(timer);
+  }, [activeIndex, isHoverPaused, isPageVisible, next, settings.autoPlay, settings.autoPlayInterval, total]);
 
   function handleSlideClick(slide: HeroSlide) {
     const href = resolveDestination(slide, products);
@@ -232,8 +215,12 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
     <>
     <section
       className="relative w-full overflow-hidden h-[75dvh] sm:h-[100dvh]"
-      onMouseEnter={pause}
-      onMouseLeave={resume}
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") setIsHoverPaused(true);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") setIsHoverPaused(false);
+      }}
     >
       {items.map((slide, index) => {
         const isActive = index === activeIndex;
