@@ -17,7 +17,7 @@ export async function createAdminToken(email: string) {
   return new SignJWT({ email, role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("12h")
+    .setExpirationTime("30d")
     .sign(encoder.encode(adminSecret()));
 }
 

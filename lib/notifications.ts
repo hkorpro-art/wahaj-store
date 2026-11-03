@@ -1,11 +1,9 @@
 import "server-only";
-import { createHash } from "node:crypto";
-import { FieldValue } from "firebase-admin/firestore";
-import { getFirebaseFirestoreAdmin, getFirebaseMessagingAdmin } from "@/lib/firebase-admin";
+import { createHash, randomUUID } from "node:crypto";
+import { getFirebaseMessagingAdmin } from "@/lib/firebase-admin";
 import { SITE_URL } from "@/lib/site-config";
+import { supabaseNotificationRepository } from "@/lib/supabase/repositories";
 
-const COLLECTION = "notification_subscriptions";
-const CAMPAIGNS_COLLECTION = "notification_campaigns";
 const MAX_MULTICAST_TOKENS = 500;
 const PUSH_DEBUG_PREFIX = "[WAHAJ_PUSH_DEBUG]";
 
@@ -45,7 +43,7 @@ export function hasFirebaseClientMessagingConfig() {
 }
 
 export function hasFirebaseAdminMessagingConfig() {
-  return Boolean(getFirebaseFirestoreAdmin() && getFirebaseMessagingAdmin());
+  return supabaseNotificationRepository.isConfigured() && Boolean(getFirebaseMessagingAdmin());
 }
 
 export function sanitizeNotificationText(value: unknown, maxLength: number) {
@@ -78,8 +76,7 @@ export async function saveNotificationSubscription({
   token: string;
   userAgent?: string;
 }) {
-  const db = getFirebaseFirestoreAdmin();
-  if (!db) {
+  if (!supabaseNotificationRepository.isConfigured()) {
     return { ok: false, settingsComplete: false };
   }
 
@@ -88,32 +85,26 @@ export async function saveNotificationSubscription({
     return { ok: false, settingsComplete: true };
   }
 
-  await db
-    .collection(COLLECTION)
-    .doc(subscriptionId(normalizedToken))
-    .set(
-      {
-        token: normalizedToken,
-        active: true,
-        userAgent: typeof userAgent === "string" ? userAgent.slice(0, 240) : "",
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp()
-      },
-      { merge: true }
-    );
+  const now = new Date().toISOString();
+  await supabaseNotificationRepository.upsertSubscription({
+    id: subscriptionId(normalizedToken),
+    token: normalizedToken,
+    active: true,
+    user_agent: typeof userAgent === "string" ? userAgent.slice(0, 240) : "",
+    created_at: now,
+    updated_at: now
+  });
 
   return { ok: true, settingsComplete: true };
 }
 
 export async function getActiveNotificationSubscriptionCount() {
-  const db = getFirebaseFirestoreAdmin();
-  if (!db) {
+  if (!supabaseNotificationRepository.isConfigured()) {
     return { count: 0, settingsComplete: false };
   }
 
-  const snapshot = await db.collection(COLLECTION).where("active", "==", true).count().get();
   return {
-    count: snapshot.data().count,
+    count: await supabaseNotificationRepository.countActiveSubscriptions(),
     settingsComplete: hasFirebaseClientMessagingConfig() && Boolean(getFirebaseMessagingAdmin())
   };
 }
@@ -137,23 +128,18 @@ async function sendNotificationToSubscriptions({
   campaignId?: string;
   latestOnly?: boolean;
 }): Promise<NotificationSendResult> {
-  const db = getFirebaseFirestoreAdmin();
   const messaging = getFirebaseMessagingAdmin();
 
-  if (!db || !messaging) {
+  if (!supabaseNotificationRepository.isConfigured() || !messaging) {
     console.warn(PUSH_DEBUG_PREFIX, "Firebase Admin Messaging is not configured", {
-      hasFirestore: Boolean(db),
+      hasDataStore: supabaseNotificationRepository.isConfigured(),
       hasMessaging: Boolean(messaging)
     });
     return { total: 0, success: 0, failed: 0, settingsComplete: false, errorCodes: {}, firebaseAccepted: false };
   }
 
-  const query = latestOnly
-    ? db.collection(COLLECTION).where("active", "==", true).orderBy("updatedAt", "desc").limit(1)
-    : db.collection(COLLECTION).where("active", "==", true);
-  const snapshot = await query.get();
-  const subscriptions = snapshot.docs
-    .map((doc) => ({ ref: doc.ref, token: String(doc.data().token || "") }))
+  const subscriptions = (await supabaseNotificationRepository.getActiveSubscriptions(latestOnly))
+    .map((row) => ({ id: row.id, token: row.token }))
     .filter((item) => item.token);
 
   console.info(PUSH_DEBUG_PREFIX, "Loaded active notification subscriptions", {
@@ -192,8 +178,7 @@ async function sendNotificationToSubscriptions({
     success += response.successCount;
     failed += response.failureCount;
 
-    const batch = db.batch();
-    let hasInvalidTokens = false;
+    const invalidTokenIdsByReason = new Map<string, string[]>();
 
     response.responses.forEach((item, responseIndex) => {
       if (!item.success) {
@@ -201,17 +186,8 @@ async function sendNotificationToSubscriptions({
       }
 
       if (!item.success && isInvalidTokenError(item.error?.code)) {
-        hasInvalidTokens = true;
-        batch.set(
-          chunk[responseIndex].ref,
-          {
-            active: false,
-            deactivatedAt: FieldValue.serverTimestamp(),
-            deactivationReason: item.error?.code,
-            updatedAt: FieldValue.serverTimestamp()
-          },
-          { merge: true }
-        );
+        const reason = item.error?.code || "unknown";
+        invalidTokenIdsByReason.set(reason, [...(invalidTokenIdsByReason.get(reason) ?? []), chunk[responseIndex].id]);
       }
     });
 
@@ -224,8 +200,8 @@ async function sendNotificationToSubscriptions({
       errorCodes
     });
 
-    if (hasInvalidTokens) {
-      await batch.commit();
+    for (const [reason, ids] of invalidTokenIdsByReason) {
+      await supabaseNotificationRepository.deactivateSubscriptions(ids, reason);
     }
   }
 
@@ -262,91 +238,50 @@ export async function saveNotificationCampaign({
   campaignId?: string;
   target?: "all" | "latest";
 }) {
-  const db = getFirebaseFirestoreAdmin();
-  if (!db) {
+  if (!supabaseNotificationRepository.isConfigured()) {
     return { ok: false, settingsComplete: false };
   }
 
-  const payload = {
+  const id = campaignId ?? randomUUID();
+  await supabaseNotificationRepository.saveCampaign({
+    id,
+    campaign_id: campaignId ?? null,
     title,
     body,
     total: result.total,
     success: result.success,
     failed: result.failed,
-    errorCodes: result.errorCodes,
-    firebaseAccepted: result.firebaseAccepted,
-    settingsComplete: result.settingsComplete,
+    error_codes: result.errorCodes,
+    firebase_accepted: result.firebaseAccepted,
+    settings_complete: result.settingsComplete,
     target,
-    ...(sentBy ? { sentBy } : {}),
-    createdAt: FieldValue.serverTimestamp()
-  };
-
-  const doc = campaignId
-    ? await db.collection(CAMPAIGNS_COLLECTION).doc(campaignId).set({ ...payload, campaignId }).then(() => campaignId)
-    : (await db.collection(CAMPAIGNS_COLLECTION).add(payload)).id;
-  return { ok: true, settingsComplete: true, id: String(doc) };
-}
-
-function serializeDate(value: unknown) {
-  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
-    return value.toDate().toISOString();
-  }
-  return typeof value === "string" ? value : new Date().toISOString();
+    sent_by: sentBy ?? null,
+    created_at: new Date().toISOString()
+  });
+  return { ok: true, settingsComplete: true, id };
 }
 
 export async function getNotificationCampaignHistory(limit = 50) {
-  const db = getFirebaseFirestoreAdmin();
-  if (!db) {
+  if (!supabaseNotificationRepository.isConfigured()) {
     return { campaigns: [] as NotificationCampaign[], settingsComplete: false };
   }
 
-  const snapshot = await db
-    .collection(CAMPAIGNS_COLLECTION)
-    .orderBy("createdAt", "desc")
-    .limit(Math.max(1, Math.min(limit, 100)))
-    .get();
-
-  const campaigns = snapshot.docs.map((doc) => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      title: String(data.title || ""),
-      body: String(data.body || ""),
-      total: Number(data.total || 0),
-      success: Number(data.success || 0),
-      failed: Number(data.failed || 0),
-      errorCodes: typeof data.errorCodes === "object" && data.errorCodes ? (data.errorCodes as Record<string, number>) : {},
-      firebaseAccepted: Boolean(data.firebaseAccepted),
-      createdAt: serializeDate(data.createdAt),
-      ...(typeof data.sentBy === "string" ? { sentBy: data.sentBy } : {}),
-      target: data.target === "latest" ? "latest" : "all"
-    } satisfies NotificationCampaign;
-  });
-
-  return { campaigns, settingsComplete: true };
+  return {
+    campaigns: await supabaseNotificationRepository.getCampaignHistory(limit),
+    settingsComplete: true
+  };
 }
 
 export async function resetAllNotificationSubscriptions() {
-  const db = getFirebaseFirestoreAdmin();
-  if (!db) {
+  if (!supabaseNotificationRepository.isConfigured()) {
     return { ok: false, settingsComplete: false, disabled: 0 };
   }
 
-  const snapshot = await db.collection(COLLECTION).where("active", "==", true).get();
-  const batch = db.batch();
-  snapshot.docs.forEach((doc) => {
-    batch.update(doc.ref, {
-      active: false,
-      deactivatedAt: FieldValue.serverTimestamp(),
-      deactivationReason: "admin-reset",
-      updatedAt: FieldValue.serverTimestamp()
-    });
-  });
-  await batch.commit();
+  const result = await supabaseNotificationRepository.resetAllSubscriptions();
 
   console.info(PUSH_DEBUG_PREFIX, "Reset notification subscriptions", {
-    disabled: snapshot.size
+    disabled: result.disabled
   });
 
-  return { ok: true, settingsComplete: true, disabled: snapshot.size };
+  return { ok: true, settingsComplete: true, disabled: result.disabled };
 }

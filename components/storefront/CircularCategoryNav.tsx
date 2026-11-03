@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { collection, onSnapshot } from "firebase/firestore";
-import { db, isFirebaseClientConfigured } from "@/lib/firebase";
 import { imageUrl } from "@/lib/imagekit";
 import type { ManagedCategory } from "@/lib/admin-local";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 export default function CircularCategoryNav() {
   const [categories, setCategories] = useState<ManagedCategory[]>([]);
@@ -13,7 +12,7 @@ export default function CircularCategoryNav() {
   const isInteracting = useRef(false);
   const lastActiveTime = useRef(Date.now());
 
-  // Load from API + Firestore realtime listener
+  // Load through the existing API contract and refresh it on catalog changes.
   useEffect(() => {
     let active = true;
 
@@ -35,44 +34,21 @@ export default function CircularCategoryNav() {
       }
     }
 
-    const unsubscribe =
-      db && isFirebaseClientConfigured
-        ? onSnapshot(
-            collection(db, "categories"),
-            (snapshot) => {
-              if (!active) return;
-              const cats: ManagedCategory[] = [];
-              snapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.visible !== false) {
-                  cats.push({
-                    id: doc.id,
-                    name: data.name || "",
-                    slug: data.slug || doc.id,
-                    image: data.image,
-                    description: data.description,
-                    sortOrder: data.sort_order ?? data.sortOrder ?? 0,
-                    visible: data.visible !== false,
-                    linkedProducts: data.linked_products ?? data.linkedProducts ?? []
-                  });
-                }
-              });
-              cats.sort((a, b) => a.sortOrder - b.sortOrder);
-              setCategories(cats);
-            },
-            () => {
-              void loadFallback();
-            }
-          )
-        : null;
+    void loadFallback();
 
-    if (!unsubscribe) {
-      void loadFallback();
-    }
+    const supabase = getSupabaseBrowserClient();
+    const channel = supabase
+      ?.channel("public-category-navigation")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "categories" },
+        () => void loadFallback()
+      )
+      .subscribe();
 
     return () => {
       active = false;
-      unsubscribe?.();
+      if (supabase && channel) void supabase.removeChannel(channel);
     };
   }, []);
 

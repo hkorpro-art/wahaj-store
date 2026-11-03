@@ -1,5 +1,4 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
 
 export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
@@ -21,4 +20,3 @@ const firebaseApp = isFirebaseClientConfigured
   : null;
 
 export { firebaseApp };
-export const db = firebaseApp ? getFirestore(firebaseApp) : null;

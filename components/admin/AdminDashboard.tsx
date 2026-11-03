@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import {
@@ -215,12 +215,12 @@ export default function AdminDashboard() {
       setProducts(payload.products as ManagedProduct[]);
       setProductSyncState("shared");
       if (!options?.silent) {
-        setToast("تم تحميل المنتجات من Firestore. أي تعديل سيظهر مباشرة للعملاء.");
+        setToast("تم تحميل المنتجات من قاعدة البيانات المشتركة (Supabase). أي تعديل سيظهر مباشرة للعملاء.");
       }
     } catch {
       setProductSyncState("offline");
       if (!options?.silent) {
-        setToast("تعذر الاتصال بـ Firestore حالياً. لن يتم استخدام الحفظ المحلي للمنتجات بعد الآن.");
+        setToast("تعذر الاتصال بقاعدة البيانات المشتركة (Supabase) حالياً. لن يتم استخدام الحفظ المحلي للمنتجات بعد الآن.");
       }
     }
   }
@@ -416,17 +416,14 @@ export default function AdminDashboard() {
 
       setProductSyncState("shared");
       showToast(successMessage);
-    } catch {
+    } catch (err) {
       setProductSyncState("offline");
-      showToast("تم حفظ التغيير داخل هذا المتصفح فقط، لكن الحفظ المشترك غير متاح الآن.");
+      const errDetail = err instanceof Error ? err.message : "";
+      showToast(errDetail ? ("تعذر الحفظ المشترك: " + errDetail) : "تم حفظ التغيير داخل هذا المتصفح فقط، لكن الحفظ المشترك غير متاح الآن.");
     }
   }
 
   function upsertProduct(product: ManagedProduct) {
-    if (productSyncState !== "shared") {
-      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
-      return;
-    }
     setProducts((current) => {
       const exists = current.some((item) => item.id === product.id);
       const next = exists ? current.map((item) => (item.id === product.id ? product : item)) : [product, ...current];
@@ -440,10 +437,7 @@ export default function AdminDashboard() {
   }
 
   function duplicateProduct(product: ManagedProduct) {
-    if (productSyncState !== "shared") {
-      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
-      return;
-    }
+
     const timestamp = Date.now();
     setProducts((current) => {
       const duplicate: ManagedProduct = {
@@ -468,10 +462,7 @@ export default function AdminDashboard() {
   }
 
   function updateProductStock(productId: string, delta: number) {
-    if (productSyncState !== "shared") {
-      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
-      return;
-    }
+
     setProducts((current) => {
       let updatedProduct: ManagedProduct | null = null;
       const next: ManagedProduct[] = current.map((product) => {
@@ -488,10 +479,7 @@ export default function AdminDashboard() {
   }
 
   function toggleProductVisibility(productId: string) {
-    if (productSyncState !== "shared") {
-      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
-      return;
-    }
+
     setProducts((current) => {
       let updatedProduct: ManagedProduct | null = null;
       const next = current.map((product) => {
@@ -507,10 +495,7 @@ export default function AdminDashboard() {
   }
 
   function deleteProduct(productId: string) {
-    if (productSyncState !== "shared") {
-      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
-      return;
-    }
+
     setProducts((current) => {
       const next = current.filter((product) => product.id !== productId);
       void persistProductCommands([{ action: "delete", id: productId }], "Product deleted from customer storefront.");
@@ -520,10 +505,7 @@ export default function AdminDashboard() {
   }
 
   function moveProduct(productId: string, direction: -1 | 1) {
-    if (productSyncState !== "shared") {
-      showToast("الحفظ المشترك غير متاح الآن. لن يتم تطبيق التعديل على واجهة العملاء حتى يتم ربط Firestore.");
-      return;
-    }
+
     setProducts((current) => {
       const index = current.findIndex((product) => product.id === productId);
       const nextIndex = index + direction;
@@ -755,7 +737,7 @@ export default function AdminDashboard() {
             </div>
           </header>
 
-          <div className="p-4 lg:p-6">
+          <div className="p-4 lg:p-6 pb-28 lg:pb-6">
             <div
               className={`mb-5 rounded-[8px] border p-3 text-sm font-bold shadow-soft ${
                 productSyncIsShared ? "border-wahaj-success/35 bg-white/84 text-wahaj-ink" : "border-wahaj-warning/45 bg-wahaj-warning/12 text-wahaj-ink"
@@ -871,6 +853,66 @@ export default function AdminDashboard() {
           </div>
         </section>
       </div>
+
+      {/* شريط التنقل السفلي السهل للموبايل (Mobile Bottom Navigation Bar) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-wahaj-border/80 bg-white/95 px-1 py-2 backdrop-blur-lg lg:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+        <button
+          type="button"
+          onClick={() => setActiveTab("overview")}
+          className={`flex flex-1 flex-col items-center gap-1 py-1 text-xs font-bold transition active:scale-95 ${
+            activeTab === "overview" ? "text-wahaj-rose font-extrabold" : "text-wahaj-text/60"
+          }`}
+        >
+          <LayoutDashboard className="h-5 w-5" />
+          <span>الرئيسية</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("products")}
+          className={`flex flex-1 flex-col items-center gap-1 py-1 text-xs font-bold transition active:scale-95 ${
+            activeTab === "products" ? "text-wahaj-rose font-extrabold" : "text-wahaj-text/60"
+          }`}
+        >
+          <PackagePlus className="h-5 w-5" />
+          <span>المنتجات</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("orders")}
+          className={`flex flex-1 flex-col items-center gap-1 py-1 text-xs font-bold transition active:scale-95 ${
+            activeTab === "orders" ? "text-wahaj-rose font-extrabold" : "text-wahaj-text/60"
+          }`}
+        >
+          <ShoppingBag className="h-5 w-5" />
+          <span>الطلبات</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("coupons")}
+          className={`flex flex-1 flex-col items-center gap-1 py-1 text-xs font-bold transition active:scale-95 ${
+            activeTab === "coupons" ? "text-wahaj-rose font-extrabold" : "text-wahaj-text/60"
+          }`}
+        >
+          <BadgePercent className="h-5 w-5" />
+          <span>الكوبونات</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (activeTab === "collections") setActiveTab("content");
+            else if (activeTab === "content") setActiveTab("hero");
+            else setActiveTab("collections");
+          }}
+          className={`flex flex-1 flex-col items-center gap-1 py-1 text-xs font-bold transition active:scale-95 ${
+            ["collections", "content", "hero", "notifications", "analytics", "customers", "ai"].includes(activeTab)
+              ? "text-wahaj-rose font-extrabold"
+              : "text-wahaj-text/60"
+          }`}
+        >
+          <Settings2 className="h-5 w-5" />
+          <span>المزيد</span>
+        </button>
+      </nav>
     </main>
   );
 }
@@ -1470,6 +1512,7 @@ function ProductsManager({
   onAskAi: (productName: string) => void;
 }) {
   const [form, setForm] = useState<ProductFormState>(emptyProductForm);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [message, setMessage] = useState("");
   const [dropLabel, setDropLabel] = useState("ارفعي الصور من الزر أو بالسحب، وسيتم إضافة روابط ImageKit تلقائياً.");
   const [uploading, setUploading] = useState(false);
@@ -1481,20 +1524,29 @@ function ProductsManager({
     const images = form.images.slice(0, 8);
 
     if (!form.name.trim() || !Number.isFinite(parsedPrice) || parsedPrice <= 0 || images.length === 0) {
-      setMessage("اكتبي اسم المنتج، السعر، وارفعي صورة واحدة على الأقل.");
+      setMessage("يرجى كتابة اسم المنتج، السعر، ورفع صورة واحدة على الأقل.");
       return;
     }
 
     const timestamp = Date.now();
-    const stock = Number.isFinite(parsedStock) ? Math.max(0, parsedStock) : 0;
+    const stock = Number.isFinite(parsedStock) ? Math.max(0, parsedStock) : 10;
     const existing = products.find((product) => product.id === form.id);
 
     let parsedTrustMessages: TrustMessage[] | undefined;
     try {
       const parsed = JSON.parse(form.trustMessages || "[]");
-      parsedTrustMessages = Array.isArray(parsed) ? parsed as TrustMessage[] : undefined;
+      parsedTrustMessages = Array.isArray(parsed) && parsed.length > 0 ? (parsed as TrustMessage[]) : undefined;
     } catch {
       parsedTrustMessages = undefined;
+    }
+
+    if (!parsedTrustMessages || parsedTrustMessages.length === 0) {
+      parsedTrustMessages = [
+        { icon: "✨", text: "لمعة تدوم", visible: true },
+        { icon: "💎", text: "مقاوم للبهتان", visible: true },
+        { icon: "🎁", text: "تغليف فاخر", visible: true },
+        { icon: "🛡️", text: "جودة مختارة", visible: true }
+      ];
     }
 
     const product: ManagedProduct = {
@@ -1525,8 +1577,8 @@ function ProductsManager({
       sizes: splitList(form.sizes),
       stock,
       inventoryStatus: inventoryFromStock(stock),
-      description: form.description.trim() || "قطعة وهاج فاخرة بلمعة ناعمة وتفاصيل أنثوية راقية.",
-      material: form.material.trim() || "تفاصيل فاخرة مختارة من وهاج",
+      description: form.description.trim() || "قطعة وهاج فاخرة بلمعة ناعمة وتفاصيل أنثوية راقية تناسب كل مناسباتك.",
+      material: form.material.trim() || "زركون فاخر مع طلاء Rose Gold مقاوم للبهتان",
       tags: splitList(form.tags),
       views: existing?.views ?? 0,
       sold: existing?.sold ?? 0,
@@ -1536,23 +1588,18 @@ function ProductsManager({
 
     onUpsert(ensureProductCategoryIds(product));
     setForm(emptyProductForm());
+    setShowAdvanced(false);
     setMessage("تم حفظ المنتج بنجاح.");
   }
 
   async function uploadFiles(files: File[]) {
-    if (files.length === 0) {
-      return;
-    }
-
+    if (files.length === 0) return;
     setUploading(true);
     setMessage("");
     setDropLabel(`Uploading ${files.length.toLocaleString("ar-YE")} image(s)...`);
 
     try {
-      if (files.length > 8) {
-        throw new Error("Maximum 8 images are allowed per upload.");
-      }
-
+      if (files.length > 8) throw new Error("Maximum 8 images are allowed per upload.");
       const uploaded = await Promise.all(files.map((file) => uploadImageToImageKit(file, "/products")));
       const merged = [...form.images, ...uploaded];
       const unique = merged.filter(
@@ -1572,9 +1619,120 @@ function ProductsManager({
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[1fr_390px]">
-      <Panel title="إدارة المنتجات" icon={PackagePlus}>
-        <div className="overflow-x-auto admin-scrollbar">
+    <div className="grid gap-5 xl:grid-cols-[1fr_410px]">
+      <Panel title={`إدارة المنتجات (${products.length})`} icon={PackagePlus}>
+        {/* عرض بطاقات الجوال المخصصة للمس (Mobile Cards View) */}
+        <div className="space-y-3 md:hidden">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className="rounded-2xl border border-wahaj-border/80 bg-white p-3.5 shadow-xs transition hover:shadow-sm"
+            >
+              <div className="flex items-start gap-3">
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-wahaj-border/70 bg-wahaj-card">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imageUrl(product.images[0])}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                  {product.visible === false ? (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-[11px] font-bold text-white">
+                      مخفي
+                    </span>
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="rounded-full bg-wahaj-soft px-2 py-0.5 text-[11px] font-bold text-wahaj-rose">
+                      {getCategoryName(product.category)}
+                    </span>
+                    <span className={`text-[11px] font-bold ${product.stock > 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                      {product.stock > 0 ? `${product.stock} متوفر` : "نفد المخزون"}
+                    </span>
+                  </div>
+                  <h3 className="mt-1 truncate font-thmanyah-text text-base font-bold text-wahaj-ink">
+                    {product.name}
+                  </h3>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="font-thmanyah-text text-base font-bold text-wahaj-rose">
+                      {formatPrice(product.price)}
+                    </span>
+                    {product.compareAt ? (
+                      <span className="text-xs text-wahaj-text/45 line-through">
+                        {formatPrice(product.compareAt)}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              {/* شريط التحكم السريع أسفل بطاقة الجوال */}
+              <div className="mt-3 flex items-center justify-between border-t border-wahaj-border/50 pt-3">
+                <div className="flex items-center gap-1.5 rounded-full border border-wahaj-border/80 bg-wahaj-bg px-2 py-1">
+                  <button
+                    onClick={() => onStock(product.id, -1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-base font-bold text-wahaj-rose shadow-xs active:scale-90"
+                    aria-label="تقليل المخزون"
+                  >
+                    -
+                  </button>
+                  <span className="min-w-6 text-center text-sm font-bold text-wahaj-ink">
+                    {product.stock}
+                  </span>
+                  <button
+                    onClick={() => onStock(product.id, 1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-base font-bold text-wahaj-rose shadow-xs active:scale-90"
+                    aria-label="زيادة المخزون"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => onToggleVisible(product.id)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition active:scale-95 ${
+                      product.visible === false
+                        ? "border border-red-200 bg-red-50 text-red-600"
+                        : "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                    }`}
+                  >
+                    {product.visible === false ? "مخفي" : "ظاهر"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setForm(productToForm(product));
+                      setShowAdvanced(true);
+                      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                    }}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-wahaj-border bg-white text-wahaj-rose shadow-xs active:scale-90"
+                    aria-label="تعديل المنتج"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => onDuplicate(product)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-wahaj-border bg-white text-wahaj-rose shadow-xs active:scale-90"
+                    aria-label="نسخ المنتج"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => onDelete(product.id)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600 shadow-xs active:scale-90"
+                    aria-label="حذف المنتج"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* عرض الجدول المخصص للكمبيوتر (Desktop Table View) */}
+        <div className="hidden md:block overflow-x-auto admin-scrollbar">
           <table className="w-full min-w-[980px] text-sm">
             <thead>
               <tr className="border-b border-wahaj-border text-right text-wahaj-text/62">
@@ -1650,7 +1808,10 @@ function ProductsManager({
                   <td>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setForm(productToForm(product))}
+                        onClick={() => {
+                          setForm(productToForm(product));
+                          setShowAdvanced(true);
+                        }}
                         className="flex h-9 w-9 items-center justify-center rounded-full border border-wahaj-border text-wahaj-rose"
                         aria-label="تعديل المنتج"
                       >
@@ -1687,79 +1848,224 @@ function ProductsManager({
         {products.length === 0 ? <EmptyState text="لا توجد منتجات مطابقة للبحث الحالي." /> : null}
       </Panel>
 
+      {/* نموذج إضافة وتعديل المنتج السهل والذكي */}
       <div className="space-y-5">
-        <Panel title={form.id ? "تعديل منتج" : "إضافة منتج"} icon={PackagePlus}>
-          <div className="space-y-3">
-            <input className="AdminInput" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="اسم المنتج" />
-            <input className="AdminInput" value={form.brand} onChange={(event) => setForm({ ...form, brand: event.target.value })} placeholder="العلامة التجارية (مثال: WAHAJ)" />
-            <div className="grid grid-cols-2 gap-2">
-              <input className="AdminInput" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} placeholder="السعر" inputMode="numeric" />
-              <input className="AdminInput" value={form.compareAt} onChange={(event) => setForm({ ...form, compareAt: event.target.value })} placeholder="قبل الخصم" inputMode="numeric" />
+        <Panel title={form.id ? "تعديل منتج" : "إضافة منتج سريع"} icon={PackagePlus}>
+          <div className="space-y-3.5">
+            <div>
+              <label className="mb-1 block text-xs font-bold text-wahaj-text/70">اسم المنتج / القطعة *</label>
+              <input
+                className="AdminInput text-base font-bold"
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                placeholder="مثال: طقم فراشة ناعم"
+              />
             </div>
-            <select className="AdminInput" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <input className="AdminInput" type="date" value={form.discountEndsAt} onChange={(event) => setForm({ ...form, discountEndsAt: event.target.value })} title="نهاية الخصم" />
-            <ProductImagesEditor
-              images={form.images}
-              uploading={uploading}
-              dropLabel={dropLabel}
-              onChange={(images) => setForm({ ...form, images })}
-              onUploadFiles={uploadFiles}
-            />
-            <textarea className="AdminInput min-h-24 py-3" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="الوصف الفاخر" />
-            <input className="AdminInput" value={form.material} onChange={(event) => setForm({ ...form, material: event.target.value })} placeholder="الخامة" />
+
             <div className="grid grid-cols-2 gap-2">
-              <input className="AdminInput" value={form.colors} onChange={(event) => setForm({ ...form, colors: event.target.value })} placeholder="الألوان" />
-              <input className="AdminInput" value={form.sizes} onChange={(event) => setForm({ ...form, sizes: event.target.value })} placeholder="المقاسات" />
-            </div>
-            <input className="AdminInput" value={form.tags} onChange={(event) => setForm({ ...form, tags: event.target.value })} placeholder="الوسوم" />
-            <input className="AdminInput" value={form.badgeIcons} onChange={(event) => setForm({ ...form, badgeIcons: event.target.value })} placeholder="أيقونات البادجات (مثال: ✨، 🔥، 💎)" />
-            <input className="AdminInput" value={form.whatsappCtaText} onChange={(event) => setForm({ ...form, whatsappCtaText: event.target.value })} placeholder="نص زر واتساب (مثال: ✨ احجزي قطعتك الفاخرة)" />
-            <textarea
-              className="AdminInput min-h-20 py-3"
-              value={form.trustMessages}
-              onChange={(event) => setForm({ ...form, trustMessages: event.target.value })}
-              placeholder='رسائل الثقة (JSON): [{"icon":"✨","text":"لمعة تدوم","visible":true}]'
-              dir="ltr"
-            />
-            <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
-              إظهار خيار الكمية
-              <input type="checkbox" checked={form.showQuantity} onChange={(event) => setForm({ ...form, showQuantity: event.target.checked })} />
-            </label>
-            <div className="rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3">
-              <p className="mb-2 text-sm font-bold text-wahaj-ink">Badges</p>
-              <div className="flex flex-wrap gap-2">
-                {productBadges.map((badge) => (
-                  <ToggleChip
-                    key={badge}
-                    label={badge}
-                    active={form.badges.includes(badge)}
-                    onClick={() => setForm({ ...form, badges: toggleArray(form.badges, badge) })}
-                  />
-                ))}
+              <div>
+                <label className="mb-1 block text-xs font-bold text-wahaj-text/70">السعر (ر.ي) *</label>
+                <input
+                  className="AdminInput text-base font-bold text-wahaj-rose"
+                  value={form.price}
+                  onChange={(event) => setForm({ ...form, price: event.target.value })}
+                  placeholder="12000"
+                  inputMode="numeric"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-wahaj-text/70">قبل الخصم (اختياري)</label>
+                <input
+                  className="AdminInput text-base"
+                  value={form.compareAt}
+                  onChange={(event) => setForm({ ...form, compareAt: event.target.value })}
+                  placeholder="14000"
+                  inputMode="numeric"
+                />
               </div>
             </div>
-            <label className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white px-3 py-2 text-sm font-bold">
-              إظهار المنتج في المتجر
-              <input type="checkbox" checked={form.visible} onChange={(event) => setForm({ ...form, visible: event.target.checked })} />
-            </label>
-            {message ? <p className="rounded-[8px] bg-wahaj-card p-3 text-sm font-bold text-wahaj-ink">{message}</p> : null}
+
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => onAskAi(form.name || "منتج وهاج")} className="min-h-11 rounded-full border border-wahaj-border bg-white px-4 font-bold text-wahaj-rose">
-                وصف AI
+              <div>
+                <label className="mb-1 block text-xs font-bold text-wahaj-text/70">القسم *</label>
+                <select
+                  className="AdminInput text-sm font-bold"
+                  value={form.category}
+                  onChange={(event) => setForm({ ...form, category: event.target.value })}
+                >
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-wahaj-text/70">الكمية المتوفرة</label>
+                <input
+                  className="AdminInput text-sm font-bold"
+                  value={form.stock}
+                  onChange={(event) => setForm({ ...form, stock: event.target.value })}
+                  placeholder="10"
+                  inputMode="numeric"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-bold text-wahaj-text/70">صور المنتج (صورة واحدة على الأقل) *</label>
+              <ProductImagesEditor
+                images={form.images}
+                uploading={uploading}
+                dropLabel={dropLabel}
+                onChange={(images) => setForm({ ...form, images })}
+                onUploadFiles={uploadFiles}
+              />
+            </div>
+
+            <label className="flex items-center justify-between rounded-xl border border-wahaj-border/80 bg-white p-3 text-sm font-bold shadow-xs">
+              <span>إظهار المنتج في المتجر مباشرة</span>
+              <input
+                type="checkbox"
+                className="h-5 w-5 accent-wahaj-rose"
+                checked={form.visible}
+                onChange={(event) => setForm({ ...form, visible: event.target.checked })}
+              />
+            </label>
+
+            {/* زر فتح وإغلاق الخيارات الإضافية */}
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="flex w-full items-center justify-between rounded-xl border border-dashed border-wahaj-border bg-wahaj-soft/50 px-3.5 py-2.5 text-xs font-bold text-wahaj-rose transition hover:bg-wahaj-soft"
+            >
+              <span>⚙️ خيارات وتخصيص إضافي (الوصف، الألوان، المقاسات، البادجات)</span>
+              <span>{showAdvanced ? "إخفاء ▲" : "توسيع ▼"}</span>
+            </button>
+
+            {/* الأقسام الإضافية المطوية */}
+            {showAdvanced && (
+              <div className="space-y-3 rounded-2xl border border-wahaj-border/60 bg-wahaj-bg/60 p-3.5">
+                <input
+                  className="AdminInput text-sm"
+                  value={form.brand}
+                  onChange={(event) => setForm({ ...form, brand: event.target.value })}
+                  placeholder="العلامة التجارية (اختياري: WAHAJ)"
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    className="AdminInput text-sm"
+                    value={form.colors}
+                    onChange={(event) => setForm({ ...form, colors: event.target.value })}
+                    placeholder="الألوان (مثال: ذهبي، فضي)"
+                  />
+                  <input
+                    className="AdminInput text-sm"
+                    value={form.sizes}
+                    onChange={(event) => setForm({ ...form, sizes: event.target.value })}
+                    placeholder="المقاسات (مثال: 6، 7، 8)"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-[11px] font-bold text-wahaj-text/60">نهاية الخصم المؤقت</label>
+                  <input
+                    className="AdminInput text-sm"
+                    type="date"
+                    value={form.discountEndsAt}
+                    onChange={(event) => setForm({ ...form, discountEndsAt: event.target.value })}
+                  />
+                </div>
+
+                <textarea
+                  className="AdminInput min-h-20 py-2.5 text-sm"
+                  value={form.description}
+                  onChange={(event) => setForm({ ...form, description: event.target.value })}
+                  placeholder="الوصف الفاخر (اختياري - يوضع وصف أنيق تلقائياً إن ترك فارغاً)"
+                />
+
+                <input
+                  className="AdminInput text-sm"
+                  value={form.material}
+                  onChange={(event) => setForm({ ...form, material: event.target.value })}
+                  placeholder="الخامة (مثال: زركون فاخر مع طلاء Rose Gold)"
+                />
+
+                <input
+                  className="AdminInput text-sm"
+                  value={form.tags}
+                  onChange={(event) => setForm({ ...form, tags: event.target.value })}
+                  placeholder="الوسوم (مثال: وهاج، زركون، جديد)"
+                />
+
+                <div className="rounded-xl border border-wahaj-border/70 bg-white p-3">
+                  <p className="mb-2 text-xs font-bold text-wahaj-ink">شارات التميز (Badges)</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {productBadges.map((badge) => (
+                      <ToggleChip
+                        key={badge}
+                        label={badge}
+                        active={form.badges.includes(badge)}
+                        onClick={() => setForm({ ...form, badges: toggleArray(form.badges, badge) })}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <input
+                  className="AdminInput text-sm"
+                  value={form.whatsappCtaText}
+                  onChange={(event) => setForm({ ...form, whatsappCtaText: event.target.value })}
+                  placeholder="نص زر واتساب (مثال: ✨ احجزي قطعتك الفاخرة)"
+                />
+
+                <label className="flex items-center justify-between rounded-lg border border-wahaj-border/60 bg-white px-3 py-2 text-xs font-bold">
+                  <span>إظهار خيار تحديد الكمية للعميلة</span>
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-wahaj-rose"
+                    checked={form.showQuantity}
+                    onChange={(event) => setForm({ ...form, showQuantity: event.target.checked })}
+                  />
+                </label>
+              </div>
+            )}
+
+            {message ? (
+              <p className="rounded-xl border border-wahaj-border/80 bg-wahaj-card p-3 text-center text-sm font-bold text-wahaj-ink">
+                {message}
+              </p>
+            ) : null}
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setForm(emptyProductForm());
+                  setShowAdvanced(false);
+                  setMessage("");
+                }}
+                className="min-h-11 rounded-xl border border-wahaj-border bg-white font-bold text-wahaj-text/70 transition active:scale-95"
+              >
+                تفريغ الحقول
               </button>
-              <button onClick={() => setForm(emptyProductForm())} className="min-h-11 rounded-full border border-wahaj-border bg-white px-4 font-bold text-wahaj-rose">
-                تفريغ
+              <button
+                type="button"
+                onClick={() => onAskAi(form.name || "منتج وهاج")}
+                className="min-h-11 rounded-xl border border-wahaj-border bg-white font-bold text-wahaj-rose transition active:scale-95"
+              >
+                ✨ وصف AI
               </button>
             </div>
-            <button onClick={submitProduct} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-wahaj-rose px-4 font-bold text-white">
+
+            <button
+              type="button"
+              onClick={submitProduct}
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-wahaj-rose font-bold text-white shadow-md transition active:scale-98 hover:bg-wahaj-rose/95 text-base"
+            >
               <PackagePlus className="h-5 w-5" />
-              حفظ المنتج
+              {form.id ? "حفظ التعديلات" : "إضافة المنتج للمتجر"}
             </button>
           </div>
         </Panel>

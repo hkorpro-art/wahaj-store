@@ -1,34 +1,15 @@
-import { getFirebaseFirestoreAdmin } from "./firebase-admin";
+import "server-only";
+
 import { orders as seedOrders } from "./data";
+import { supabaseOrderRepository } from "./supabase/repositories";
 import type { Order } from "./types";
 
-export const FIRESTORE_ORDERS_COLLECTION = "production_orders";
-
 export async function getManagedOrders(): Promise<Order[]> {
-  const firestore = getFirebaseFirestoreAdmin();
-
-  if (firestore) {
+  if (supabaseOrderRepository.isConfigured()) {
     try {
-      const snapshot = await firestore.collection(FIRESTORE_ORDERS_COLLECTION).get();
-      const managedOrders = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          customer: String(data.customer || ""),
-          phone: String(data.phone || ""),
-          products: Array.isArray(data.products) ? data.products.map(String) : [],
-          total: Number(data.total || 0),
-          notes: String(data.notes || ""),
-          status: data.status || "جديد",
-          createdAt: String(data.createdAt || ""),
-          isGift: Boolean(data.isGift),
-          giftMessage: String(data.giftMessage || "")
-        } as Order;
-      });
-
-      return managedOrders.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
+      return await supabaseOrderRepository.getAll();
     } catch (error) {
-      console.error("Unable to load orders from Firebase:", error);
+      console.error("Unable to load orders from the production data store:", error);
     }
   }
 
@@ -36,39 +17,25 @@ export async function getManagedOrders(): Promise<Order[]> {
 }
 
 export async function saveOrder(order: Order) {
-  const firestore = getFirebaseFirestoreAdmin();
-
-  if (firestore) {
+  if (supabaseOrderRepository.isConfigured()) {
     try {
-      await firestore.collection(FIRESTORE_ORDERS_COLLECTION).doc(order.id).set({
-        customer: order.customer,
-        phone: order.phone,
-        products: order.products,
-        total: order.total,
-        notes: order.notes,
-        status: order.status,
-        createdAt: order.createdAt,
-        isGift: order.isGift ?? false,
-        giftMessage: order.giftMessage ?? ""
-      });
-      return { saved: true };
+      return await supabaseOrderRepository.create(order);
     } catch (error) {
-      console.error("Unable to save order to Firebase:", error);
+      console.error("Unable to save order to the production data store:", error);
     }
   }
   return { saved: false };
 }
 
-export async function deleteOrderFromFirestore(orderId: string) {
-  const firestore = getFirebaseFirestoreAdmin();
-
-  if (firestore) {
+export async function deleteOrder(orderId: string) {
+  if (supabaseOrderRepository.isConfigured()) {
     try {
-      await firestore.collection(FIRESTORE_ORDERS_COLLECTION).doc(orderId).delete();
-      return { deleted: true };
+      return await supabaseOrderRepository.delete(orderId);
     } catch (error) {
-      console.error("Unable to delete order from Firebase:", error);
+      console.error("Unable to delete order from the production data store:", error);
     }
   }
   return { deleted: false };
 }
+
+export const deleteOrderFromFirestore = deleteOrder;

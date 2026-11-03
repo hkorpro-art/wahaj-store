@@ -1,7 +1,6 @@
 import "server-only";
 import { applicationDefault, cert, getApps, initializeApp } from "firebase-admin/app";
 import { getMessaging } from "firebase-admin/messaging";
-import { getFirestore } from "firebase-admin/firestore";
 
 function readEnv(...names: string[]) {
   for (const name of names) {
@@ -52,20 +51,6 @@ function createFirebaseApp() {
   }
 
   return null;
-}
-
-export function getFirebaseAdminApp() {
-  return createFirebaseApp();
-}
-
-export function getFirebaseFirestoreAdmin() {
-  const app = createFirebaseApp();
-
-  if (!app) {
-    return null;
-  }
-
-  return getFirestore(app);
 }
 
 export function getFirebaseMessagingAdmin() {

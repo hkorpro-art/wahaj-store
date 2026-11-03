@@ -1,29 +1,27 @@
-import type { HeroAnimationSettings, HeroSlide } from "./admin-local";
-import { getFirebaseFirestoreAdmin } from "./firebase-admin";
+import "server-only";
 
-const HERO_SLIDES_COLLECTION = "hero_slides";
-const HERO_SETTINGS_DOC = "hero_settings";
+import type { HeroAnimationSettings, HeroSlide } from "./admin-local";
+import { supabaseContentRepository } from "./supabase/repositories";
+
+const DEFAULT_HERO_SETTINGS: HeroAnimationSettings = {
+  transitionSpeed: 700,
+  autoPlay: true,
+  autoPlayInterval: 5000,
+  floatingEffect: true,
+  backgroundBlur: 4,
+  sideScale: 0.7,
+  showHero: true
+};
 
 type HeroSource = "firebase" | "seed";
 
 export async function getHeroSlides(): Promise<{ slides: HeroSlide[]; source: HeroSource }> {
-  const firestore = getFirebaseFirestoreAdmin();
-
-  if (firestore) {
+  if (supabaseContentRepository.isConfigured()) {
     try {
-      const snapshot = await firestore
-        .collection(HERO_SLIDES_COLLECTION)
-        .get();
-
-      const slides = snapshot.docs
-        .map((doc) => ({ id: doc.id, ...doc.data() } as HeroSlide))
-        .sort((a, b) => a.sortOrder - b.sortOrder);
-
-      if (slides.length > 0) {
-        return { slides, source: "firebase" };
-      }
+      const slides = await supabaseContentRepository.getHeroSlides();
+      if (slides.length > 0) return { slides, source: "firebase" };
     } catch (error) {
-      console.error("Unable to load hero slides from Firebase:", error);
+      console.error("Unable to load hero slides from the production data store:", error);
     }
   }
 
@@ -31,64 +29,22 @@ export async function getHeroSlides(): Promise<{ slides: HeroSlide[]; source: He
 }
 
 export async function saveHeroSlides(slides: HeroSlide[]) {
-  const firestore = getFirebaseFirestoreAdmin();
-
-  if (!firestore) {
-    throw new Error("Firebase Firestore Admin is not configured.");
-  }
-
-  const batch = firestore.batch();
-  const collection = firestore.collection(HERO_SLIDES_COLLECTION);
-  const nextIds = new Set(slides.map((slide) => slide.id));
-
-  slides.forEach((slide) => {
-    const ref = collection.doc(slide.id);
-    batch.set(ref, { ...slide, updatedAt: new Date().toISOString() });
-  });
-
-  const snapshot = await collection.select().get();
-  snapshot.docs.forEach((doc) => {
-    if (!nextIds.has(doc.id)) {
-      batch.delete(doc.ref);
-    }
-  });
-
-  await batch.commit();
-  return { saved: true as const };
+  if (!supabaseContentRepository.isConfigured()) throw new Error("Supabase is not configured.");
+  return supabaseContentRepository.replaceHeroSlides(slides);
 }
 
 export async function getHeroSettings(): Promise<HeroAnimationSettings> {
-  const firestore = getFirebaseFirestoreAdmin();
-
-  if (firestore) {
+  if (supabaseContentRepository.isConfigured()) {
     try {
-      const doc = await firestore.collection("store_settings").doc(HERO_SETTINGS_DOC).get();
-      if (doc.exists) {
-        return doc.data() as HeroAnimationSettings;
-      }
+      return await supabaseContentRepository.getHeroSettings() ?? DEFAULT_HERO_SETTINGS;
     } catch (error) {
-      console.error("Unable to load hero settings from Firebase:", error);
+      console.error("Unable to load hero settings from the production data store:", error);
     }
   }
-
-  return {
-    transitionSpeed: 700,
-    autoPlay: true,
-    autoPlayInterval: 5000,
-    floatingEffect: true,
-    backgroundBlur: 4,
-    sideScale: 0.7,
-    showHero: true
-  };
+  return DEFAULT_HERO_SETTINGS;
 }
 
 export async function saveHeroSettings(settings: HeroAnimationSettings) {
-  const firestore = getFirebaseFirestoreAdmin();
-
-  if (!firestore) {
-    throw new Error("Firebase Firestore Admin is not configured.");
-  }
-
-  await firestore.collection("store_settings").doc(HERO_SETTINGS_DOC).set(settings);
-  return { saved: true as const };
+  if (!supabaseContentRepository.isConfigured()) throw new Error("Supabase is not configured.");
+  return supabaseContentRepository.saveHeroSettings(settings);
 }

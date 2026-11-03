@@ -17,7 +17,7 @@ export async function getManagedCategories(): Promise<{ categories: ManagedCateg
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error("Unable to load categories from Firebase:", message);
+      console.error("Unable to load categories from the production data store:", message);
     }
   }
 

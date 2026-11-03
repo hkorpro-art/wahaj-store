@@ -28,3 +28,4 @@ app/debug/
 opencode.jsonc
 stagehand-cart-result.txt
 stagehand-cart.mjs
+.env*

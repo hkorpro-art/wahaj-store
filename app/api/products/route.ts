@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { verifyAdminToken } from "@/lib/auth";
@@ -43,14 +43,15 @@ async function saveProductsRequest(request: Request) {
   const admin = await verifyAdminToken(token);
 
   if (!admin) {
-    return NextResponse.json({ message: "غير مصرح." }, { status: 401 });
+    return NextResponse.json({ message: "غير مصرح (يرجى تسجيل الدخول مجدداً)." }, { status: 401 });
   }
 
   const json = await request.json();
   const commandPayload = productCommandSchema.safeParse(json);
 
   if (!commandPayload.success) {
-    return NextResponse.json({ message: "بيانات المنتج غير صالحة." }, { status: 400 });
+    const issueMessages = commandPayload.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ");
+    return NextResponse.json({ message: `بيانات المنتج غير صالحة: ${issueMessages}`, saved: false }, { status: 400 });
   }
 
   try {
@@ -100,11 +101,12 @@ async function saveProductsRequest(request: Request) {
         });
       }
     }
-  } catch {
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("Save product error:", errorMsg);
     return NextResponse.json(
-      { message: "قاعدة بيانات المنتجات غير مفعلة. لم يتم حفظ التغيير.", saved: false },
-      { status: 503 }
+      { message: `خطأ في حفظ المنتج بقاعدة البيانات: ${errorMsg}`, saved: false },
+      { status: 500 }
     );
   }
 }
-

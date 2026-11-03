@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getFirebaseFirestoreAdmin } from "@/lib/firebase-admin";
+import { isSupabaseServerConfigured } from "@/lib/supabase/server";
 import { verifyAdminToken } from "@/lib/auth";
 import { getCouponByCode, getCoupons, saveCoupons } from "@/lib/coupons";
 import type { Coupon } from "@/lib/types";
@@ -59,8 +59,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const db = getFirebaseFirestoreAdmin();
-    if (!db) {
+    if (!isSupabaseServerConfigured()) {
       return NextResponse.json({ ok: false, message: "Firestore غير مهيأ." }, { status: 500 });
     }
 
