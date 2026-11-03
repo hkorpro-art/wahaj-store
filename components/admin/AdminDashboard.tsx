@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { motion } from "framer-motion";
 import {
@@ -208,8 +208,8 @@ export default function AdminDashboard() {
       const response = await fetch(`/api/products?refresh=${Date.now()}`, { cache: "no-store" });
       const payload = await response.json().catch(() => null);
 
-      if (!response.ok || !Array.isArray(payload?.products) || payload?.source !== "firebase") {
-        throw new Error(payload?.message || "Firestore is not available.");
+      if (!response.ok || !Array.isArray(payload?.products) || (payload?.source !== "firebase" && payload?.source !== "supabase")) {
+        throw new Error(payload?.message || "قاعدة البيانات المشتركة غير متاحة.");
       }
 
       setProducts(payload.products as ManagedProduct[]);
@@ -1360,7 +1360,7 @@ function MenuIconsManager() {
       }
 
       setIcons(payload?.icons || {});
-      setSyncLabel(payload?.source === "firebase" ? "متصل بـ Firestore" : "افتراضي");
+      setSyncLabel(payload?.source === "firebase" || payload?.source === "supabase" ? "متصل بـ Supabase" : "افتراضي");
     } catch (error) {
       setSyncLabel("تعذر الاتصال");
       setMessage(error instanceof Error ? error.message : "تعذر تحميل الأيقونات.");

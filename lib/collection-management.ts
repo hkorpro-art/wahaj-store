@@ -4,7 +4,7 @@ import type { ManagedCollection } from "./admin-local";
 import { seedCollections } from "./collections";
 import { collectionRepository } from "./collection-repository";
 
-type CollectionSource = "firebase" | "seed";
+type CollectionSource = "supabase" | "firebase" | "seed";
 
 export async function getManagedCollections(): Promise<{ collections: ManagedCollection[]; source: CollectionSource }> {
   if (collectionRepository.isConfigured()) {
@@ -13,7 +13,7 @@ export async function getManagedCollections(): Promise<{ collections: ManagedCol
 
       return {
         collections: managedCollections && managedCollections.length > 0 ? managedCollections : seedCollections,
-        source: "firebase"
+        source: "supabase"
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

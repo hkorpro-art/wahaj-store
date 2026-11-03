@@ -1,7 +1,7 @@
 import type { ManagedProduct } from "./admin-local";
 import { productRepository } from "./product-repository";
 
-type ProductSource = "firebase";
+type ProductSource = "supabase" | "firebase";
 
 export async function getManagedProducts(): Promise<{ products: ManagedProduct[]; source: ProductSource }> {
   if (!productRepository.isConfigured()) {
@@ -13,7 +13,7 @@ export async function getManagedProducts(): Promise<{ products: ManagedProduct[]
 
     return {
       products: managedProducts,
-      source: "firebase"
+      source: "supabase"
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

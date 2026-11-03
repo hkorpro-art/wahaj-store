@@ -4,7 +4,7 @@ import type { ManagedCategory } from "./admin-local";
 import { seedCategories } from "./categories";
 import { categoryRepository } from "./category-repository";
 
-type CategorySource = "firebase" | "seed";
+type CategorySource = "supabase" | "firebase" | "seed";
 
 export async function getManagedCategories(): Promise<{ categories: ManagedCategory[]; source: CategorySource }> {
   if (categoryRepository.isConfigured()) {
@@ -13,7 +13,7 @@ export async function getManagedCategories(): Promise<{ categories: ManagedCateg
 
       return {
         categories: managedCategories && managedCategories.length > 0 ? managedCategories : seedCategories,
-        source: "firebase"
+        source: "supabase"
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

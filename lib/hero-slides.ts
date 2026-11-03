@@ -13,13 +13,13 @@ const DEFAULT_HERO_SETTINGS: HeroAnimationSettings = {
   showHero: true
 };
 
-type HeroSource = "firebase" | "seed";
+type HeroSource = "supabase" | "firebase" | "seed";
 
 export async function getHeroSlides(): Promise<{ slides: HeroSlide[]; source: HeroSource }> {
   if (supabaseContentRepository.isConfigured()) {
     try {
       const slides = await supabaseContentRepository.getHeroSlides();
-      if (slides.length > 0) return { slides, source: "firebase" };
+      if (slides.length > 0) return { slides, source: "supabase" };
     } catch (error) {
       console.error("Unable to load hero slides from the production data store:", error);
     }
