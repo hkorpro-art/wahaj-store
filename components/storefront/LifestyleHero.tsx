@@ -26,7 +26,7 @@ type LifestyleHeroProps = {
 
 function HeroSkeleton() {
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-wahaj-beige/30">
+    <div className="relative h-[46dvh] sm:h-[54dvh] max-h-[480px] min-h-[340px] w-full overflow-hidden bg-wahaj-beige/30">
       <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-wahaj-beige/40 to-wahaj-muted/20" />
       <div className="absolute bottom-28 left-1/2 w-4/5 max-w-md -translate-x-1/2 space-y-4 text-center">
         <div className="mx-auto h-11 w-3/4 rounded-lg bg-white/30" />
@@ -214,7 +214,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
   return (
     <>
     <section
-      className="relative w-full overflow-hidden h-[75dvh] sm:h-[100dvh]"
+      className="relative w-full overflow-hidden h-[46dvh] sm:h-[54dvh] max-h-[480px] min-h-[340px]"
       onPointerEnter={(event) => {
         if (event.pointerType === "mouse") setIsHoverPaused(true);
       }}
@@ -283,7 +283,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
             {/* Campaign copy — bottom-left */}
             {isActive && (
               <motion.div
-                className="absolute inset-x-0 bottom-0 px-6 pb-16 pt-16 sm:px-10 sm:pb-20 sm:pt-28 md:px-16"
+                className="absolute inset-x-0 bottom-0 px-5 pb-9 pt-8 sm:px-10 sm:pb-14 sm:pt-16 md:px-16"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
@@ -291,7 +291,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
                 <div className="mx-auto max-w-6xl">
                   <div className="max-w-lg">
                     <h2
-                      className="font-thmanyah-display text-3xl font-medium leading-tight sm:text-4xl md:text-5xl drop-shadow-lg"
+                      className="font-thmanyah-display text-2xl font-medium leading-tight sm:text-3xl md:text-4xl drop-shadow-md"
                       style={{
                         color: textColor,
                         textShadow: textIsDark ? "0 2px 12px rgba(0,0,0,0.3)" : "none"
@@ -301,7 +301,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
                     </h2>
                     {slide.subtitle && (
                       <p
-                        className="mt-3 text-sm leading-7 sm:text-base"
+                        className="mt-1 text-xs leading-6 sm:text-sm line-clamp-2"
                         style={{
                           color: textIsDark ? "rgba(69,0,6,0.85)" : "rgba(255,255,255,0.85)",
                           textShadow: textIsDark ? "none" : "0 1px 8px rgba(0,0,0,0.25)"
@@ -311,7 +311,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
                       </p>
                     )}
                     <span
-                      className="mt-4 inline-flex min-h-[46px] items-center justify-center rounded-full px-8 text-sm font-bold transition-colors duration-300 btn-luxury sm:mt-6"
+                      className="mt-2.5 inline-flex min-h-[38px] sm:min-h-[42px] items-center justify-center rounded-full px-6 text-xs sm:text-sm font-bold transition-all duration-300 active:scale-95 shadow-sm sm:mt-4"
                       style={{
                         backgroundColor: textIsDark ? "#450006" : "#FFFFFF",
                         color: textIsDark ? "#FFFFFF" : "#2A1215"
@@ -333,7 +333,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
 
       {/* Navigation dots + arrows */}
       {total > 1 && (
-        <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3">
+        <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2">
           <button
             onClick={(e) => { e.stopPropagation(); prev(); }}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/20"
@@ -398,26 +398,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
         ) : null}
       </label>
 
-      {/* Quick Search Apple Filter Pills */}
-      <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto px-1 py-1 no-scrollbar">
-        {["أطقم", "زركون", "أقراط", "سلاسل", "أساور", "تيجان"].map((filter) => {
-          const isActive = searchQuery === filter;
-          return (
-            <button
-              key={filter}
-              type="button"
-              onClick={() => onSearchChange?.(isActive ? "" : filter)}
-              className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-all duration-200 active:scale-95 ${
-                isActive
-                  ? "bg-brand-burgundy text-white shadow-sm"
-                  : "border border-white/70 bg-white/75 text-[#2A1215]/80 backdrop-blur-md hover:bg-white"
-              }`}
-            >
-              {filter}
-            </button>
-          );
-        })}
-      </div>
+
     </div>
     </>
   );

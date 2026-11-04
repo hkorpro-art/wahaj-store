@@ -128,7 +128,7 @@ export default function WahajStorefront({
             </div>
           </div>
 
-          <motion.div layout className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+          <motion.div layout className="grid grid-cols-2 gap-3.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
             <AnimatePresence mode="popLayout">
                 {filteredProducts.map((product, index) => (
                 <ProductCard
@@ -207,7 +207,18 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
         </button>
 
         <div className="flex flex-1 items-center justify-center">
-          <Link href="/" className="px-4 py-1">
+          <Link
+            href="/"
+            className="group relative flex items-center justify-center gap-1.5 rounded-full liquid-glass-pill px-5 py-1.5 shadow-[0_4px_16px_rgba(69,0,6,0.08)] transition-all duration-300 hover:scale-105 active:scale-95"
+            aria-label="الرئيسية - متجر وهاج"
+          >
+            <motion.span
+              animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.15, 1] }}
+              transition={{ duration: 4, repeat: Infinity, repeatDelay: 3, ease: "easeInOut" }}
+              className="text-brand-champagne shrink-0"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+            </motion.span>
             <BrandMark
               size="md"
               showSubtitle={false}
@@ -339,14 +350,17 @@ function ProductCard({ product, priority, loading, onCart }: ProductCardProps) {
               {product.name}
             </h3>
           </Link>
-          <div className="mt-2 flex flex-wrap items-baseline gap-2">
-            <p className="text-sm font-extrabold text-brand-burgundy tracking-tight">
-              {formatPrice(product.price)}
-            </p>
+          <div className="mt-2.5 flex flex-wrap items-baseline gap-1.5">
+            <span className="font-thmanyah-display text-base sm:text-lg font-extrabold text-brand-burgundy tracking-tight">
+              {new Intl.NumberFormat("en-US").format(product.price)}
+            </span>
+            <span className="text-xs font-bold text-brand-burgundy/85">
+              ريال
+            </span>
             {product.compareAt ? (
-              <p className="text-xs text-wahaj-text/50 line-through">
-                {formatPrice(product.compareAt)}
-              </p>
+              <span className="mr-1 text-xs font-medium text-neutral-400 line-through">
+                {new Intl.NumberFormat("en-US").format(product.compareAt)} ريال
+              </span>
             ) : null}
           </div>
         </div>

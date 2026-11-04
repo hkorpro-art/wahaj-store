@@ -76,8 +76,8 @@ function isVideoUrl(url: string) {
   return /\.(mp4|webm|mov|avi)$/i.test(url) || url.includes("video");
 }
 
-function formatPriceLatin(value: number) {
-  return `${new Intl.NumberFormat("en-US").format(value)} YER`;
+function formatPriceRiyal(value: number) {
+  return `${new Intl.NumberFormat("en-US").format(value)} ريال`;
 }
 
 export default function ProductDetailClient({ slug, initialProduct, initialSimilarProducts, siteContentDefaults }: ProductDetailClientProps) {
@@ -199,7 +199,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           <div className="flex items-center justify-between gap-3 rounded-full liquid-glass-pill px-4 py-2 shadow-[0_16px_40px_rgba(45,0,4,0.14)]">
             <div className="min-w-0 flex-1 pr-1 text-right">
               <p className="truncate text-xs font-bold text-wahaj-ink">{product.name}</p>
-              <p className="font-thmanyah-text text-sm font-extrabold text-brand-burgundy">{formatPriceLatin(product.price)}</p>
+              <p className="font-thmanyah-text text-sm font-extrabold text-brand-burgundy">{formatPriceRiyal(product.price)}</p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
@@ -348,11 +348,11 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             </h1>
             <div className="shrink-0 text-left">
               <p className="font-thmanyah-display text-2xl font-semibold leading-none text-[#5A222A]">
-                {formatPriceLatin(product.price)}
+                {formatPriceRiyal(product.price)}
               </p>
               {product.compareAt ? (
                 <p className="mt-1 text-sm font-medium leading-none text-[#A15C64]/60 line-through">
-                  {formatPriceLatin(product.compareAt)}
+                  {formatPriceRiyal(product.compareAt)}
                 </p>
               ) : null}
             </div>
@@ -435,29 +435,22 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
 
         {/* ─── PURCHASE ACTIONS & APPLE TRUST BADGES ─── */}
         <section className="mt-6 space-y-3">
-          {/* Apple HIG 3-Column Trust Micro-Cards */}
-          <div className="grid grid-cols-3 gap-2 py-1">
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200/60 bg-white/80 p-2.5 text-center shadow-[0_2px_8px_rgba(69,0,6,0.03)] backdrop-blur-md">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-burgundy/8 text-brand-burgundy">
-                <ShieldCheck className="h-4 w-4" />
-              </span>
-              <span className="mt-1 text-xs font-bold text-[#2A1215]">فحص وضمان</span>
-              <span className="text-[10px] text-neutral-500">معاينة قبل الاستلام</span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200/60 bg-white/80 p-2.5 text-center shadow-[0_2px_8px_rgba(69,0,6,0.03)] backdrop-blur-md">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-burgundy/8 text-brand-burgundy">
-                <Truck className="h-4 w-4" />
-              </span>
-              <span className="mt-1 text-xs font-bold text-[#2A1215]">توصيل سريع</span>
-              <span className="text-[10px] text-neutral-500">لجميع المحافظات</span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200/60 bg-white/80 p-2.5 text-center shadow-[0_2px_8px_rgba(69,0,6,0.03)] backdrop-blur-md">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-burgundy/8 text-brand-burgundy">
-                <RefreshCw className="h-4 w-4" />
-              </span>
-              <span className="mt-1 text-xs font-bold text-[#2A1215]">استبدال مرن</span>
-              <span className="text-[10px] text-neutral-500">راحة بال تامة</span>
-            </div>
+          {/* Subtle Compact Trust Badge Strip */}
+          <div className="flex items-center justify-around rounded-xl border border-neutral-200/50 bg-white/70 px-3 py-2 text-[11px] font-semibold text-neutral-600 backdrop-blur-xs shadow-2xs">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-brand-burgundy" />
+              <span>فحص ومعاينة</span>
+            </span>
+            <span className="text-neutral-300">•</span>
+            <span className="flex items-center gap-1.5">
+              <Truck className="h-3.5 w-3.5 text-brand-burgundy" />
+              <span>توصيل سريع</span>
+            </span>
+            <span className="text-neutral-300">•</span>
+            <span className="flex items-center gap-1.5">
+              <RefreshCw className="h-3.5 w-3.5 text-brand-burgundy" />
+              <span>استبدال واسترجاع</span>
+            </span>
           </div>
 
           <button
@@ -561,7 +554,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
                   </div>
                   <div className="p-3">
                     <p className="line-clamp-2 min-h-10 text-sm font-bold text-wahaj-ink">{item.name}</p>
-                    <p className="mt-1 font-thmanyah-text text-sm font-medium text-brand-burgundy">{formatPriceLatin(item.price)}</p>
+                    <p className="mt-1 font-thmanyah-text text-sm font-medium text-brand-burgundy">{formatPriceRiyal(item.price)}</p>
                   </div>
                 </Link>
               ))}
@@ -578,7 +571,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           <div className="flex items-center justify-between gap-3 rounded-full liquid-glass-pill px-4 py-2 shadow-[0_16px_40px_rgba(45,0,4,0.14)]">
             <div className="min-w-0 flex-1 pr-1 text-right">
               <p className="truncate text-xs font-bold text-wahaj-ink">{product.name}</p>
-              <p className="font-thmanyah-text text-sm font-extrabold text-brand-burgundy">{formatPriceLatin(product.price)}</p>
+              <p className="font-thmanyah-text text-sm font-extrabold text-brand-burgundy">{formatPriceRiyal(product.price)}</p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
