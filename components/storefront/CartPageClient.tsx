@@ -194,20 +194,22 @@ export default function CartPageClient() {
             <div className="w-10" />
           </div>
         </header>
-        <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-          <div className="mb-5 rounded-full bg-wahaj-soft/60 p-4">
-            <ShoppingBag className="h-8 w-8 text-wahaj-rose" />
+        <div className="mx-auto my-12 max-w-sm px-4">
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-white/80 bg-white/85 p-8 text-center shadow-[0_8px_32px_rgba(69,0,6,0.06)] backdrop-blur-xl">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-burgundy/8 text-brand-burgundy">
+              <ShoppingBag className="h-8 w-8 text-brand-burgundy" strokeWidth={1.5} />
+            </div>
+            <p className="font-thmanyah-display text-xl font-bold text-[#2A1215]">سلتك بانتظار لمستك ✨</p>
+            <p className="mt-2 text-xs leading-6 text-neutral-500">
+              لم تضيفي أي قطعة بعد.. اكتشفي تشكيلتنا الفاخرة المصممة لتضيئي بها لحظاتك
+            </p>
+            <Link
+              href="/"
+              className="mt-6 flex min-h-12 w-full items-center justify-center rounded-full bg-brand-burgundy px-6 text-sm font-bold text-white shadow-[0_8px_24px_rgba(69,0,6,0.20)] transition-all hover:bg-brand-burgundy-deep active:scale-95"
+            >
+              استكشفي التشكيلة الفاخرة ✨
+            </Link>
           </div>
-          <p className="font-display text-xl font-medium text-wahaj-ink">✨ لم تختاري لمستك بعد</p>
-          <p className="mt-2 text-sm leading-6 text-wahaj-text/70">
-            اكتشفي قطعاً صُممت لتضيئي بها لحظاتك
-          </p>
-          <Link
-            href="/"
-            className="mt-6 flex min-h-11 items-center justify-center rounded-full bg-wahaj-ink px-8 text-sm font-bold text-white transition-all duration-300 hover:bg-wahaj-rose"
-          >
-            استكشفي المجموعة
-          </Link>
         </div>
       </main>
     );
@@ -243,8 +245,21 @@ export default function CartPageClient() {
       </header>
 
       <div className="mx-auto max-w-lg px-4 pb-8 pt-4">
-        <p className="mb-4 font-thmanyah-text text-xs font-medium text-wahaj-text/60">
-          طلبك الناعم • {totalQty} {totalQty === 1 ? "قطعة مختارة" : "قطع مختارة"} ✨
+        {/* Apple Luxury Free Shipping Banner */}
+        <div className="mb-4 flex items-center justify-between rounded-2xl border border-amber-300/40 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 px-4 py-3 text-xs text-[#2A1215] shadow-xs">
+          <span className="flex items-center gap-2 font-bold">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-champagne/30 text-amber-900">
+              ✨
+            </span>
+            <span>شحن فاخر ومجاني لجميع الطلبات</span>
+          </span>
+          <span className="rounded-full bg-brand-champagne/30 px-2.5 py-0.5 text-[11px] font-bold text-amber-950">
+            مفعل تلقائياً
+          </span>
+        </div>
+
+        <p className="mb-3 px-1 font-thmanyah-text text-xs font-bold text-neutral-500">
+          قطعك المختارة ({totalQty})
         </p>
 
         <AnimatePresence mode={reducedMotion ? "sync" : "popLayout"}>
@@ -256,55 +271,58 @@ export default function CartPageClient() {
               animate={reducedMotion ? undefined : { opacity: 1, x: 0, scale: 1 }}
               exit={reducedMotion ? undefined : { opacity: 0, x: 30, scale: 0.96 }}
               transition={reducedMotion ? undefined : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="mb-3 flex gap-4 rounded-[20px] border border-white/80 bg-white/90 shadow-[0_4px_20px_rgba(69,0,6,0.06)] p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]"
+              className="mb-3 flex gap-3.5 rounded-2xl border border-neutral-200/60 bg-white/90 p-3.5 shadow-[0_2px_12px_rgba(69,0,6,0.04)] backdrop-blur-md"
             >
-              <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-xl">
+              <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-xl border border-neutral-100">
                 <Image
                   src={imageUrl(item.product.images[0], { width: 200, height: 260 })}
                   alt={item.product.name}
                   fill
-                  sizes="96px"
+                  sizes="80px"
                   className="object-cover"
                 />
               </div>
-              <div className="flex min-w-0 flex-1 flex-col justify-between">
+              <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
                 <div>
-                  <p className="line-clamp-2 text-sm font-bold leading-snug text-wahaj-ink">
+                  <p className="line-clamp-2 text-sm font-bold leading-snug text-[#2A1215]">
                     {item.product.name}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-wahaj-rose">
+                  <p className="mt-1 font-thmanyah-text text-sm font-bold text-brand-burgundy">
                     {formatPrice(item.product.price)}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 rounded-full border border-wahaj-border/60 bg-white/80 p-0.5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1 rounded-full border border-neutral-200/80 bg-neutral-50/80 p-0.5 shadow-2xs">
                     <button
                       onClick={() => updateQuantity(item.product.id, -1)}
-                      className="flex h-10 w-10 items-center justify-center rounded-full text-wahaj-text/60 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-600 transition-all hover:bg-white active:scale-90"
+                      aria-label="تقليل الكمية"
                     >
-                      <Minus className="h-3.5 w-3.5" />
+                      <Minus className="h-3 w-3" />
                     </button>
                     <motion.span
                       key={item.quantity}
                       initial={reducedMotion ? undefined : { scale: 1.2, opacity: 0.6 }}
                       animate={reducedMotion ? undefined : { scale: 1, opacity: 1 }}
                       transition={reducedMotion ? undefined : { duration: 0.15 }}
-                      className="min-w-[24px] text-center text-sm font-bold text-wahaj-ink"
+                      className="min-w-[20px] text-center text-xs font-bold text-[#2A1215]"
                     >
                       {item.quantity}
                     </motion.span>
                     <button
                       onClick={() => updateQuantity(item.product.id, 1)}
-                      className="flex h-10 w-10 items-center justify-center rounded-full text-wahaj-text/60 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-600 transition-all hover:bg-white active:scale-90"
+                      aria-label="زيادة الكمية"
                     >
-                      <span className="text-lg font-bold leading-none">+</span>
+                      <span className="text-base font-bold leading-none">+</span>
                     </button>
                   </div>
                   <button
                     onClick={() => removeFromCart(item.product.id)}
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-wahaj-text/30 transition-all duration-200 hover:bg-wahaj-soft/60 hover:text-wahaj-rose active:scale-90"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-100 hover:text-rose-600 active:scale-90"
+                    aria-label="حذف المنتج"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
@@ -312,90 +330,86 @@ export default function CartPageClient() {
           ))}
         </AnimatePresence>
 
-        {/* Order Summary */}
-        <div className="mb-4 rounded-[20px] border border-white/80 bg-white/90 shadow-[0_4px_20px_rgba(69,0,6,0.06)] p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]">
-          <div className="mb-3 flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-wahaj-rose" />
-            <span className="text-xs font-bold text-wahaj-ink">ملخص الطلب</span>
+        {/* Apple Unified Order Summary & WhatsApp Checkout */}
+        <div className="mb-4 overflow-hidden rounded-2xl border border-neutral-200/70 bg-white/95 p-5 shadow-[0_4px_20px_rgba(69,0,6,0.06)] backdrop-blur-md">
+          <div className="mb-3.5 flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-brand-burgundy" />
+            <span className="text-xs font-bold text-[#2A1215]">ملخص الطلب</span>
           </div>
-          <div className="space-y-2 text-sm">
+          <div className="space-y-2.5 text-sm">
             <div className="flex justify-between">
-              <span className="text-wahaj-text/70">المجموع الفرعي</span>
-              <span className="font-semibold text-wahaj-ink">{formatPrice(subtotal)}</span>
+              <span className="text-neutral-500">المجموع الفرعي</span>
+              <span className="font-semibold text-[#2A1215]">{formatPrice(subtotal)}</span>
             </div>
             {discount > 0 ? (
               <div className="flex justify-between">
-                <span className="text-wahaj-text/70">الخصم</span>
-                <span className="font-semibold text-wahaj-success">-{formatPrice(discount)}</span>
+                <span className="text-neutral-500">الخصم</span>
+                <span className="font-semibold text-emerald-700">-{formatPrice(discount)}</span>
               </div>
             ) : null}
             <div className="flex justify-between">
-              <span className="text-wahaj-text/70">الشحن</span>
-              <span className="font-semibold text-wahaj-success">مجاني</span>
+              <span className="text-neutral-500">الشحن</span>
+              <span className="font-semibold text-emerald-700">مجاني لجميع المحافظات ✨</span>
             </div>
-            <div className="mt-2 border-t border-wahaj-border/40 pt-2">
-              <div className="flex justify-between">
-                <span className="font-bold text-wahaj-ink">الإجمالي</span>
-                <span className="font-thmanyah-text text-lg font-bold text-wahaj-ink">{formatPrice(finalTotal)}</span>
+            <div className="my-2 border-t border-neutral-200/60 pt-3">
+              <div className="flex items-baseline justify-between">
+                <div>
+                  <span className="block text-sm font-bold text-[#2A1215]">الإجمالي النهائي</span>
+                  <span className="text-[11px] text-neutral-400">شامل المعاينة والتغليف</span>
+                </div>
+                <span className="font-thmanyah-display text-2xl font-bold text-brand-burgundy">
+                  {formatPrice(finalTotal)}
+                </span>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* WhatsApp Checkout */}
-        <div className="mb-4 rounded-[20px] border border-white/80 bg-white/90 shadow-[0_4px_20px_rgba(69,0,6,0.06)] p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="font-bold text-wahaj-ink">الإجمالي</span>
-            <span className="font-thmanyah-text text-xl font-bold text-wahaj-ink">
-              {formatPrice(finalTotal)}
-            </span>
-          </div>
           <button
             onClick={handleCheckout}
             disabled={cartItems.length === 0 || checkingOut}
-            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-burgundy text-base font-bold text-white shadow-[0_8px_24px_rgba(69,0,6,0.20)] transition-all duration-300 hover:bg-brand-burgundy-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-4 flex min-h-14 w-full items-center justify-center gap-2.5 rounded-full bg-brand-burgundy text-base font-bold text-white shadow-[0_8px_24px_rgba(69,0,6,0.22)] transition-all hover:bg-brand-burgundy-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <MessageCircle className="h-5 w-5" />
-            {checkingOut ? "جاري التحميل..." : "إتمام الطلب عبر واتساب ✨"}
+            <span>{checkingOut ? "جاري تحضير طلبك..." : "إتمام الطلب عبر واتساب ✨"}</span>
           </button>
         </div>
 
-        {/* Coupon */}
-        <div className="rounded-[20px] border border-white/80 bg-white/90 shadow-[0_4px_20px_rgba(69,0,6,0.06)] p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]">
-          <div className="mb-3 flex items-center gap-2">
-            <Gift className="h-4 w-4 text-wahaj-rose" />
-            <span className="text-xs font-bold text-wahaj-ink">كود الخصم</span>
+        {/* Apple HIG Coupon Field */}
+        <div className="rounded-2xl border border-neutral-200/70 bg-white/90 p-4 shadow-[0_2px_12px_rgba(69,0,6,0.04)] backdrop-blur-md">
+          <div className="mb-2.5 flex items-center gap-2">
+            <Gift className="h-4 w-4 text-brand-burgundy" />
+            <span className="text-xs font-bold text-[#2A1215]">هل لديكِ كود خصم؟</span>
           </div>
           <div className="flex gap-2">
             <input
               type="text"
               value={couponCode}
               onChange={(e) => { setCouponCode(e.target.value); setCouponError(""); }}
-              placeholder={appliedCoupon ? "تم تطبيق كود خصم" : "أدخلي كود الخصم"}
+              placeholder={appliedCoupon ? "تم تطبيق كود الخصم" : "أدخلي كود الخصم"}
               disabled={!!appliedCoupon}
-              className="min-h-11 flex-1 rounded-xl border border-wahaj-border/60 bg-white/80 px-4 text-sm text-wahaj-ink outline-none transition-all duration-200 focus:border-wahaj-rose/40 focus:shadow-[0_0_0_3px_rgba(201,169,98,0.15)] disabled:opacity-50"
+              className="min-h-11 flex-1 rounded-xl border border-neutral-200 bg-neutral-50/80 px-4 text-xs font-medium text-[#2A1215] outline-none transition-all focus:border-brand-burgundy/40 focus:bg-white focus:shadow-[0_0_0_3px_rgba(69,0,6,0.08)] disabled:opacity-50"
               dir="rtl"
             />
             {appliedCoupon ? (
               <button
                 onClick={removeCoupon}
-                className="flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-wahaj-soft/60 px-4 text-xs font-bold text-wahaj-ink transition-all duration-200 hover:bg-wahaj-soft active:scale-95"
+                className="flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-neutral-200/60 px-4 text-xs font-bold text-neutral-700 transition-all hover:bg-neutral-200 active:scale-95"
               >
                 إلغاء
               </button>
             ) : (
               <button
                 onClick={applyCoupon}
-                className="flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-burgundy px-5 text-xs font-bold text-white transition-all duration-200 hover:bg-brand-burgundy-deep active:scale-95 shadow-sm"
+                className="flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-burgundy px-5 text-xs font-bold text-white transition-all hover:bg-brand-burgundy-deep active:scale-95 shadow-xs"
               >
                 تطبيق
               </button>
             )}
           </div>
           {couponError ? (
-            <p className="mt-2 text-xs text-red-500/80">{couponError}</p>
+            <p className="mt-2 text-xs font-semibold text-rose-600">{couponError}</p>
           ) : couponSuccess ? (
-            <p className="mt-2 text-xs text-wahaj-success">{couponSuccess}</p>
+            <p className="mt-2 text-xs font-semibold text-emerald-700">{couponSuccess}</p>
           ) : null}
         </div>
       </div>

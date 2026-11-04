@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ChevronDown, Gem, RefreshCw, Share2, ShoppingBag, Sparkles, Tag, Truck } from "lucide-react";
+import { ArrowLeft, ChevronDown, Gem, RefreshCw, Share2, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -374,52 +374,58 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           </p>
         </section>
 
-        {/* ─── OPTIONS ─── */}
+        {/* ─── OPTIONS: Tactile Apple Swatches ─── */}
         {hasAnyOption ? (
-          <section className="mt-5 divide-y divide-wahaj-border/40">
+          <section className="mt-5 divide-y divide-neutral-200/50">
 
             {product.colors.length > 0 ? (
               <div className="py-3.5">
-                <p className="mb-2.5 text-sm font-bold text-wahaj-ink">اختاري اللون</p>
-                <div className="flex flex-wrap gap-2">
-                  {product.colors.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => setColor(option)}
-                      className={`flex min-h-10 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-bold transition-all duration-200 ${
-                        color === option
-                          ? "border-wahaj-rose bg-wahaj-rose/8 text-wahaj-rose"
-                          : "border-wahaj-border/60 text-wahaj-text hover:border-wahaj-rose/40"
-                      }`}
-                    >
-                      <span
-                        className="h-4 w-4 rounded-full border border-white/70 shadow-sm"
-                        style={{ background: colorMap[option] || "#F3D6D9" }}
-                      />
-                      {option}
-                    </button>
-                  ))}
+                <p className="mb-2.5 text-xs font-bold tracking-wider text-[#2A1215]/80">اختاري اللون</p>
+                <div className="flex flex-wrap gap-2.5">
+                  {product.colors.map((option) => {
+                    const isSelected = color === option;
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => setColor(option)}
+                        className={`flex min-h-10 items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all duration-200 active:scale-95 ${
+                          isSelected
+                            ? "border-brand-burgundy bg-brand-burgundy/10 text-brand-burgundy shadow-xs ring-1 ring-brand-burgundy/30 scale-[1.02]"
+                            : "border-neutral-200/80 bg-white/80 text-[#2A1215]/80 hover:border-neutral-300"
+                        }`}
+                      >
+                        <span
+                          className="h-4 w-4 rounded-full border border-black/10 shadow-xs"
+                          style={{ background: colorMap[option] || "#F3D6D9" }}
+                        />
+                        <span>{option}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ) : null}
 
             {product.sizes.length > 0 ? (
               <div className="py-3.5">
-                <p className="mb-2.5 text-sm font-bold text-wahaj-ink">اختاري المقاس</p>
+                <p className="mb-2.5 text-xs font-bold tracking-wider text-[#2A1215]/80">اختاري المقاس</p>
                 <div className="flex flex-wrap gap-2">
-                  {product.sizes.map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => setSize(option)}
-                      className={`min-h-10 rounded-full border px-4 py-1.5 text-sm font-bold transition-all duration-200 ${
-                        size === option
-                          ? "border-wahaj-rose bg-wahaj-rose text-white"
-                          : "border-wahaj-border/60 bg-white/70 text-wahaj-text hover:border-wahaj-rose/40"
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
+                  {product.sizes.map((option) => {
+                    const isSelected = size === option;
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => setSize(option)}
+                        className={`min-h-10 rounded-full border px-4 py-1.5 text-xs font-bold transition-all duration-200 active:scale-95 ${
+                          isSelected
+                            ? "border-brand-burgundy bg-brand-burgundy text-white shadow-xs scale-[1.02]"
+                            : "border-neutral-200/80 bg-white/80 text-[#2A1215]/80 hover:border-neutral-300"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ) : null}
@@ -427,29 +433,51 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           </section>
         ) : null}
 
-        {/* ─── PURCHASE ACTIONS ─── */}
+        {/* ─── PURCHASE ACTIONS & APPLE TRUST BADGES ─── */}
         <section className="mt-6 space-y-3">
-          <p className="whitespace-nowrap text-center font-thmanyah-text text-[14px] text-wahaj-text/60 sm:text-[15px]">
-            فحص قبل التسليم • دفع عند الاستلام • استبدال واسترجاع
-          </p>
+          {/* Apple HIG 3-Column Trust Micro-Cards */}
+          <div className="grid grid-cols-3 gap-2 py-1">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200/60 bg-white/80 p-2.5 text-center shadow-[0_2px_8px_rgba(69,0,6,0.03)] backdrop-blur-md">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-burgundy/8 text-brand-burgundy">
+                <ShieldCheck className="h-4 w-4" />
+              </span>
+              <span className="mt-1 text-xs font-bold text-[#2A1215]">فحص وضمان</span>
+              <span className="text-[10px] text-neutral-500">معاينة قبل الاستلام</span>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200/60 bg-white/80 p-2.5 text-center shadow-[0_2px_8px_rgba(69,0,6,0.03)] backdrop-blur-md">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-burgundy/8 text-brand-burgundy">
+                <Truck className="h-4 w-4" />
+              </span>
+              <span className="mt-1 text-xs font-bold text-[#2A1215]">توصيل سريع</span>
+              <span className="text-[10px] text-neutral-500">لجميع المحافظات</span>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200/60 bg-white/80 p-2.5 text-center shadow-[0_2px_8px_rgba(69,0,6,0.03)] backdrop-blur-md">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-burgundy/8 text-brand-burgundy">
+                <RefreshCw className="h-4 w-4" />
+              </span>
+              <span className="mt-1 text-xs font-bold text-[#2A1215]">استبدال مرن</span>
+              <span className="text-[10px] text-neutral-500">راحة بال تامة</span>
+            </div>
+          </div>
+
           <button
             onClick={handleDirectCheckout}
-            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-wahaj-rose px-4 font-bold text-white shadow-glow transition-transform active:scale-[0.98]"
+            className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-full bg-brand-burgundy px-4 font-bold text-white shadow-[0_8px_24px_rgba(69,0,6,0.22)] transition-all hover:bg-brand-burgundy-deep active:scale-[0.98]"
           >
-            <Sparkles className="h-5 w-5 shrink-0" />
-            <span className="truncate">اطلبي الآن</span>
+            <Sparkles className="h-5 w-5 shrink-0 text-brand-champagne" />
+            <span className="truncate text-base">اطلبي الآن مباشرة</span>
           </button>
           <div className="flex gap-2">
             <button
               onClick={addTouch}
-              className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-wahaj-ink px-4 font-bold text-white shadow-sm transition-transform active:scale-[0.98]"
+              className="flex min-h-[50px] flex-1 items-center justify-center gap-2 rounded-full border border-neutral-300/80 bg-white/90 px-4 font-bold text-[#2A1215] shadow-xs transition-all hover:bg-white active:scale-[0.98]"
             >
-              <ShoppingBag className="h-5 w-5 shrink-0" />
-              {added ? "تمت ✓" : "أضيفي للسلة"}
+              <ShoppingBag className="h-5 w-5 shrink-0 text-brand-burgundy" />
+              <span>{added ? "أضيفت للطلب ✨" : "أضيفي للسلة"}</span>
             </button>
             <button
               onClick={handleShare}
-              className="flex min-h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-wahaj-rose/50 bg-wahaj-soft/60 text-wahaj-rose transition hover:bg-wahaj-rose hover:text-white"
+              className="flex min-h-[50px] w-[50px] shrink-0 items-center justify-center rounded-full border border-neutral-200/80 bg-white/80 text-[#2A1215] transition-all hover:bg-white active:scale-95 shadow-xs"
               aria-label="مشاركة القطعة"
             >
               <Share2 className="h-5 w-5" />
@@ -457,8 +485,8 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           </div>
         </section>
 
-        {/* ─── ACCORDION ─── */}
-        <section className="mt-4 space-y-2">
+        {/* ─── ACCORDION: Apple Inset Grouped ─── */}
+        <section className="mt-5 overflow-hidden rounded-2xl border border-neutral-200/70 bg-white/85 shadow-[0_2px_12px_rgba(69,0,6,0.03)] divide-y divide-neutral-100">
           {accordionConfig.map(({ id, title, Icon }) => {
             const contentMap: Record<string, string> = {
               details: product.accordionDetails || siteContentDefaults.accordionDetails,
@@ -470,19 +498,21 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             const isOpen = openAccordion === id;
 
             return (
-              <div key={id} className="border-b border-wahaj-border/30">
+              <div key={id}>
                 <button
                   onClick={() => setOpenAccordion(isOpen ? null : id)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-base font-bold text-wahaj-ink transition-colors hover:bg-wahaj-soft/30"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-sm font-bold text-[#2A1215] transition-colors hover:bg-neutral-50/80 active:bg-neutral-100/60"
                   aria-expanded={isOpen}
                 >
                   <span className="flex items-center gap-2.5">
-                    <Icon className="h-4 w-4 text-wahaj-rose/70" />
+                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-burgundy/8 text-brand-burgundy">
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
                     <span>{title}</span>
                   </span>
                   <ChevronDown
-                    className={`h-4 w-4 text-wahaj-rose/60 transition-transform duration-300 ${
-                      isOpen ? "rotate-180" : ""
+                    className={`h-4 w-4 text-neutral-400 transition-transform duration-300 ${
+                      isOpen ? "rotate-180 text-brand-burgundy" : ""
                     }`}
                   />
                 </button>
@@ -493,10 +523,10 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: reducedMotion ? 0 : 0.3, ease: "easeInOut" }}
-                      className="overflow-hidden"
+                      transition={{ duration: reducedMotion ? 0 : 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden bg-neutral-50/50"
                     >
-                      <div className="border-t border-wahaj-border/30 px-4 py-3.5 text-sm leading-7 text-wahaj-text/80">
+                      <div className="border-t border-neutral-100 px-4 py-3 text-xs leading-6 text-neutral-600">
                         {content}
                       </div>
                     </motion.div>

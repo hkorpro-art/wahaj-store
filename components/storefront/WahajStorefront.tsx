@@ -518,63 +518,111 @@ function MenuSheet({ open, onClose, collections }: { open: boolean; onClose: () 
     <AnimatePresence>
       {open ? (
         <motion.div className="fixed inset-0 z-[75]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-          <button className="absolute inset-0 bg-wahaj-ink/25 backdrop-blur-sm" onClick={onClose} aria-label="إغلاق" />
+          <button className="absolute inset-0 bg-[#2A1215]/30 backdrop-blur-sm" onClick={onClose} aria-label="إغلاق" />
           <motion.aside
-            className="glass absolute bottom-0 right-0 top-0 w-[86vw] max-w-sm p-5 overflow-y-auto"
+            className="absolute bottom-0 right-0 top-0 w-[86vw] max-w-sm bg-[#FDFBF9]/95 backdrop-blur-2xl p-5 overflow-y-auto border-l border-white/60 shadow-2xl flex flex-col justify-between"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 26, stiffness: 240 }}
+            transition={{ type: "spring", damping: 28, stiffness: 260 }}
           >
-            <div className="flex items-center justify-between">
-              <BrandMark size="md" className="items-start text-right" />
-              <button onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-full bg-white/80 btn-luxury">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+            <div>
+              {/* Apple Sheet Grabber Handle */}
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-300/80" />
 
-            {visibleCollections.length > 0 ? (
-              <>
-                <p className="mt-7 mb-2 text-xs font-bold text-wahaj-rose/80">المجموعات</p>
-                <div className="space-y-2">
-                  {visibleCollections.map((c) => (
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3">
+                <BrandMark size="md" className="items-start text-right" />
+                <button
+                  onClick={onClose}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-200/60 text-[#2A1215] transition-all hover:bg-neutral-200 active:scale-95"
+                  aria-label="إغلاق القائمة"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Grouped Inset: Collections */}
+              {visibleCollections.length > 0 ? (
+                <div className="mt-4">
+                  <p className="mb-2 px-1 text-xs font-bold tracking-wider text-brand-burgundy/70">المجموعات الفاخرة</p>
+                  <div className="overflow-hidden rounded-2xl border border-neutral-200/70 bg-white/90 shadow-[0_2px_12px_rgba(69,0,6,0.04)] divide-y divide-neutral-100/90">
+                    {visibleCollections.map((c) => (
+                      <Link
+                        key={c.id}
+                        href={`/collections/${c.slug}`}
+                        onClick={onClose}
+                        className="flex items-center justify-between px-4 py-3 text-sm font-bold text-[#2A1215] transition-colors hover:bg-neutral-50 active:bg-neutral-100/70"
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-burgundy/8 text-brand-burgundy">
+                            <Gem className="h-3 w-3" />
+                          </span>
+                          <span>{c.name}</span>
+                        </span>
+                        <ChevronLeft className="h-4 w-4 text-neutral-400" />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Grouped Inset: Wahaj World */}
+              <div className="mt-5">
+                <p className="mb-2 px-1 text-xs font-bold tracking-wider text-brand-burgundy/70">عالم وهاج</p>
+                <div className="overflow-hidden rounded-2xl border border-neutral-200/70 bg-white/90 shadow-[0_2px_12px_rgba(69,0,6,0.04)] divide-y divide-neutral-100/90">
+                  {infoLinks.map(([label, href]) => (
                     <Link
-                      key={c.id}
-                      href={`/collections/${c.slug}`}
+                      key={href}
+                      href={href}
                       onClick={onClose}
-                      className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white/70 px-4 py-3 font-bold btn-luxury"
+                      className="flex items-center justify-between px-4 py-3 text-sm font-semibold text-[#2A1215] transition-colors hover:bg-neutral-50 active:bg-neutral-100/70"
                     >
-                      {c.name}
-                      <ChevronLeft className="h-4 w-4 text-wahaj-rose" />
+                      <span>{label}</span>
+                      <ChevronLeft className="h-4 w-4 text-neutral-400" />
                     </Link>
                   ))}
                 </div>
-              </>
-            ) : null}
+              </div>
 
-            <p className="mt-5 mb-2 text-xs font-bold text-wahaj-rose/80">وهاج</p>
-            <div className="space-y-2">
-              {infoLinks.map(([label, href]) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={onClose}
-                  className="flex items-center justify-between rounded-[8px] border border-wahaj-border bg-white/70 px-4 py-3 font-bold btn-luxury"
+              {/* Direct WhatsApp Concierge Card */}
+              <div className="mt-5">
+                <a
+                  href="https://wa.me/967780007804"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 transition-transform active:scale-[0.98]"
                 >
-                  {label}
-                  <ChevronLeft className="h-4 w-4 text-wahaj-rose" />
-                </Link>
-              ))}
+                  <span className="flex items-center gap-2.5">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xs">
+                      <MessageCircle className="h-4 w-4" fill="currentColor" strokeWidth={1} />
+                    </span>
+                    <span className="text-right">
+                      <span className="block text-xs font-bold text-emerald-950">خدمة العملاء الفاخرة</span>
+                      <span className="block text-[11px] text-emerald-800/80">تواصلي معنا عبر واتساب</span>
+                    </span>
+                  </span>
+                  <ChevronLeft className="h-4 w-4 text-emerald-700" />
+                </a>
+              </div>
             </div>
-            <NotificationSettingsEntry />
-            <Link
-              href="/admin"
-              onClick={onClose}
-              className="mt-5 flex items-center justify-center gap-1.5 text-wahaj-rose/40 hover:text-wahaj-rose/70 transition-colors"
-              aria-label="لوحة التحكم"
-            >
-              <Settings className="h-4 w-4" />
-            </Link>
+
+            {/* Bottom Footer Controls */}
+            <div className="pt-4 pb-2 border-t border-neutral-200/60 mt-4">
+              <NotificationSettingsEntry />
+              <div className="mt-3 flex items-center justify-between px-2 text-xs text-neutral-400">
+                <span>متجر وهاج © {new Date().getFullYear()}</span>
+                <Link
+                  href="/admin"
+                  onClick={onClose}
+                  className="flex items-center gap-1 text-neutral-400 hover:text-brand-burgundy transition-colors"
+                  aria-label="لوحة التحكم"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                  <span>الإدارة</span>
+                </Link>
+              </div>
+            </div>
           </motion.aside>
         </motion.div>
       ) : null}
