@@ -9,7 +9,7 @@ export default function AdminLogin() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/admin";
-  const [email, setEmail] = useState("hkorpro@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -70,6 +70,7 @@ export default function AdminLogin() {
               onChange={(event) => setEmail(event.target.value)}
               type="email"
               required
+              placeholder="name@example.com"
               className="h-12 w-full rounded-2xl border border-neutral-200/80 bg-neutral-50/50 px-4 text-sm font-medium outline-none transition focus:border-brand-burgundy focus:bg-white focus:ring-2 focus:ring-brand-burgundy/10"
             />
           </label>
@@ -80,6 +81,7 @@ export default function AdminLogin() {
               onChange={(event) => setPassword(event.target.value)}
               type="password"
               required
+              placeholder="••••••••"
               className="h-12 w-full rounded-2xl border border-neutral-200/80 bg-neutral-50/50 px-4 text-sm font-medium outline-none transition focus:border-brand-burgundy focus:bg-white focus:ring-2 focus:ring-brand-burgundy/10"
             />
           </label>
