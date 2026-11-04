@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   ArrowDown,
@@ -9,6 +9,7 @@ import {
   BarChart3,
   Bell,
   CheckCircle2,
+  ChevronLeft,
   CircleDollarSign,
   Copy,
   Eye,
@@ -149,6 +150,11 @@ type CollectionCommand =
   | { action: "delete"; id: string }
   | { action: "reorder"; collectionId: string; adjacentCollectionId: string };
 
+function formatAdminPrice(amount?: number | null): string {
+  if (amount === undefined || amount === null || Number.isNaN(amount)) return "0 ريال";
+  return `${new Intl.NumberFormat("en-US").format(amount)} ريال`;
+}
+
 function seedManagedProducts(): ManagedProduct[] {
   return seedProducts.map((product) => ({ ...product, visible: true }));
 }
@@ -177,6 +183,7 @@ function writeStored<T>(key: string, value: T) {
 export default function AdminDashboard() {
   const [hydrated, setHydrated] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
   const [products, setProducts] = useState<ManagedProduct[]>(seedManagedProducts);
   const [orders, setOrders] = useState<Order[]>(seedOrders);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -434,7 +441,7 @@ export default function AdminDashboard() {
       const command: ProductCommand = exists
         ? { action: "update", product }
         : { action: "create", product, sortOrder: -Date.now() };
-      void persistProductCommands([command], "Product saved and synced for customers.");
+      void persistProductCommands([command], "تم حفظ المنتج ومزامنته للعملاء بنجاح.");
       return next;
     });
     showToast("جاري حفظ المنتج ومزامنته مع واجهة العملاء...");
@@ -460,7 +467,7 @@ export default function AdminDashboard() {
       ];
       void persistProductCommands(
         [{ action: "create", product: duplicate, sortOrder: -timestamp }],
-        "Product duplicated and synced for customers."
+        "تم تكرار المنتج ومزامنته للعملاء بنجاح."
       );
       return next;
     });
@@ -478,7 +485,7 @@ export default function AdminDashboard() {
         return updatedProduct;
       });
       if (updatedProduct) {
-        void persistProductCommands([{ action: "update", product: updatedProduct }], "Stock updated and synced for customers.");
+        void persistProductCommands([{ action: "update", product: updatedProduct }], "تم تحديث المخزون ومزامنته للعملاء بنجاح.");
       }
       return next;
     });
@@ -494,20 +501,24 @@ export default function AdminDashboard() {
         return updatedProduct;
       });
       if (updatedProduct) {
-        void persistProductCommands([{ action: "update", product: updatedProduct }], "Product visibility updated for customers.");
+        void persistProductCommands([{ action: "update", product: updatedProduct }], "تم تحديث ظهور المنتج ومزامنته للعملاء بنجاح.");
       }
       return next;
     });
   }
 
   function deleteProduct(productId: string) {
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm("هل أنتِ متأكدة من حذف هذا المنتج نهائياً من قاعدة البيانات ومتجر وهاج؟");
+      if (!confirmed) return;
+    }
 
     setProducts((current) => {
       const next = current.filter((product) => product.id !== productId);
-      void persistProductCommands([{ action: "delete", id: productId }], "Product deleted from customer storefront.");
+      void persistProductCommands([{ action: "delete", id: productId }], "تم حذف المنتج بنجاح من قاعدة البيانات ومتجر العملاء.");
       return next;
     });
-    showToast("تم حذف المنتج من لوحة التحكم ومن واجهة المتجر المحلية.");
+    showToast("جاري حذف المنتج من قاعدة البيانات...");
   }
 
   function moveProduct(productId: string, direction: -1 | 1) {
@@ -521,7 +532,7 @@ export default function AdminDashboard() {
       [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
       void persistProductCommands(
         [{ action: "reorder", productId, adjacentProductId: adjacentProduct.id }],
-        "Product order updated for customers."
+        "تم تحديث ترتيب المنتجات ومزامنته للعملاء بنجاح."
       );
       return next;
     });
@@ -589,7 +600,7 @@ export default function AdminDashboard() {
       });
       void persistProductCommands(
         updatedProducts.map((product) => ({ action: "update", product })),
-        "Order saved and product stock synced."
+        "تم حفظ الطلب وتحديث مخزون المنتجات بنجاح."
       );
       return next;
     });
@@ -686,17 +697,17 @@ export default function AdminDashboard() {
         </aside>
 
         <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 border-b border-wahaj-border bg-white/78 backdrop-blur-2xl">
+          <header className="sticky top-0 z-30 border-b border-neutral-200/70 bg-white/80 backdrop-blur-2xl">
             <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-6">
               <div>
-                <p className="text-sm text-wahaj-rose">لوحة تحكم وهاج</p>
-                <h1 className="font-thmanyah-text text-2xl font-bold text-wahaj-ink">
+                <p className="text-xs font-semibold text-brand-burgundy/80">لوحة تحكم وهاج</p>
+                <h1 className="font-thmanyah-text text-2xl font-bold tracking-tight text-[#2A1215]">
                   {tabs.find((tab) => tab.id === activeTab)?.label}
                 </h1>
               </div>
               <div className="flex items-center gap-2">
-                <label className="hidden h-11 items-center gap-2 rounded-full border border-wahaj-border bg-white px-4 md:flex">
-                  <Search className="h-4 w-4 text-wahaj-rose" />
+                <label className="hidden h-10 items-center gap-2 rounded-full border border-neutral-200/80 bg-neutral-50/70 px-4 md:flex focus-within:border-brand-burgundy focus-within:bg-white transition">
+                  <Search className="h-4 w-4 text-brand-burgundy" />
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
@@ -706,22 +717,22 @@ export default function AdminDashboard() {
                 </label>
                 <button
                   onClick={() => setActiveTab("notifications")}
-                  className="relative flex h-11 w-11 items-center justify-center rounded-full border border-wahaj-border bg-white text-wahaj-rose"
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200/80 bg-white text-neutral-700 hover:text-brand-burgundy shadow-2xs transition active:scale-90"
                   aria-label="الإشعارات"
                 >
-                  <Bell className="h-5 w-5" />
+                  <Bell className="h-4 w-4" />
                   {notifications.length > 0 ? (
-                    <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-wahaj-rose px-1 text-[11px] font-bold text-white">
+                    <span className="absolute -left-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-burgundy px-1 text-[10px] font-bold text-white">
                       {notifications.length}
                     </span>
                   ) : null}
                 </button>
                 <button
                   onClick={logout}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border border-wahaj-border bg-white text-wahaj-rose"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200/80 bg-white text-neutral-700 hover:text-brand-burgundy shadow-2xs transition active:scale-90"
                   aria-label="تسجيل الخروج"
                 >
-                  <LogOut className="h-5 w-5" />
+                  <LogOut className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -730,30 +741,46 @@ export default function AdminDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex min-w-fit items-center gap-2 rounded-full border px-3 py-2 text-sm font-bold ${
+                  className={`flex min-w-fit items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition active:scale-95 ${
                     activeTab === tab.id
-                      ? "border-wahaj-rose bg-wahaj-soft text-wahaj-rose"
-                      : "border-wahaj-border bg-white"
+                      ? "border-brand-burgundy bg-brand-burgundy text-white shadow-xs"
+                      : "border-neutral-200/80 bg-white/90 text-neutral-600"
                   }`}
                 >
-                  <tab.icon className="h-4 w-4" />
-                  {tab.label}
+                  <tab.icon className="h-3.5 w-3.5" />
+                  <span>{tab.label}</span>
                 </button>
               ))}
             </div>
           </header>
 
           <div className="p-4 lg:p-6 pb-28 lg:pb-6">
-            <div
-              className={`mb-5 rounded-[8px] border p-3 text-sm font-bold shadow-soft ${
-                productSyncIsShared ? "border-wahaj-success/35 bg-white/84 text-wahaj-ink" : "border-wahaj-warning/45 bg-wahaj-warning/12 text-wahaj-ink"
-              }`}
-            >
-              <div className="flex items-start gap-2">
-                {productSyncIsShared ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-wahaj-success" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-wahaj-warning" />}
-                <span>{toast}</span>
+            {toast ? (
+              <div
+                className={`mb-5 flex items-center justify-between gap-3 rounded-2xl border p-3.5 text-sm font-medium shadow-xs transition-all ${
+                  productSyncIsShared
+                    ? "border-emerald-500/20 bg-emerald-50/80 text-emerald-900"
+                    : "border-amber-500/30 bg-amber-50/90 text-amber-950"
+                }`}
+              >
+                <div className="flex items-start gap-2.5">
+                  {productSyncIsShared ? (
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  ) : (
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                  )}
+                  <span className="leading-snug">{toast}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setToast("")}
+                  className="rounded-full p-1 text-neutral-400 hover:bg-black/5 hover:text-neutral-700 active:scale-90"
+                  aria-label="إغلاق التنبيه"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            </div>
+            ) : null}
 
             {activeTab === "overview" ? (
               <Overview
@@ -860,13 +887,13 @@ export default function AdminDashboard() {
         </section>
       </div>
 
-      {/* شريط التنقل السفلي السهل للموبايل (Mobile Bottom Navigation Bar) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-wahaj-border/80 bg-white/95 px-1 py-2 backdrop-blur-lg lg:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+      {/* شريط التنقل السفلي الفاخر بنظام Apple HIG */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-neutral-200/80 bg-white/92 px-1 py-1.5 backdrop-blur-2xl lg:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.04)]">
         <button
           type="button"
-          onClick={() => setActiveTab("overview")}
-          className={`flex flex-1 flex-col items-center gap-1 py-1 text-xs font-bold transition active:scale-95 ${
-            activeTab === "overview" ? "text-wahaj-rose font-extrabold" : "text-wahaj-text/60"
+          onClick={() => { setActiveTab("overview"); setMoreSheetOpen(false); }}
+          className={`flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-bold transition active:scale-95 ${
+            activeTab === "overview" && !moreSheetOpen ? "text-brand-burgundy font-extrabold" : "text-neutral-500"
           }`}
         >
           <LayoutDashboard className="h-5 w-5" />
@@ -874,9 +901,9 @@ export default function AdminDashboard() {
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("products")}
-          className={`flex flex-1 flex-col items-center gap-1 py-1 text-xs font-bold transition active:scale-95 ${
-            activeTab === "products" ? "text-wahaj-rose font-extrabold" : "text-wahaj-text/60"
+          onClick={() => { setActiveTab("products"); setMoreSheetOpen(false); }}
+          className={`flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-bold transition active:scale-95 ${
+            activeTab === "products" && !moreSheetOpen ? "text-brand-burgundy font-extrabold" : "text-neutral-500"
           }`}
         >
           <PackagePlus className="h-5 w-5" />
@@ -884,9 +911,9 @@ export default function AdminDashboard() {
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("orders")}
-          className={`flex flex-1 flex-col items-center gap-1 py-1 text-xs font-bold transition active:scale-95 ${
-            activeTab === "orders" ? "text-wahaj-rose font-extrabold" : "text-wahaj-text/60"
+          onClick={() => { setActiveTab("orders"); setMoreSheetOpen(false); }}
+          className={`flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-bold transition active:scale-95 ${
+            activeTab === "orders" && !moreSheetOpen ? "text-brand-burgundy font-extrabold" : "text-neutral-500"
           }`}
         >
           <ShoppingBag className="h-5 w-5" />
@@ -894,31 +921,169 @@ export default function AdminDashboard() {
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("coupons")}
-          className={`flex flex-1 flex-col items-center gap-1 py-1 text-xs font-bold transition active:scale-95 ${
-            activeTab === "coupons" ? "text-wahaj-rose font-extrabold" : "text-wahaj-text/60"
+          onClick={() => { setActiveTab("collections"); setMoreSheetOpen(false); }}
+          className={`flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-bold transition active:scale-95 ${
+            activeTab === "collections" && !moreSheetOpen ? "text-brand-burgundy font-extrabold" : "text-neutral-500"
           }`}
         >
-          <BadgePercent className="h-5 w-5" />
-          <span>الكوبونات</span>
+          <Tags className="h-5 w-5" />
+          <span>المجموعات</span>
         </button>
         <button
           type="button"
-          onClick={() => {
-            if (activeTab === "collections") setActiveTab("content");
-            else if (activeTab === "content") setActiveTab("hero");
-            else setActiveTab("collections");
-          }}
-          className={`flex flex-1 flex-col items-center gap-1 py-1 text-xs font-bold transition active:scale-95 ${
-            ["collections", "content", "hero", "notifications", "analytics", "customers", "ai"].includes(activeTab)
-              ? "text-wahaj-rose font-extrabold"
-              : "text-wahaj-text/60"
+          onClick={() => setMoreSheetOpen(true)}
+          className={`flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-bold transition active:scale-95 ${
+            moreSheetOpen || ["hero", "content", "coupons", "customers", "notifications", "analytics", "ai"].includes(activeTab)
+              ? "text-brand-burgundy font-extrabold"
+              : "text-neutral-500"
           }`}
         >
           <Settings2 className="h-5 w-5" />
           <span>المزيد</span>
         </button>
       </nav>
+
+      {/* نافذة الإجراءات والمزيد المنبثقة بنظام Apple HIG */}
+      <AnimatePresence>
+        {moreSheetOpen && (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMoreSheetOpen(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="relative max-h-[85vh] w-full overflow-y-auto rounded-t-[28px] border-t border-neutral-200/80 bg-white p-5 shadow-2xl backdrop-blur-2xl"
+            >
+              <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-neutral-300" />
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-thmanyah-text text-xl font-bold text-[#2A1215]">أقسام لوحة التحكم</h3>
+                  <p className="text-xs text-neutral-500">اختر القسم الذي ترغب بإدارته</p>
+                </div>
+                <button
+                  onClick={() => setMoreSheetOpen(false)}
+                  className="rounded-full bg-neutral-100 p-2 text-neutral-500 hover:bg-neutral-200 active:scale-90"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4 pb-6">
+                <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50/60 p-2">
+                  <p className="px-3 py-1 text-[11px] font-bold text-neutral-400">الواجهة والمظهر</p>
+                  <button
+                    onClick={() => { setActiveTab("hero"); setMoreSheetOpen(false); }}
+                    className="flex w-full items-center justify-between rounded-xl p-3 text-right text-sm font-bold text-neutral-800 hover:bg-white active:bg-neutral-100 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-burgundy/10 text-brand-burgundy">
+                        <ImageIcon className="h-4 w-4" />
+                      </span>
+                      <span>سلايدر الهيرو المتحرك</span>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 text-neutral-400" />
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab("content"); setMoreSheetOpen(false); }}
+                    className="flex w-full items-center justify-between rounded-xl p-3 text-right text-sm font-bold text-neutral-800 hover:bg-white active:bg-neutral-100 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-burgundy/10 text-brand-burgundy">
+                        <Settings2 className="h-4 w-4" />
+                      </span>
+                      <span>نصوص وعروض الواجهة</span>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 text-neutral-400" />
+                  </button>
+                </div>
+
+                <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50/60 p-2">
+                  <p className="px-3 py-1 text-[11px] font-bold text-neutral-400">التسويق والمبيعات</p>
+                  <button
+                    onClick={() => { setActiveTab("coupons"); setMoreSheetOpen(false); }}
+                    className="flex w-full items-center justify-between rounded-xl p-3 text-right text-sm font-bold text-neutral-800 hover:bg-white active:bg-neutral-100 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-800">
+                        <BadgePercent className="h-4 w-4" />
+                      </span>
+                      <span>كوبونات الخصم</span>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 text-neutral-400" />
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab("analytics"); setMoreSheetOpen(false); }}
+                    className="flex w-full items-center justify-between rounded-xl p-3 text-right text-sm font-bold text-neutral-800 hover:bg-white active:bg-neutral-100 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-800">
+                        <BarChart3 className="h-4 w-4" />
+                      </span>
+                      <span>تقارير الأداء والمبيعات</span>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 text-neutral-400" />
+                  </button>
+                </div>
+
+                <div className="rounded-2xl border border-neutral-200/70 bg-neutral-50/60 p-2">
+                  <p className="px-3 py-1 text-[11px] font-bold text-neutral-400">العميلات والتواصل</p>
+                  <button
+                    onClick={() => { setActiveTab("customers"); setMoreSheetOpen(false); }}
+                    className="flex w-full items-center justify-between rounded-xl p-3 text-right text-sm font-bold text-neutral-800 hover:bg-white active:bg-neutral-100 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-800">
+                        <UsersRound className="h-4 w-4" />
+                      </span>
+                      <span>سجل العميلات ونقاط VIP</span>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 text-neutral-400" />
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab("notifications"); setMoreSheetOpen(false); }}
+                    className="flex w-full items-center justify-between rounded-xl p-3 text-right text-sm font-bold text-neutral-800 hover:bg-white active:bg-neutral-100 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-800">
+                        <Bell className="h-4 w-4" />
+                      </span>
+                      <span>إدارة الإشعارات الفورية</span>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 text-neutral-400" />
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab("ai"); setMoreSheetOpen(false); }}
+                    className="flex w-full items-center justify-between rounded-xl p-3 text-right text-sm font-bold text-neutral-800 hover:bg-white active:bg-neutral-100 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-800">
+                        <WandSparkles className="h-4 w-4" />
+                      </span>
+                      <span>مساعد وهاج الذكي</span>
+                    </div>
+                    <ChevronLeft className="h-4 w-4 text-neutral-400" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => { setMoreSheetOpen(false); logout(); }}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200/80 bg-red-50/80 py-3.5 text-sm font-bold text-red-600 active:scale-95 transition"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>تسجيل الخروج من اللوحة</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
@@ -966,7 +1131,7 @@ function Overview({
   const cards = [
     { label: "عدد الطلبات", value: orders.length.toLocaleString("ar-YE"), icon: ShoppingBag, tone: "text-wahaj-rose" },
     { label: "المنتجات الظاهرة", value: products.length.toLocaleString("ar-YE"), icon: PackageCheck, tone: "text-wahaj-success" },
-    { label: "الأرباح", value: formatPrice(revenue), icon: CircleDollarSign, tone: "text-wahaj-stars" }
+    { label: "الأرباح", value: formatAdminPrice(revenue), icon: CircleDollarSign, tone: "text-wahaj-stars" }
   ];
 
   return (
@@ -975,7 +1140,7 @@ function Overview({
         {cards.map((card) => (
           <motion.div
             key={card.label}
-            className="rounded-[8px] border border-wahaj-border bg-white p-4 shadow-soft"
+            className="rounded-2xl border border-neutral-200/80 bg-white/95 p-4 sm:p-5 shadow-xs backdrop-blur-md"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
           >
@@ -1024,7 +1189,7 @@ function QuickActions({ onAction }: { onAction: (tab: TabId) => void }) {
           <button
             key={action.label}
             onClick={() => onAction(action.tab)}
-            className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-[8px] border border-wahaj-border bg-wahaj-bg p-3 text-center font-bold transition hover:border-wahaj-rose hover:bg-wahaj-soft"
+            className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-2xl border border-neutral-200/80 bg-neutral-50/60 p-3 text-center font-semibold transition active:scale-95 hover:border-brand-burgundy/40 hover:bg-brand-burgundy/5"
           >
             <action.icon className="h-6 w-6 text-wahaj-rose" />
             {action.label}
@@ -1666,11 +1831,11 @@ function ProductsManager({
                   </h3>
                   <div className="mt-1 flex items-baseline gap-2">
                     <span className="font-thmanyah-text text-base font-bold text-wahaj-rose">
-                      {formatPrice(product.price)}
+                      {formatAdminPrice(product.price)}
                     </span>
                     {product.compareAt ? (
                       <span className="text-xs text-wahaj-text/45 line-through">
-                        {formatPrice(product.compareAt)}
+                        {formatAdminPrice(product.compareAt)}
                       </span>
                     ) : null}
                   </div>
@@ -1679,20 +1844,20 @@ function ProductsManager({
 
               {/* شريط التحكم السريع أسفل بطاقة الجوال */}
               <div className="mt-3 flex items-center justify-between border-t border-wahaj-border/50 pt-3">
-                <div className="flex items-center gap-1.5 rounded-full border border-wahaj-border/80 bg-wahaj-bg px-2 py-1">
+                <div className="flex items-center gap-1.5 rounded-full border border-neutral-200/80 bg-neutral-50 px-2 py-1">
                   <button
                     onClick={() => onStock(product.id, -1)}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-base font-bold text-wahaj-rose shadow-xs active:scale-90"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-base font-bold text-brand-burgundy shadow-xs active:scale-90 border border-neutral-200/60"
                     aria-label="تقليل المخزون"
                   >
                     -
                   </button>
-                  <span className="min-w-6 text-center text-sm font-bold text-wahaj-ink">
+                  <span className="min-w-6 text-center text-sm font-bold text-[#2A1215]">
                     {product.stock}
                   </span>
                   <button
                     onClick={() => onStock(product.id, 1)}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-base font-bold text-wahaj-rose shadow-xs active:scale-90"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-base font-bold text-brand-burgundy shadow-xs active:scale-90 border border-neutral-200/60"
                     aria-label="زيادة المخزون"
                   >
                     +
@@ -1716,21 +1881,21 @@ function ProductsManager({
                       setShowAdvanced(true);
                       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
                     }}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-wahaj-border bg-white text-wahaj-rose shadow-xs active:scale-90"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200/80 bg-white text-neutral-700 shadow-xs active:scale-90 hover:text-brand-burgundy"
                     aria-label="تعديل المنتج"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => onDuplicate(product)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-wahaj-border bg-white text-wahaj-rose shadow-xs active:scale-90"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200/80 bg-white text-neutral-700 shadow-xs active:scale-90 hover:text-brand-burgundy"
                     aria-label="نسخ المنتج"
                   >
                     <Copy className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => onDelete(product.id)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600 shadow-xs active:scale-90"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-red-200/70 bg-red-50 text-red-600 shadow-xs active:scale-90 hover:bg-red-100"
                     aria-label="حذف المنتج"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -1772,8 +1937,8 @@ function ProductsManager({
                   </td>
                   <td>{getCategoryName(product.category)}</td>
                   <td>
-                    <p className="font-bold text-wahaj-rose">{formatPrice(product.price)}</p>
-                    {product.compareAt ? <p className="text-xs text-wahaj-text/45 line-through">{formatPrice(product.compareAt)}</p> : null}
+                    <p className="font-bold text-wahaj-rose">{formatAdminPrice(product.price)}</p>
+                    {product.compareAt ? <p className="text-xs text-wahaj-text/45 line-through">{formatAdminPrice(product.compareAt)}</p> : null}
                   </td>
                   <td>
                     <div className="flex w-fit items-center gap-2 rounded-full bg-wahaj-card px-2 py-1">
@@ -2102,7 +2267,7 @@ function CustomersManager({
           <div className="space-y-3 text-sm">
             <InfoRow label="الهاتف" value={customer.phone} />
             <InfoRow label="عدد الطلبات" value={customer.orders.toLocaleString("ar-YE")} />
-            <InfoRow label="إجمالي الطلبات" value={formatPrice(customer.total)} />
+            <InfoRow label="إجمالي الطلبات" value={formatAdminPrice(customer.total)} />
             <InfoRow label="آخر طلب" value={customer.lastOrder} />
             <div className="rounded-[8px] bg-wahaj-card p-3">
               <p className="font-bold text-wahaj-ink">احفظي للإلهام</p>
@@ -2228,7 +2393,7 @@ function CouponsManager({
               <div className="flex items-center justify-between gap-3">
                 <p className="font-thmanyah-text text-2xl font-bold text-wahaj-ink">{coupon.code}</p>
                 <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-wahaj-rose">
-                  {coupon.type === "percentage" ? `${coupon.value}%` : formatPrice(coupon.value)}
+                  {coupon.type === "percentage" ? `${coupon.value}%` : formatAdminPrice(coupon.value)}
                 </span>
               </div>
               <div className="mt-3 text-sm">
@@ -2238,7 +2403,7 @@ function CouponsManager({
               </div>
               <div className="mt-3 grid gap-2 text-sm">
                 <InfoRow label="تاريخ الانتهاء" value={coupon.expiresAt} />
-                <InfoRow label="الحد الأدنى" value={formatPrice(coupon.minOrder)} />
+                <InfoRow label="الحد الأدنى" value={formatAdminPrice(coupon.minOrder)} />
               </div>
               <div className="mt-4 flex gap-2">
                 <button
