@@ -30,6 +30,7 @@ import BrandMark from "@/components/storefront/BrandMark";
 import LifestyleHero from "@/components/storefront/LifestyleHero";
 import CircularCollections from "@/components/storefront/CircularCollections";
 import StoreSplash from "@/components/storefront/StoreSplash";
+import CollectionsBottomSheet from "@/components/storefront/CollectionsBottomSheet";
 import NotificationOptIn from "@/components/storefront/NotificationOptIn";
 import NotificationForegroundListener from "@/components/storefront/NotificationForegroundListener";
 import NotificationSettingsEntry from "@/components/storefront/NotificationSettingsEntry";
@@ -65,6 +66,7 @@ export default function WahajStorefront({
   const [activeCoupons, setActiveCoupons] = useState<Coupon[]>(initialActiveCoupons);
   const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [addedToast, setAddedToast] = useState<{ visible: boolean; productName: string }>({ visible: false, productName: "" });
   const [heroContrasts, setHeroContrasts] = useState<ElementContrasts>({ logo: "dark", menu: "dark", cart: "dark", search: "dark" });
 
@@ -153,9 +155,16 @@ export default function WahajStorefront({
       <BottomNavigation
         cartCount={cartItems.length}
         onCart={() => router.push("/cart")}
+        onCollections={() => setCollectionsOpen(true)}
       />
 
       <FloatingWhatsApp items={cartItems} />
+
+      <CollectionsBottomSheet
+        open={collectionsOpen}
+        onClose={() => setCollectionsOpen(false)}
+        collections={initialCollections}
+      />
 
       <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} collections={initialCollections} />
 
@@ -390,25 +399,18 @@ function ProductCard({ product, priority, loading, onCart }: ProductCardProps) {
 
 function BottomNavigation({
   cartCount,
-  onCart
+  onCart,
+  onCollections
 }: {
   cartCount: number;
   onCart: () => void;
+  onCollections: () => void;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
-
-  function scrollToCollections() {
-    if (pathname === "/") {
-      document.getElementById("collections-section")?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      router.push("/#collections-section");
-    }
-  }
 
   const items = [
     { label: "الرئيسية", href: "/", icon: Home },
-    { label: "المجموعات", href: "#", icon: Gem, action: scrollToCollections },
+    { label: "المجموعات", href: "#", icon: Gem, action: onCollections },
     { label: "السلة", href: "#", icon: ShoppingBag, action: onCart, count: cartCount }
   ];
 
