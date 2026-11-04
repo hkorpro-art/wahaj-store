@@ -26,7 +26,7 @@ type LifestyleHeroProps = {
 
 function HeroSkeleton() {
   return (
-    <div className="relative h-[46dvh] sm:h-[54dvh] max-h-[480px] min-h-[340px] w-full overflow-hidden bg-wahaj-beige/30">
+    <div className="relative h-[53dvh] sm:h-[62dvh] max-h-[540px] min-h-[380px] w-full overflow-hidden bg-wahaj-beige/30">
       <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-wahaj-beige/40 to-wahaj-muted/20" />
       <div className="absolute bottom-28 left-1/2 w-4/5 max-w-md -translate-x-1/2 space-y-4 text-center">
         <div className="mx-auto h-11 w-3/4 rounded-lg bg-white/30" />
@@ -214,7 +214,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
   return (
     <>
     <section
-      className="relative w-full overflow-hidden h-[46dvh] sm:h-[54dvh] max-h-[480px] min-h-[340px]"
+      className="relative w-full overflow-hidden h-[53dvh] sm:h-[62dvh] max-h-[540px] min-h-[380px]"
       onPointerEnter={(event) => {
         if (event.pointerType === "mouse") setIsHoverPaused(true);
       }}
@@ -283,7 +283,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
             {/* Campaign copy — bottom-left */}
             {isActive && (
               <motion.div
-                className="absolute inset-x-0 bottom-0 px-5 pb-9 pt-8 sm:px-10 sm:pb-14 sm:pt-16 md:px-16"
+                className="absolute inset-x-0 bottom-0 px-5 pb-11 pt-10 sm:px-10 sm:pb-16 sm:pt-20 md:px-16"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}

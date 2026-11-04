@@ -29,6 +29,7 @@ import { type ElementContrasts } from "@/lib/contrast";
 import BrandMark from "@/components/storefront/BrandMark";
 import LifestyleHero from "@/components/storefront/LifestyleHero";
 import CircularCollections from "@/components/storefront/CircularCollections";
+import StoreSplash from "@/components/storefront/StoreSplash";
 import NotificationOptIn from "@/components/storefront/NotificationOptIn";
 import NotificationForegroundListener from "@/components/storefront/NotificationForegroundListener";
 import NotificationSettingsEntry from "@/components/storefront/NotificationSettingsEntry";
@@ -87,6 +88,7 @@ export default function WahajStorefront({
 
   return (
     <main className="min-h-screen overflow-hidden bg-wahaj-bg text-wahaj-text luxury-grain luxury-radial-light">
+      <StoreSplash />
       <NotificationForegroundListener />
       <Header
         cartCount={cartItems.length}
@@ -104,19 +106,17 @@ export default function WahajStorefront({
 
       <OfferBar offers={siteContent.offerMessages} activeCoupons={activeCoupons} />
 
-      <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
-        <NotificationOptIn />
-
-        <div id="collections-section">
-          <div className="mb-4">
-            <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">مجموعات وهاج</p>
+      <div className="mx-auto w-full max-w-6xl px-4 pb-24 pt-1 sm:px-6 sm:pt-3 lg:px-8">
+        <div id="collections-section" className="scroll-mt-20">
+          <div className="mb-2">
+            <p className="font-thmanyah-text text-xs font-semibold text-wahaj-rose">مجموعات وهاج</p>
             <h2 className="type-section text-wahaj-ink">اختاري بحسب مجموعتك</h2>
           </div>
           <CircularCollections collections={initialCollections} />
         </div>
 
-        <motion.section id="products" {...fadeUp} className="lux-section">
-          <div className="mb-4 flex items-end justify-between gap-4">
+        <motion.section id="products" {...fadeUp} className="mt-3.5 sm:mt-5">
+          <div className="mb-2.5 flex items-end justify-between gap-4">
             <div>
               <p className="font-thmanyah-text text-sm font-medium text-wahaj-rose">مختارات وهاج</p>
               <h2 className="type-section text-wahaj-ink">تسوقي من وهاج</h2>
@@ -201,7 +201,7 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
         <button
           aria-label="القائمة الرئيسية"
           onClick={onMenu}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full liquid-glass text-brand-burgundy shadow-sm transition-all duration-300 hover:scale-105 active:scale-95 hover:bg-white/90"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/80 bg-white/80 text-brand-burgundy shadow-[0_4px_16px_rgba(69,0,6,0.08)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 hover:bg-white"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -209,28 +209,19 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
         <div className="flex flex-1 items-center justify-center">
           <Link
             href="/"
-            className="group relative flex items-center justify-center gap-1.5 rounded-full liquid-glass-pill px-5 py-1.5 shadow-[0_4px_16px_rgba(69,0,6,0.08)] transition-all duration-300 hover:scale-105 active:scale-95"
+            className="px-4 py-1 transition-transform duration-300 hover:scale-105 active:scale-95"
             aria-label="الرئيسية - متجر وهاج"
           >
-            <motion.span
-              animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.15, 1] }}
-              transition={{ duration: 4, repeat: Infinity, repeatDelay: 3, ease: "easeInOut" }}
-              className="text-brand-champagne shrink-0"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-            </motion.span>
-            <BrandMark
-              size="md"
-              showSubtitle={false}
-              className="items-center text-center"
-            />
+            <span className="font-thmanyah-display text-2xl sm:text-3xl font-bold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
+              وهاج
+            </span>
           </Link>
         </div>
 
         <button
           aria-label="سلة التسوق"
           onClick={onCart}
-          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full liquid-glass text-brand-burgundy shadow-sm transition-all duration-300 hover:scale-105 active:scale-95 hover:bg-white/90"
+          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/80 bg-white/80 text-brand-burgundy shadow-[0_4px_16px_rgba(69,0,6,0.08)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 hover:bg-white"
         >
           <ShoppingBag className="h-5 w-5" />
           {cartCount > 0 ? <Counter value={cartCount} /> : null}

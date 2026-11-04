@@ -98,7 +98,7 @@ export default function CircularCollections({ collections }: CircularCollections
   };
 
   return (
-    <div className="w-full py-4 select-none min-h-[130px]">
+    <div className="w-full pt-1 pb-1 select-none min-h-[110px]">
       {visibleCollections.length === 0 ? (
         <div className="no-scrollbar flex gap-5 overflow-x-auto px-4 py-2" dir="ltr">
           {Array.from({ length: 6 }).map((_, i) => (
