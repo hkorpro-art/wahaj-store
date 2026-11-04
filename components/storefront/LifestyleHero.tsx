@@ -195,9 +195,49 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
     }
   }
 
-  if (!settings.showHero) return null;
-  if (loading) return <HeroSkeleton />;
-  if (total === 0) return null;
+  const renderSearchBar = () => (
+    <div className="relative z-30 mx-auto -mt-6 mb-5 w-full max-w-lg px-4 sm:px-6">
+      <label className="flex h-12 items-center gap-3 rounded-full border border-white/80 bg-white/90 px-4 shadow-[0_8px_30px_rgba(69,0,6,0.09)] backdrop-blur-xl transition-all duration-300 focus-within:border-brand-burgundy/40 focus-within:bg-white focus-within:shadow-[0_8px_32px_rgba(69,0,6,0.15)]">
+        <svg className="h-4 w-4 shrink-0 text-brand-burgundy/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
+        <input
+          value={searchQuery}
+          onChange={(e) => onSearchChange?.(e.target.value)}
+          className="h-full min-w-0 flex-1 bg-transparent text-sm font-medium text-[#2A1215] outline-none placeholder-[#2A1215]/45"
+          placeholder="ابحثي عن زركون، تاج، طقم..."
+          dir="rtl"
+          aria-label="ابحثي في متجر وهاج"
+        />
+        {searchQuery ? (
+          <button
+            type="button"
+            onClick={() => onSearchChange?.("")}
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-200/80 text-neutral-600 hover:bg-neutral-300 active:scale-90 transition-all text-[11px] font-bold"
+            aria-label="مسح البحث"
+          >
+            ✕
+          </button>
+        ) : null}
+      </label>
+    </div>
+  );
+
+  if (!settings.showHero || total === 0) {
+    return (
+      <div className="pt-2 pb-1">
+        {renderSearchBar()}
+      </div>
+    );
+  }
+  if (loading) {
+    return (
+      <>
+        <HeroSkeleton />
+        {renderSearchBar()}
+      </>
+    );
+  }
 
   const dur = settings.transitionSpeed / 1000;
   const isDark = topContrast === "dark";
@@ -372,34 +412,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
       />
     </section>
 
-    {/* Apple HIG Liquid Glass search bar — bridges hero/content boundary */}
-    <div className="relative z-30 mx-auto -mt-6 mb-5 w-full max-w-lg px-4 sm:px-6">
-      <label className="flex h-12 items-center gap-3 rounded-full border border-white/80 bg-white/90 px-4 shadow-[0_8px_30px_rgba(69,0,6,0.09)] backdrop-blur-xl transition-all duration-300 focus-within:border-brand-burgundy/40 focus-within:bg-white focus-within:shadow-[0_8px_32px_rgba(69,0,6,0.15)]">
-        <svg className="h-4 w-4 shrink-0 text-brand-burgundy/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-        </svg>
-        <input
-          value={searchQuery}
-          onChange={(e) => onSearchChange?.(e.target.value)}
-          className="h-full min-w-0 flex-1 bg-transparent text-sm font-medium text-[#2A1215] outline-none placeholder-[#2A1215]/45"
-          placeholder="ابحثي عن زركون، تاج، طقم..."
-          dir="rtl"
-          aria-label="ابحثي في متجر وهاج"
-        />
-        {searchQuery ? (
-          <button
-            type="button"
-            onClick={() => onSearchChange?.("")}
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-neutral-200/80 text-neutral-600 hover:bg-neutral-300 active:scale-90 transition-all text-[11px] font-bold"
-            aria-label="مسح البحث"
-          >
-            ✕
-          </button>
-        ) : null}
-      </label>
-
-
-    </div>
+      {renderSearchBar()}
     </>
   );
 }

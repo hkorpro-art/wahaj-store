@@ -62,7 +62,7 @@ async function saveProductsRequest(request: Request) {
 
         return NextResponse.json({
           message: "تم حفظ المنتج للعملاء.",
-          product: commandPayload.data.product,
+          product: saved.product,
           saved: saved.saved
         });
       }
@@ -74,7 +74,7 @@ async function saveProductsRequest(request: Request) {
 
         return NextResponse.json({
           message: "تم حفظ المنتج للعملاء.",
-          product: commandPayload.data.product,
+          product: saved.product,
           saved: saved.saved
         });
       }

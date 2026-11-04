@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { ManagedCategory, ManagedCollection, ManagedProduct } from "@/lib/admin-local";
+import { createSlug } from "@/lib/collection-record";
 import type { Tables } from "../database.types";
 import {
   categoryToSupabase,
@@ -18,7 +19,7 @@ async function resolveUniqueProductSlug(
   baseSlug: string,
   productId: string
 ): Promise<string> {
-  const normalized = baseSlug.trim() || `product-${Date.now()}`;
+  const normalized = createSlug(baseSlug) || `product-${Date.now()}`;
 
   const { data: existing } = await client
     .from("production_products")
@@ -46,7 +47,7 @@ async function resolveUniqueProductSlug(
     }
   }
 
-  return `${root}-${Date.now()}`;
+  return `${root}-${Date.now().toString().slice(-6)}`;
 }
 
 export class SupabaseProductRepository {
@@ -69,24 +70,69 @@ export class SupabaseProductRepository {
   async createProduct(product: ManagedProduct, options: { sortOrder?: number } = {}) {
     const client = getSupabaseServerClient();
     const uniqueSlug = await resolveUniqueProductSlug(client, product.slug, product.id);
-    const finalProduct = uniqueSlug !== product.slug ? { ...product, slug: uniqueSlug } : product;
+    let finalProduct = uniqueSlug !== product.slug ? { ...product, slug: uniqueSlug } : { ...product };
 
-    await client
-      .from("production_products")
-      .upsert(productToSupabase(finalProduct, options.sortOrder ?? 0))
-      .throwOnError();
+    try {
+      await client
+        .from("production_products")
+        .upsert(productToSupabase(finalProduct, options.sortOrder ?? 0))
+        .throwOnError();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes("production_products_slug_key") || msg.includes("23505")) {
+        const root = (createSlug(finalProduct.slug) || "product").replace(/-\d+$/, "");
+        finalProduct = { ...finalProduct, slug: `${root}-${Date.now().toString().slice(-6)}` };
+        await client
+          .from("production_products")
+          .upsert(productToSupabase(finalProduct, options.sortOrder ?? 0))
+          .throwOnError();
+      } else {
+        throw error;
+      }
+    }
+
     return { product: finalProduct, saved: true as const };
   }
 
   async updateProduct(product: ManagedProduct) {
     const client = getSupabaseServerClient();
     const uniqueSlug = await resolveUniqueProductSlug(client, product.slug, product.id);
-    const finalProduct = uniqueSlug !== product.slug ? { ...product, slug: uniqueSlug } : product;
+    let finalProduct = uniqueSlug !== product.slug ? { ...product, slug: uniqueSlug } : { ...product };
 
-    await client
-      .from("production_products")
-      .upsert(productToSupabase(finalProduct))
-      .throwOnError();
+    try {
+      const updateData = productUpdateToSupabase(finalProduct);
+      const { data, error } = await client
+        .from("production_products")
+        .update(updateData)
+        .eq("id", finalProduct.id)
+        .select("id");
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return await this.createProduct(finalProduct);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes("production_products_slug_key") || msg.includes("23505")) {
+        const root = (createSlug(finalProduct.slug) || "product").replace(/-\d+$/, "");
+        finalProduct = { ...finalProduct, slug: `${root}-${Date.now().toString().slice(-6)}` };
+        const updateData = productUpdateToSupabase(finalProduct);
+        const { data } = await client
+          .from("production_products")
+          .update(updateData)
+          .eq("id", finalProduct.id)
+          .select("id")
+          .throwOnError();
+
+        if (!data || data.length === 0) {
+          return await this.createProduct(finalProduct);
+        }
+      } else {
+        throw error;
+      }
+    }
+
     return { product: finalProduct, saved: true as const };
   }
 

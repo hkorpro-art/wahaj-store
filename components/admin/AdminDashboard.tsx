@@ -444,7 +444,7 @@ export default function AdminDashboard() {
 
     const timestamp = Date.now();
     setProducts((current) => {
-      const duplicateId = `${product.id}-${timestamp}`;
+      const duplicateId = `admin-${timestamp}`;
       const duplicateSlug = resolveUniqueSlug(`${product.slug}-copy`, duplicateId, current);
       const duplicate: ManagedProduct = {
         ...product,
