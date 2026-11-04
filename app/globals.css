@@ -65,10 +65,8 @@ html[data-splash="active"] .wahaj-app-shell {
 
 html:not([data-splash="active"]) .wahaj-app-shell {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
-  transition:
-    opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.88s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: none;
+  transition: opacity 0.72s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ── Display: عناوين، شعار، أقسام فاخرة ── */
@@ -516,4 +514,53 @@ img {
   .shine-sweep-wrap::after {
     display: none;
   }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   APPLE HIG CRAFT UTILITIES — Liquid Glass & No-Scrollbar
+   ═══════════════════════════════════════════════════════════ */
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 
+    0 16px 40px -8px rgba(69, 0, 6, 0.08),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.liquid-glass-subtle {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 8px 24px -4px rgba(69, 0, 6, 0.05);
+}
+
+.liquid-glass-pill {
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 
+    0 12px 32px -4px rgba(45, 0, 4, 0.08),
+    0 2px 6px 0 rgba(45, 0, 4, 0.03),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.9);
+}
+
+.safe-bottom {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
 }

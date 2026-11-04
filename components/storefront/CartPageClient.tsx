@@ -256,7 +256,7 @@ export default function CartPageClient() {
               animate={reducedMotion ? undefined : { opacity: 1, x: 0, scale: 1 }}
               exit={reducedMotion ? undefined : { opacity: 0, x: 30, scale: 0.96 }}
               transition={reducedMotion ? undefined : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="mb-3 flex gap-4 rounded-2xl border border-wahaj-border/50 bg-white/85 p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]"
+              className="mb-3 flex gap-4 rounded-[20px] border border-white/80 bg-white/90 shadow-[0_4px_20px_rgba(69,0,6,0.06)] p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]"
             >
               <div className="relative h-28 w-24 shrink-0 overflow-hidden rounded-xl">
                 <Image
@@ -313,7 +313,7 @@ export default function CartPageClient() {
         </AnimatePresence>
 
         {/* Order Summary */}
-        <div className="mb-4 rounded-2xl border border-wahaj-border/50 bg-white/85 p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]">
+        <div className="mb-4 rounded-[20px] border border-white/80 bg-white/90 shadow-[0_4px_20px_rgba(69,0,6,0.06)] p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]">
           <div className="mb-3 flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-wahaj-rose" />
             <span className="text-xs font-bold text-wahaj-ink">ملخص الطلب</span>
@@ -343,7 +343,7 @@ export default function CartPageClient() {
         </div>
 
         {/* WhatsApp Checkout */}
-        <div className="mb-4 rounded-2xl border border-wahaj-border/50 bg-white/85 p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]">
+        <div className="mb-4 rounded-[20px] border border-white/80 bg-white/90 shadow-[0_4px_20px_rgba(69,0,6,0.06)] p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]">
           <div className="mb-3 flex items-center justify-between">
             <span className="font-bold text-wahaj-ink">الإجمالي</span>
             <span className="font-thmanyah-text text-xl font-bold text-wahaj-ink">
@@ -353,15 +353,15 @@ export default function CartPageClient() {
           <button
             onClick={handleCheckout}
             disabled={cartItems.length === 0 || checkingOut}
-            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-wahaj-ink text-base font-bold text-white shadow-lg transition-all duration-300 hover:bg-wahaj-rose active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-burgundy text-base font-bold text-white shadow-[0_8px_24px_rgba(69,0,6,0.20)] transition-all duration-300 hover:bg-brand-burgundy-deep active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <MessageCircle className="h-5 w-5" />
-            {checkingOut ? "جاري التحميل..." : "إتمام الطلب الفاخر ✨"}
+            {checkingOut ? "جاري التحميل..." : "إتمام الطلب عبر واتساب ✨"}
           </button>
         </div>
 
         {/* Coupon */}
-        <div className="rounded-2xl border border-wahaj-border/50 bg-white/85 p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]">
+        <div className="rounded-[20px] border border-white/80 bg-white/90 shadow-[0_4px_20px_rgba(69,0,6,0.06)] p-4 shadow-[0_2px_12px_rgba(69,0,6,0.06)]">
           <div className="mb-3 flex items-center gap-2">
             <Gift className="h-4 w-4 text-wahaj-rose" />
             <span className="text-xs font-bold text-wahaj-ink">كود الخصم</span>
@@ -386,7 +386,7 @@ export default function CartPageClient() {
             ) : (
               <button
                 onClick={applyCoupon}
-                className="flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-wahaj-ink px-5 text-xs font-bold text-white transition-all duration-200 hover:bg-wahaj-rose active:scale-95"
+                className="flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand-burgundy px-5 text-xs font-bold text-white transition-all duration-200 hover:bg-brand-burgundy-deep active:scale-95 shadow-sm"
               >
                 تطبيق
               </button>

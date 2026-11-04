@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   Gem,
@@ -162,14 +163,19 @@ export default function WahajStorefront({
         {addedToast.visible ? (
           <motion.div
             key="cart-toast"
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: -24, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed bottom-28 left-1/2 z-[80] -translate-x-1/2 rounded-2xl border border-wahaj-border/60 bg-white/90 px-5 py-3 text-center shadow-satin backdrop-blur-xl"
+            exit={{ opacity: 0, y: -16, scale: 0.94 }}
+            transition={{ type: "spring", stiffness: 400, damping: 28 }}
+            className="fixed top-6 left-1/2 z-[100] -translate-x-1/2 flex items-center gap-3 rounded-full liquid-glass-pill px-5 py-2.5 shadow-[0_16px_40px_rgba(45,0,4,0.14)]"
           >
-            <p className="text-sm font-bold text-wahaj-ink">✨ أضيفت إلى طلبك</p>
-            <p className="mt-0.5 text-xs text-wahaj-text/70 line-clamp-1">{addedToast.productName}</p>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-burgundy text-brand-champagne shadow-xs">
+              <Sparkles className="h-3.5 w-3.5" />
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-extrabold text-brand-burgundy">أضيفت إلى طلبك ✨</p>
+              <p className="text-[11px] text-wahaj-text/75 line-clamp-1">{addedToast.productName}</p>
+            </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -189,39 +195,19 @@ type HeaderProps = {
 };
 
 function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
-  const menuIsDark = heroContrasts.menu === "dark";
-  const logoIsDark = heroContrasts.logo === "dark";
-  const cartIsDark = heroContrasts.cart === "dark";
-
-  const menuBg = menuIsDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.75)";
-  const menuBorder = menuIsDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.08)";
-  const menuColor = menuIsDark ? "#FFFFFF" : "#450006";
-  const menuHoverBg = menuIsDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)";
-
-  const cartBg = cartIsDark ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.75)";
-  const cartBorder = cartIsDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.08)";
-  const cartColor = cartIsDark ? "#FFFFFF" : "#450006";
-  const cartHoverBg = cartIsDark ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.9)";
-
-  const logoColor = logoIsDark ? "#FFFFFF" : "#450006";
-  const logoShadow = logoIsDark ? "drop-shadow-[0_2px_10px_rgba(0,0,0,0.25)]" : "";
-
   return (
     <header className="absolute inset-x-0 top-0 z-50">
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
         <button
-          aria-label="القائمة"
+          aria-label="القائمة الرئيسية"
           onClick={onMenu}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full backdrop-blur-md transition-all duration-300"
-          style={{ backgroundColor: menuBg, color: menuColor, border: `1px solid ${menuBorder}` }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = menuHoverBg; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = menuBg; }}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full liquid-glass text-brand-burgundy shadow-sm transition-all duration-300 hover:scale-105 active:scale-95 hover:bg-white/90"
         >
-          <Menu className="h-[18px] w-[18px]" />
+          <Menu className="h-5 w-5" />
         </button>
 
         <div className="flex flex-1 items-center justify-center">
-          <Link href="/" className={`px-4 py-1 ${logoShadow}`}>
+          <Link href="/" className="px-4 py-1">
             <BrandMark
               size="md"
               showSubtitle={false}
@@ -231,20 +217,14 @@ function Header({ cartCount, heroContrasts, onCart, onMenu }: HeaderProps) {
         </div>
 
         <button
-          aria-label="السلة"
+          aria-label="سلة التسوق"
           onClick={onCart}
-          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full backdrop-blur-md transition-all duration-300"
-          style={{ backgroundColor: cartBg, color: cartColor, border: `1px solid ${cartBorder}` }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = cartHoverBg; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = cartBg; }}
+          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full liquid-glass text-brand-burgundy shadow-sm transition-all duration-300 hover:scale-105 active:scale-95 hover:bg-white/90"
         >
-          <ShoppingBag className="h-[18px] w-[18px]" />
+          <ShoppingBag className="h-5 w-5" />
           {cartCount > 0 ? <Counter value={cartCount} /> : null}
         </button>
       </div>
-      <style>{`
-        .wahaj-brand-wordmark { color: ${logoColor} !important; text-shadow: ${logoIsDark ? "0 2px 10px rgba(0,0,0,0.25)" : "none"} !important; }
-      `}</style>
     </header>
   );
 }
@@ -309,61 +289,91 @@ type ProductCardProps = {
 };
 
 function ProductCard({ product, priority, loading, onCart }: ProductCardProps) {
+  const [justAdded, setJustAdded] = useState(false);
   const productHref = `/product/${product.slug}`;
+
+  function handleAdd() {
+    onCart(product);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1500);
+  }
 
   return (
     <motion.article
       layout
-      initial={{ opacity: 0, scale: 0.95, y: 12 }}
+      initial={{ opacity: 0, scale: 0.96, y: 14 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="group border border-wahaj-border/50 bg-white/85 shadow-[0_2px_16px_rgba(69,0,6,0.05)] transition-all duration-400 hover:shadow-[0_8px_30px_rgba(69,0,6,0.10)]"
-      whileHover={{ y: -4 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      className="group relative flex flex-col justify-between overflow-hidden rounded-[20px] border border-white/80 bg-white/90 shadow-[0_4px_20px_rgba(69,0,6,0.05)] transition-all duration-300 hover:shadow-[0_12px_36px_rgba(69,0,6,0.12)] hover:-translate-y-1"
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1], layout: { duration: 0.3 } }}
     >
-      {/* Keep rounded clipping off the transformed Motion node to avoid Android Chrome GPU corruption. */}
-      <div className="overflow-hidden rounded-xl">
-      <div className="relative">
-        <Link href={productHref} className="relative block aspect-[3/4] overflow-hidden bg-wahaj-card">
-          <Image
-            src={imageUrl(product.images[0], { width: 640, height: 853 })}
-            alt={product.name}
-            fill
-            priority={priority}
-            loading={loading}
-            sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/30 to-transparent" />
-        </Link>
-        <div className="absolute right-2 top-2 flex flex-wrap gap-1">
-          {product.badges.slice(0, 2).map((badge) => (
-            <span key={badge} className="rounded-full bg-white/85 px-2 py-0.5 text-[10px] font-bold text-wahaj-rose shadow-sm backdrop-blur-sm">
-              {badge}
-            </span>
-          ))}
+      <div>
+        <div className="relative">
+          <Link href={productHref} className="relative block aspect-[3/4] overflow-hidden bg-wahaj-card">
+            <Image
+              src={imageUrl(product.images[0], { width: 640, height: 853 })}
+              alt={product.name}
+              fill
+              priority={priority}
+              loading={loading}
+              sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            />
+            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 via-black/10 to-transparent" />
+          </Link>
+          <div className="absolute right-2.5 top-2.5 flex flex-wrap gap-1.5">
+            {product.badges.slice(0, 2).map((badge) => (
+              <span
+                key={badge}
+                className="rounded-full border border-white/70 bg-white/90 px-2.5 py-0.5 text-[10px] font-bold text-brand-burgundy shadow-sm backdrop-blur-md"
+              >
+                {badge}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-3.5">
+          <Link href={productHref}>
+            <h3 className="line-clamp-2 text-sm font-bold leading-snug text-wahaj-ink transition-colors duration-200 group-hover:text-brand-burgundy">
+              {product.name}
+            </h3>
+          </Link>
+          <div className="mt-2 flex flex-wrap items-baseline gap-2">
+            <p className="text-sm font-extrabold text-brand-burgundy tracking-tight">
+              {formatPrice(product.price)}
+            </p>
+            {product.compareAt ? (
+              <p className="text-xs text-wahaj-text/50 line-through">
+                {formatPrice(product.compareAt)}
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      <div className="p-3">
-        <Link href={productHref}>
-          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-wahaj-ink transition-colors duration-300 group-hover:text-wahaj-rose">{product.name}</h3>
-        </Link>
-        <div className="mt-1.5 flex flex-wrap items-end gap-2">
-          <p className="text-sm font-semibold text-brand-burgundy">{formatPrice(product.price)}</p>
-          {product.compareAt ? (
-            <p className="text-[11px] text-wahaj-text/45 line-through">{formatPrice(product.compareAt)}</p>
-          ) : null}
-        </div>
+      <div className="px-3.5 pb-3.5 pt-0">
         <motion.button
-          onClick={() => onCart(product)}
-          className="mt-2.5 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-wahaj-ink px-3 text-xs font-bold text-white transition-all duration-300 hover:bg-wahaj-rose active:scale-[0.97]"
-          whileTap={{ scale: 0.97 }}
+          onClick={handleAdd}
+          className={`flex min-h-[42px] w-full items-center justify-center gap-1.5 rounded-full px-3 text-xs font-bold transition-all duration-300 active:scale-[0.96] shadow-sm ${
+            justAdded
+              ? "bg-brand-burgundy-deep text-brand-champagne shadow-md"
+              : "bg-brand-burgundy text-white hover:bg-brand-burgundy-deep hover:shadow-md"
+          }`}
+          whileTap={{ scale: 0.96 }}
         >
-          <ShoppingBag className="h-3.5 w-3.5" />
-          أضيفي للسلة
+          {justAdded ? (
+            <>
+              <Check className="h-3.5 w-3.5 text-brand-champagne" />
+              <span>أضيفت للطلب ✨</span>
+            </>
+          ) : (
+            <>
+              <ShoppingBag className="h-3.5 w-3.5" />
+              <span>أضيفي للسلة</span>
+            </>
+          )}
         </motion.button>
-      </div>
       </div>
     </motion.article>
   );
@@ -398,29 +408,23 @@ function BottomNavigation({
   ];
 
   return (
-    <nav className="fixed bottom-7 left-1/2 z-50 -translate-x-1/2">
-      <div className="flex items-center justify-around gap-3 rounded-full border border-wahaj-border/40 bg-white/70 px-5 py-1.5 shadow-[0_4px_20px_rgba(69,0,6,0.06)] backdrop-blur-xl transition-all duration-300">
+    <nav className="fixed safe-bottom left-1/2 z-50 -translate-x-1/2">
+      <div className="flex items-center justify-around gap-1.5 sm:gap-3 rounded-full liquid-glass-pill px-4 py-1.5 shadow-[0_12px_36px_rgba(45,0,4,0.12)]">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = item.href === pathname || (item.href !== "/" && pathname?.startsWith(item.href));
           const content = (
-            <>
-              <span
-                className={`relative flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300 ${
-                  isActive ? "bg-wahaj-rose/10 text-wahaj-rose" : "text-wahaj-ink"
-                }`}
-              >
+            <div className={`flex min-h-[44px] min-w-[68px] sm:min-w-[76px] flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1 transition-all duration-300 ${
+              isActive ? "bg-brand-burgundy/10 text-brand-burgundy font-bold" : "text-wahaj-ink/75 hover:text-brand-burgundy"
+            }`}>
+              <span className="relative flex h-6 w-6 items-center justify-center">
                 <Icon className="h-4 w-4" />
                 {item.count ? <Counter value={item.count} /> : null}
               </span>
-              <span
-                className={`max-w-full truncate transition-colors duration-300 ${
-                  isActive ? "text-[10px] font-bold text-wahaj-rose" : "text-[10px] font-medium text-wahaj-text/60"
-                }`}
-              >
+              <span className="max-w-full truncate text-[11px] leading-tight">
                 {item.label}
               </span>
-            </>
+            </div>
           );
 
           if (item.action) {
@@ -428,7 +432,7 @@ function BottomNavigation({
               <button
                 key={item.label}
                 onClick={item.action}
-                className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1 transition-all duration-300 hover:scale-105 active:scale-95"
+                className="transition-transform duration-200 active:scale-95"
               >
                 {content}
               </button>
@@ -439,7 +443,7 @@ function BottomNavigation({
             <Link
               key={item.label}
               href={item.href}
-              className="flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-1 transition-all duration-300 hover:scale-105 active:scale-95"
+              className="transition-transform duration-200 active:scale-95"
             >
               {content}
             </Link>

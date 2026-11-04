@@ -193,7 +193,35 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             العودة إلى المتجر
           </Link>
         </div>
-      </main>
+            {/* ─── APPLE HIG MOBILE STICKY BUY BAR ─── */}
+      {product ? (
+        <div className="fixed safe-bottom inset-x-4 z-40 mx-auto max-w-md md:hidden">
+          <div className="flex items-center justify-between gap-3 rounded-full liquid-glass-pill px-4 py-2 shadow-[0_16px_40px_rgba(45,0,4,0.14)]">
+            <div className="min-w-0 flex-1 pr-1 text-right">
+              <p className="truncate text-xs font-bold text-wahaj-ink">{product.name}</p>
+              <p className="font-thmanyah-text text-sm font-extrabold text-brand-burgundy">{formatPriceLatin(product.price)}</p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={addTouch}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-wahaj-soft text-brand-burgundy transition-transform active:scale-90"
+                aria-label="أضيفي للسلة"
+              >
+                <ShoppingBag className="h-4 w-4" />
+              </button>
+              <button
+                onClick={handleDirectCheckout}
+                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-brand-burgundy px-5 text-xs font-bold text-white shadow-sm transition-transform active:scale-95"
+              >
+                <Sparkles className="h-4 w-4 text-brand-champagne" />
+                <span>اطلبي الآن</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+    </main>
     );
   }
 
@@ -512,6 +540,35 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
         ) : null}
       </div>
 
+
+    
+      {/* ─── APPLE HIG MOBILE STICKY BUY BAR ─── */}
+      {product ? (
+        <div className="fixed safe-bottom inset-x-4 z-40 mx-auto max-w-md md:hidden">
+          <div className="flex items-center justify-between gap-3 rounded-full liquid-glass-pill px-4 py-2 shadow-[0_16px_40px_rgba(45,0,4,0.14)]">
+            <div className="min-w-0 flex-1 pr-1 text-right">
+              <p className="truncate text-xs font-bold text-wahaj-ink">{product.name}</p>
+              <p className="font-thmanyah-text text-sm font-extrabold text-brand-burgundy">{formatPriceLatin(product.price)}</p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={addTouch}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-wahaj-soft text-brand-burgundy transition-transform active:scale-90"
+                aria-label="أضيفي للسلة"
+              >
+                <ShoppingBag className="h-4 w-4" />
+              </button>
+              <button
+                onClick={handleDirectCheckout}
+                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-brand-burgundy px-5 text-xs font-bold text-white shadow-sm transition-transform active:scale-95"
+              >
+                <Sparkles className="h-4 w-4 text-brand-champagne" />
+                <span>اطلبي الآن</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
     </main>
   );
