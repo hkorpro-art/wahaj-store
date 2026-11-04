@@ -104,6 +104,32 @@ async function saveProductsRequest(request: Request) {
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error("Save product error:", errorMsg);
+
+    if (
+      (commandPayload.data.action === "create" || commandPayload.data.action === "update") &&
+      errorMsg.includes("production_products_slug_key")
+    ) {
+      try {
+        const fallbackProduct = {
+          ...commandPayload.data.product,
+          slug: `${commandPayload.data.product.slug}-${Date.now().toString().slice(-4)}`
+        };
+        const saved =
+          commandPayload.data.action === "create"
+            ? await productRepository.createProduct(fallbackProduct, { sortOrder: commandPayload.data.sortOrder })
+            : await productRepository.updateProduct(fallbackProduct);
+
+        revalidateProductPages();
+        return NextResponse.json({
+          message: "تم حفظ المنتج للعملاء (مع تعديل الرابط المختصر تلقائياً لمنع التكرار).",
+          product: saved.product,
+          saved: saved.saved
+        });
+      } catch (retryErr) {
+        console.error("Retry with unique slug failed:", retryErr);
+      }
+    }
+
     return NextResponse.json(
       { message: `خطأ في حفظ المنتج بقاعدة البيانات: ${errorMsg}`, saved: false },
       { status: 500 }

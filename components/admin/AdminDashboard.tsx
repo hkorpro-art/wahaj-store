@@ -411,6 +411,9 @@ export default function AdminDashboard() {
           if (!response.ok || payload?.saved !== true) {
             throw new Error(payload?.message || "Unable to save product.");
           }
+          if (payload?.product) {
+            setProducts((curr) => curr.map((p) => (p.id === payload.product.id ? payload.product : p)));
+          }
         })
       );
 
@@ -420,6 +423,7 @@ export default function AdminDashboard() {
       setProductSyncState("offline");
       const errDetail = err instanceof Error ? err.message : "";
       showToast(errDetail ? ("تعذر الحفظ المشترك: " + errDetail) : "تم حفظ التغيير داخل هذا المتصفح فقط، لكن الحفظ المشترك غير متاح الآن.");
+      void loadSharedProducts({ silent: true });
     }
   }
 
@@ -440,10 +444,12 @@ export default function AdminDashboard() {
 
     const timestamp = Date.now();
     setProducts((current) => {
+      const duplicateId = `${product.id}-${timestamp}`;
+      const duplicateSlug = resolveUniqueSlug(`${product.slug}-copy`, duplicateId, current);
       const duplicate: ManagedProduct = {
         ...product,
-        id: `${product.id}-${timestamp}`,
-        slug: `${product.slug}-copy-${timestamp}`,
+        id: duplicateId,
+        slug: duplicateSlug,
         name: `${product.name} نسخة`,
         visible: true,
         stock: Math.max(product.stock, 1)
@@ -1549,9 +1555,13 @@ function ProductsManager({
       ];
     }
 
+    const productId = form.id || `admin-${timestamp}`;
+    const baseSlug = existing?.slug || createSlug(form.name) || `product-${timestamp}`;
+    const slug = resolveUniqueSlug(baseSlug, productId, products);
+
     const product: ManagedProduct = {
-      id: form.id || `admin-${timestamp}`,
-      slug: existing?.slug || createSlug(form.name) || `product-${timestamp}`,
+      id: productId,
+      slug,
       name: form.name.trim(),
       brand: form.brand.trim() || undefined,
       category: form.category,
@@ -4170,6 +4180,22 @@ function createSlug(value: string) {
     .replace(/[^\u0600-\u06FFa-z0-9-]/g, "")
     .replace(/^-+|-+$/g, "");
 }
+
+function resolveUniqueSlug(desired: string, productId: string, allProducts: ManagedProduct[]): string {
+  const base = desired.trim() || `product-${Date.now()}`;
+  const takenSlugs = new Set(
+    allProducts.filter((p) => p.id !== productId).map((p) => p.slug)
+  );
+  if (!takenSlugs.has(base)) return base;
+
+  const cleanBase = base.replace(/-\d+$/, "");
+  let index = 2;
+  while (takenSlugs.has(`${cleanBase}-${index}`)) {
+    index++;
+  }
+  return `${cleanBase}-${index}`;
+}
+
 
 function inventoryFromStock(stock: number) {
   if (stock <= 0) return "نفد";

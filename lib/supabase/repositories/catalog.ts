@@ -13,6 +13,42 @@ import {
 import { readAllPages } from "../pagination";
 import { getSupabaseServerClient, isSupabaseServerConfigured } from "../server";
 
+async function resolveUniqueProductSlug(
+  client: ReturnType<typeof getSupabaseServerClient>,
+  baseSlug: string,
+  productId: string
+): Promise<string> {
+  const normalized = baseSlug.trim() || `product-${Date.now()}`;
+
+  const { data: existing } = await client
+    .from("production_products")
+    .select("id")
+    .eq("slug", normalized)
+    .neq("id", productId)
+    .maybeSingle();
+
+  if (!existing) {
+    return normalized;
+  }
+
+  const root = normalized.replace(/-\d+$/, "");
+  for (let counter = 2; counter <= 30; counter++) {
+    const candidate = `${root}-${counter}`;
+    const { data: clash } = await client
+      .from("production_products")
+      .select("id")
+      .eq("slug", candidate)
+      .neq("id", productId)
+      .maybeSingle();
+
+    if (!clash) {
+      return candidate;
+    }
+  }
+
+  return `${root}-${Date.now()}`;
+}
+
 export class SupabaseProductRepository {
   isConfigured = isSupabaseServerConfigured;
 
@@ -31,19 +67,27 @@ export class SupabaseProductRepository {
   }
 
   async createProduct(product: ManagedProduct, options: { sortOrder?: number } = {}) {
-    await getSupabaseServerClient()
+    const client = getSupabaseServerClient();
+    const uniqueSlug = await resolveUniqueProductSlug(client, product.slug, product.id);
+    const finalProduct = uniqueSlug !== product.slug ? { ...product, slug: uniqueSlug } : product;
+
+    await client
       .from("production_products")
-      .upsert(productToSupabase(product, options.sortOrder ?? 0))
+      .upsert(productToSupabase(finalProduct, options.sortOrder ?? 0))
       .throwOnError();
-    return { product, saved: true as const };
+    return { product: finalProduct, saved: true as const };
   }
 
   async updateProduct(product: ManagedProduct) {
-    await getSupabaseServerClient()
+    const client = getSupabaseServerClient();
+    const uniqueSlug = await resolveUniqueProductSlug(client, product.slug, product.id);
+    const finalProduct = uniqueSlug !== product.slug ? { ...product, slug: uniqueSlug } : product;
+
+    await client
       .from("production_products")
-      .upsert(productToSupabase(product))
+      .upsert(productToSupabase(finalProduct))
       .throwOnError();
-    return { product, saved: true as const };
+    return { product: finalProduct, saved: true as const };
   }
 
   async deleteProduct(id: string) {
@@ -84,27 +128,59 @@ abstract class SupabaseCollectionLikeRepository {
     return rows.map(collectionFromSupabase);
   }
 
+  protected async ensureUniqueSlug(collection: ManagedCollection): Promise<ManagedCollection> {
+    const client = getSupabaseServerClient();
+    const candidate = collection.slug.trim() || `item-${Date.now()}`;
+    const { data: existing } = await client
+      .from(this.table)
+      .select("id")
+      .eq("slug", candidate)
+      .neq("id", collection.id)
+      .maybeSingle();
+
+    if (!existing) return collection;
+
+    const root = candidate.replace(/-\d+$/, "");
+    for (let counter = 2; counter <= 30; counter++) {
+      const testSlug = `${root}-${counter}`;
+      const { data: clash } = await client
+        .from(this.table)
+        .select("id")
+        .eq("slug", testSlug)
+        .neq("id", collection.id)
+        .maybeSingle();
+
+      if (!clash) {
+        return { ...collection, slug: testSlug };
+      }
+    }
+
+    return { ...collection, slug: `${root}-${Date.now()}` };
+  }
+
   protected async createRecord(collection: ManagedCollection, options: { sortOrder?: number } = {}) {
     const sortOrder = options.sortOrder ?? collection.sortOrder;
+    const finalCollection = await this.ensureUniqueSlug(collection);
     const client = getSupabaseServerClient();
     if (this.table === "categories") {
-      await client.from("categories").insert(categoryToSupabase(collection, sortOrder)).throwOnError();
+      await client.from("categories").insert(categoryToSupabase(finalCollection, sortOrder)).throwOnError();
     } else {
-      await client.from("collections").insert(collectionToSupabase(collection, sortOrder)).throwOnError();
+      await client.from("collections").insert(collectionToSupabase(finalCollection, sortOrder)).throwOnError();
     }
-    return { collection, saved: true as const };
+    return { collection: finalCollection, saved: true as const };
   }
 
   protected async updateRecord(collection: ManagedCollection) {
-    const row = collectionToSupabase(collection);
+    const finalCollection = await this.ensureUniqueSlug(collection);
+    const row = collectionToSupabase(finalCollection);
     const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...update } = row;
     const client = getSupabaseServerClient();
     if (this.table === "categories") {
-      await client.from("categories").update(update).eq("id", collection.id).select("id").single().throwOnError();
+      await client.from("categories").update(update).eq("id", finalCollection.id).select("id").single().throwOnError();
     } else {
-      await client.from("collections").update(update).eq("id", collection.id).select("id").single().throwOnError();
+      await client.from("collections").update(update).eq("id", finalCollection.id).select("id").single().throwOnError();
     }
-    return { collection, saved: true as const };
+    return { collection: finalCollection, saved: true as const };
   }
 
   protected async deleteRecord(id: string) {
