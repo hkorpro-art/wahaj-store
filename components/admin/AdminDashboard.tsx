@@ -3370,6 +3370,84 @@ function LocalNotificationsManager({
   );
 }
 
+type NormalizedAnalytics = {
+  productViews: Record<string, { count: number; name: string }>;
+  whatsappClicks: Record<string, { count: number; name: string }>;
+  collectionVisits: Record<string, { count: number; name: string }>;
+  whatsappTotal: number;
+  whatsappDaily: Record<string, number>;
+  overviewSessions?: number;
+  cartAdditions?: number;
+  sources?: Array<{ source: string; sessions: number; productViews: number; whatsappIntents: number }>;
+};
+
+function normalizeAnalyticsResponse(data: unknown): NormalizedAnalytics {
+  const fallback: NormalizedAnalytics = {
+    productViews: {},
+    whatsappClicks: {},
+    collectionVisits: {},
+    whatsappTotal: 0,
+    whatsappDaily: {},
+    overviewSessions: 0,
+    cartAdditions: 0,
+    sources: []
+  };
+
+  if (!data || typeof data !== "object") return fallback;
+
+  const raw = data as Record<string, any>;
+
+  // Case 1: StoreAnalyticsDashboard (Supabase v2 schema)
+  if (Array.isArray(raw.products) || raw.overview) {
+    const productViews: Record<string, { count: number; name: string }> = {};
+    const whatsappClicks: Record<string, { count: number; name: string }> = {};
+
+    if (Array.isArray(raw.products)) {
+      for (const p of raw.products) {
+        if (!p || typeof p !== "object") continue;
+        const id = String(p.productId || "");
+        const name = String(p.productName || id);
+        const views = Number(p.views) || 0;
+        const clicks = (Number(p.whatsappProductIntents) || 0) + (Number(p.whatsappCartIntents) || 0);
+
+        if (id && views > 0) {
+          productViews[id] = { count: views, name };
+        }
+        if (id && clicks > 0) {
+          whatsappClicks[id] = { count: clicks, name };
+        }
+      }
+    }
+
+    const whatsappTotal = Number(raw.overview?.whatsappIntent) || 0;
+    const overviewSessions = Number(raw.overview?.sessions) || 0;
+    const cartAdditions = Number(raw.overview?.cartAdditions) || 0;
+
+    return {
+      productViews,
+      whatsappClicks,
+      collectionVisits: (raw.collectionVisits && typeof raw.collectionVisits === "object") ? raw.collectionVisits : {},
+      whatsappTotal,
+      whatsappDaily: (raw.whatsappDaily && typeof raw.whatsappDaily === "object") ? raw.whatsappDaily : {},
+      overviewSessions,
+      cartAdditions,
+      sources: Array.isArray(raw.sources) ? raw.sources : []
+    };
+  }
+
+  // Case 2: Legacy schema
+  return {
+    productViews: (raw.productViews && typeof raw.productViews === "object") ? raw.productViews : {},
+    whatsappClicks: (raw.whatsappClicks && typeof raw.whatsappClicks === "object") ? raw.whatsappClicks : {},
+    collectionVisits: (raw.collectionVisits && typeof raw.collectionVisits === "object") ? raw.collectionVisits : {},
+    whatsappTotal: typeof raw.whatsappTotal === "number" ? raw.whatsappTotal : 0,
+    whatsappDaily: (raw.whatsappDaily && typeof raw.whatsappDaily === "object") ? raw.whatsappDaily : {},
+    overviewSessions: 0,
+    cartAdditions: 0,
+    sources: []
+  };
+}
+
 function AnalyticsManager({
   products,
   collections
@@ -3377,20 +3455,18 @@ function AnalyticsManager({
   products: ManagedProduct[];
   collections: ManagedCollection[];
 }) {
-  const [analyticsData, setAnalyticsData] = useState<{
-    productViews: Record<string, { count: number; name: string }>;
-    whatsappClicks: Record<string, { count: number; name: string }>;
-    collectionVisits: Record<string, { count: number; name: string }>;
-    whatsappTotal: number;
-    whatsappDaily: Record<string, number>;
-  }>({
+  const [analyticsData, setAnalyticsData] = useState<NormalizedAnalytics>({
     productViews: {},
     whatsappClicks: {},
     collectionVisits: {},
     whatsappTotal: 0,
-    whatsappDaily: {}
+    whatsappDaily: {},
+    overviewSessions: 0,
+    cartAdditions: 0,
+    sources: []
   });
 
+  const [loading, setLoading] = useState(true);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
@@ -3400,8 +3476,11 @@ function AnalyticsManager({
       const res = await fetch("/api/analytics", { method: "DELETE" });
       const data = await res.json();
       if (!data.ok) throw new Error(data.message || "فشل الحذف");
-      const fresh = await fetch("/api/analytics").then((r) => r.json());
-      if (fresh && typeof fresh === "object") setAnalyticsData(fresh);
+      const freshRes = await fetch("/api/analytics");
+      if (freshRes.ok) {
+        const fresh = await freshRes.json();
+        setAnalyticsData(normalizeAnalyticsResponse(fresh));
+      }
       setShowResetConfirm(false);
     } catch (err) {
       console.error("Reset error:", err);
@@ -3411,84 +3490,111 @@ function AnalyticsManager({
   }
 
   useEffect(() => {
+    let mounted = true;
+    setLoading(true);
     fetch("/api/analytics")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && typeof data === "object") setAnalyticsData(data);
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
       })
-      .catch(() => {});
+      .then((data) => {
+        if (mounted && data) {
+          setAnalyticsData(normalizeAnalyticsResponse(data));
+        }
+      })
+      .catch((err) => {
+        console.warn("Analytics fetch error, using safe fallback:", err);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const totalProductViews = useMemo(
-    () => Object.values(analyticsData.productViews).reduce((s, v) => s + v.count, 0),
-    [analyticsData.productViews]
-  );
+  const totalProductViews = useMemo(() => {
+    const views = analyticsData.productViews || {};
+    return Object.values(views).reduce((s, v) => s + (v?.count || 0), 0);
+  }, [analyticsData.productViews]);
 
-  const topViewedProducts = useMemo(
-    () =>
-      Object.entries(analyticsData.productViews)
-        .sort(([, a], [, b]) => b.count - a.count)
-        .slice(0, 5),
-    [analyticsData.productViews]
-  );
+  const topViewedProducts = useMemo(() => {
+    const views = analyticsData.productViews || {};
+    return Object.entries(views)
+      .filter(([, v]) => v && typeof v.count === "number")
+      .sort(([, a], [, b]) => b.count - a.count)
+      .slice(0, 5);
+  }, [analyticsData.productViews]);
 
-  const topWhatsAppProducts = useMemo(
-    () =>
-      Object.entries(analyticsData.whatsappClicks)
-        .sort(([, a], [, b]) => b.count - a.count)
-        .slice(0, 5),
-    [analyticsData.whatsappClicks]
-  );
+  const topWhatsAppProducts = useMemo(() => {
+    const clicks = analyticsData.whatsappClicks || {};
+    return Object.entries(clicks)
+      .filter(([, v]) => v && typeof v.count === "number")
+      .sort(([, a], [, b]) => b.count - a.count)
+      .slice(0, 5);
+  }, [analyticsData.whatsappClicks]);
 
-  const topVisitedCollections = useMemo(
-    () =>
-      Object.entries(analyticsData.collectionVisits)
-        .sort(([, a], [, b]) => b.count - a.count)
-        .slice(0, 5),
-    [analyticsData.collectionVisits]
-  );
+  const topVisitedCollections = useMemo(() => {
+    const visits = analyticsData.collectionVisits || {};
+    return Object.entries(visits)
+      .filter(([, v]) => v && typeof v.count === "number")
+      .sort(([, a], [, b]) => b.count - a.count)
+      .slice(0, 5);
+  }, [analyticsData.collectionVisits]);
 
-  const dailyClicks = useMemo(
-    () =>
-      Object.entries(analyticsData.whatsappDaily)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .slice(-7),
-    [analyticsData.whatsappDaily]
-  );
+  const dailyClicks = useMemo(() => {
+    const daily = analyticsData.whatsappDaily || {};
+    return Object.entries(daily)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-7);
+  }, [analyticsData.whatsappDaily]);
 
   const conversionData = useMemo(() => {
     const activeProducts = products.filter((p) => p.visible !== false);
+    const viewsMap = analyticsData.productViews || {};
+    const clicksMap = analyticsData.whatsappClicks || {};
     return activeProducts
       .map((p) => {
-        const views = analyticsData.productViews[p.id]?.count || 0;
-        const clicks = analyticsData.whatsappClicks[p.id]?.count || 0;
-        return { productId: p.id, productName: p.name, views, whatsappClicks: clicks, conversionRate: views > 0 ? (clicks / views) * 100 : 0 };
+        const views = viewsMap[p.id]?.count || 0;
+        const clicks = clicksMap[p.id]?.count || 0;
+        return {
+          productId: p.id,
+          productName: p.name,
+          views,
+          whatsappClicks: clicks,
+          conversionRate: views > 0 ? (clicks / views) * 100 : 0
+        };
       })
       .filter((item) => item.views > 0 || item.whatsappClicks > 0)
       .sort((a, b) => b.views - a.views);
-  }, [products, analyticsData]);
+  }, [products, analyticsData.productViews, analyticsData.whatsappClicks]);
 
   const lowEngagement = useMemo(() => {
+    const viewsMap = analyticsData.productViews || {};
+    const clicksMap = analyticsData.whatsappClicks || {};
     return products
       .filter((p) => p.visible !== false)
       .map((p) => {
-        const views = analyticsData.productViews[p.id]?.count || 0;
-        const clicks = analyticsData.whatsappClicks[p.id]?.count || 0;
+        const views = viewsMap[p.id]?.count || 0;
+        const clicks = clicksMap[p.id]?.count || 0;
         return { productId: p.id, productName: p.name, views, whatsappClicks: clicks, engagement: views + clicks };
       })
       .filter((item) => item.engagement === 0)
       .slice(0, 10);
-  }, [products, analyticsData]);
+  }, [products, analyticsData.productViews, analyticsData.whatsappClicks]);
 
   const visibleProducts = products.filter((p) => p.visible !== false);
 
   return (
-    <div className="space-y-5">
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="space-y-6">
+      {/* بطاقات المؤشرات الإحصائية بنظام Apple HIG */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <SummaryCard icon={PackagePlus} label="إجمالي المنتجات" value={visibleProducts.length} />
-        <SummaryCard icon={Eye} label="مشاهدات المنتجات" value={totalProductViews} />
-        <SummaryCard icon={MessageCircle} label="نقرات واتساب" value={analyticsData.whatsappTotal} />
+        <SummaryCard icon={Eye} label="مشاهدات المنتجات" value={totalProductViews} tone="burgundy" />
+        <SummaryCard icon={MessageCircle} label="نقرات وتواصل واتساب" value={analyticsData.whatsappTotal} tone="emerald" />
+        <SummaryCard icon={UsersRound} label="جلسات الزوار" value={analyticsData.overviewSessions || 0} tone="blue" />
+        <SummaryCard icon={ShoppingBag} label="الإضافة للسلة" value={analyticsData.cartAdditions || 0} tone="amber" />
         <SummaryCard icon={Tags} label="إجمالي المجموعات" value={collections.length} />
       </div>
 
@@ -3498,19 +3604,46 @@ function AnalyticsManager({
           {topViewedProducts.length > 0 ? (
             <RankedList items={topViewedProducts.map(([id, v]) => ({ id, label: v.name, value: v.count, unit: "مشاهدة" }))} />
           ) : (
-            <EmptyState text="لا توجد مشاهدات مسجلة بعد." />
+            <EmptyState text={loading ? "جار تحميل الإحصائيات..." : "لا توجد مشاهدات مسجلة بعد."} />
           )}
         </Panel>
 
         {/* Most clicked on WhatsApp */}
-        <Panel title="الأكثر نقراً على واتساب" icon={MessageCircle}>
+        <Panel title="الأكثر طلباً وتواصلاً عبر واتساب" icon={MessageCircle}>
           {topWhatsAppProducts.length > 0 ? (
             <RankedList items={topWhatsAppProducts.map(([id, v]) => ({ id, label: v.name, value: v.count, unit: "نقرة" }))} />
           ) : (
-            <EmptyState text="لا توجد نقرات واتساب مسجلة بعد." />
+            <EmptyState text={loading ? "جار تحميل الإحصائيات..." : "لا توجد نقرات واتساب مسجلة بعد."} />
           )}
         </Panel>
       </div>
+
+      {/* Traffic Sources if available */}
+      {analyticsData.sources && analyticsData.sources.length > 0 && (
+        <Panel title="مصادر الزيارات والقنوات (Traffic Channels)" icon={TrendingUp}>
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            {analyticsData.sources.map((src) => {
+              const channelNames: Record<string, string> = {
+                direct: "دخول مباشر (Direct)",
+                search: "محركات البحث (Google)",
+                social: "منصات التواصل (Instagram / TikTok)",
+                campaign: "الحملات الإعلانية (Ads)",
+                referral: "روابط خارجية (Referral)",
+                unknown: "قنوات أخرى"
+              };
+              return (
+                <div key={src.source} className="flex items-center justify-between rounded-xl border border-neutral-200/70 bg-white/80 p-3 shadow-2xs">
+                  <div>
+                    <p className="font-bold text-xs text-[#2A1215]">{channelNames[src.source] || src.source}</p>
+                    <p className="text-[11px] text-neutral-400">{src.productViews} مشاهدة · {src.whatsappIntents} واتساب</p>
+                  </div>
+                  <span className="font-thmanyah-text text-sm font-bold text-brand-burgundy">{src.sessions} جلسة</span>
+                </div>
+              );
+            })}
+          </div>
+        </Panel>
+      )}
 
       <div className="grid gap-5 xl:grid-cols-2">
         {/* Most visited collections */}
@@ -3527,9 +3660,9 @@ function AnalyticsManager({
           {dailyClicks.length > 0 ? (
             <div className="space-y-2">
               {dailyClicks.map(([date, count]) => (
-                <div key={date} className="flex items-center justify-between rounded-[8px] bg-wahaj-card px-3 py-2 text-sm">
-                  <span className="text-wahaj-text/70">{date}</span>
-                  <span className="font-bold text-wahaj-rose">{count} نقرة</span>
+                <div key={date} className="flex items-center justify-between rounded-xl border border-neutral-200/60 bg-white/80 px-3.5 py-2.5 text-sm shadow-2xs">
+                  <span className="text-neutral-500 font-mono text-xs">{date}</span>
+                  <span className="font-bold text-brand-burgundy">{count} نقرة</span>
                 </div>
               ))}
             </div>
@@ -3540,16 +3673,16 @@ function AnalyticsManager({
       </div>
 
       {/* Conversion indicators */}
-      <Panel title="مؤشرات التحويل (مشاهدات → واتساب)" icon={TrendingUp}>
+      <Panel title="مؤشرات التحويل (مشاهدات ← واتساب)" icon={TrendingUp}>
         {conversionData.length > 0 ? (
           <div className="space-y-2">
             {conversionData.slice(0, 8).map((item) => (
-              <div key={item.productId} className="flex items-center gap-3 rounded-[8px] bg-wahaj-card px-3 py-2 text-sm">
+              <div key={item.productId} className="flex items-center gap-3 rounded-xl border border-neutral-200/60 bg-white/80 px-3.5 py-2.5 text-sm shadow-2xs">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-wahaj-ink">{item.productName}</p>
-                  <p className="text-xs text-wahaj-text/55">{item.views} مشاهدة · {item.whatsappClicks} واتساب</p>
+                  <p className="truncate font-bold text-[#2A1215]">{item.productName}</p>
+                  <p className="text-xs text-neutral-400">{item.views} مشاهدة · {item.whatsappClicks} واتساب</p>
                 </div>
-                <span className="shrink-0 font-bold text-wahaj-rose">{item.conversionRate.toFixed(1)}%</span>
+                <span className="shrink-0 font-bold text-brand-burgundy">{item.conversionRate.toFixed(1)}%</span>
               </div>
             ))}
           </div>
@@ -3560,62 +3693,62 @@ function AnalyticsManager({
 
       {/* Products needing attention */}
       {lowEngagement.length > 0 ? (
-        <Panel title="منتجات تحتاج اهتمام" icon={AlertTriangle}>
+        <Panel title="منتجات تحتاج اهتمام تسويقي" icon={AlertTriangle}>
           <div className="space-y-2">
             {lowEngagement.map((item) => (
-              <div key={item.productId} className="flex items-center gap-3 rounded-[8px] border border-dashed border-wahaj-border bg-wahaj-bg/60 px-3 py-2 text-sm">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-wahaj-warning" />
-                <span className="flex-1 font-bold text-wahaj-ink">{item.productName}</span>
-                <span className="shrink-0 text-xs text-wahaj-text/60">لا توجد مشاهدات أو نقرات</span>
+              <div key={item.productId} className="flex items-center gap-3 rounded-xl border border-dashed border-amber-200/80 bg-amber-50/40 px-3.5 py-2.5 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+                <span className="flex-1 font-bold text-neutral-800">{item.productName}</span>
+                <span className="shrink-0 text-xs text-neutral-500">لا توجد مشاهدات أو نقرات</span>
               </div>
             ))}
           </div>
         </Panel>
       ) : null}
 
-      {/* Analytics Reset */}
-      <div className="border-t border-wahaj-border/50 pt-6">
+      {/* Analytics Reset Button */}
+      <div className="border-t border-neutral-200/70 pt-6">
         <button
           onClick={() => setShowResetConfirm(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-[8px] border border-red-200 bg-red-50/50 px-4 py-3 text-sm font-bold text-red-600 transition-colors hover:bg-red-50"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50/60 px-4 py-3.5 text-sm font-bold text-red-600 transition active:scale-[0.98] hover:bg-red-100"
         >
           <Trash2 className="h-4 w-4" />
-          إعادة تعيين التحليلات
+          <span>إعادة تعيين التحليلات وتصفير العدادات</span>
         </button>
       </div>
 
       {/* Reset confirmation modal */}
       {showResetConfirm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={() => setShowResetConfirm(false)}
         >
-          <div className="mx-4 w-full max-w-sm rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-3xl border border-neutral-200/80 bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-wahaj-ink">إعادة تعيين التحليلات</h3>
+              <h3 className="font-thmanyah-text text-lg font-bold text-[#2A1215]">تأكيد إعادة التعيين</h3>
               <button
                 onClick={() => setShowResetConfirm(false)}
-                className="rounded-full p-1 text-wahaj-text/50 hover:bg-wahaj-bg hover:text-wahaj-ink"
+                className="rounded-full bg-neutral-100 p-1.5 text-neutral-400 hover:bg-neutral-200 active:scale-90"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
-            <p className="mb-6 text-sm leading-6 text-wahaj-text/80">
-              سيتم حذف جميع بيانات التحليلات الحالية. لا يمكن التراجع عن هذه العملية.
+            <p className="mb-6 text-xs leading-6 text-neutral-600">
+              سيتم حذف جميع إحصائيات المشاهدات ونقرات واتساب الحالية. لا يمكن التراجع عن هذه العملية بعد التأكيد.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowResetConfirm(false)}
-                className="flex-1 rounded-[8px] border border-wahaj-border bg-white px-4 py-2.5 text-sm font-bold text-wahaj-ink transition-colors hover:bg-wahaj-bg"
+                className="flex-1 rounded-2xl border border-neutral-200 bg-neutral-50 py-3 text-xs font-bold text-neutral-700 active:scale-95 transition"
               >
                 إلغاء
               </button>
               <button
                 onClick={handleReset}
                 disabled={isResetting}
-                className="flex-1 rounded-[8px] bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+                className="flex-1 rounded-2xl bg-red-600 py-3 text-xs font-bold text-white shadow-xs active:scale-95 transition hover:bg-red-700 disabled:opacity-60"
               >
-                {isResetting ? "جار الحذف..." : "نعم، إعادة التعيين"}
+                {isResetting ? "جار الحذف..." : "نعم، حذف وتصفير"}
               </button>
             </div>
           </div>
@@ -3625,16 +3758,35 @@ function AnalyticsManager({
   );
 }
 
-function SummaryCard({ icon: Icon, label, value }: { icon: ComponentType<{ className?: string }>; label: string; value: number }) {
+function SummaryCard({
+  icon: Icon,
+  label,
+  value,
+  tone = "burgundy"
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+  tone?: "burgundy" | "emerald" | "blue" | "amber";
+}) {
+  const toneClasses = {
+    burgundy: "bg-brand-burgundy/8 text-brand-burgundy",
+    emerald: "bg-emerald-500/10 text-emerald-800",
+    blue: "bg-blue-500/10 text-blue-800",
+    amber: "bg-amber-500/10 text-amber-800"
+  }[tone];
+
   return (
-    <div className="rounded-[8px] border border-wahaj-border bg-white p-4 shadow-soft">
+    <div className="rounded-2xl border border-neutral-200/80 bg-white/95 p-3.5 sm:p-4 shadow-xs backdrop-blur-md">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-wahaj-soft text-wahaj-rose">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-2xs ${toneClasses}`}>
           <Icon className="h-5 w-5" />
         </span>
-        <div>
-          <p className="text-xs text-wahaj-text/64">{label}</p>
-          <p className="font-thmanyah-text text-2xl font-bold text-wahaj-ink">{value.toLocaleString("ar-YE")}</p>
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-medium text-neutral-500">{label}</p>
+          <p className="font-thmanyah-text text-xl sm:text-2xl font-bold tracking-tight text-[#2A1215]">
+            {value.toLocaleString("en-US")}
+          </p>
         </div>
       </div>
     </div>
@@ -3645,12 +3797,16 @@ function RankedList({ items }: { items: { id: string; label: string; value: numb
   return (
     <div className="space-y-2">
       {items.map((item, index) => (
-        <div key={item.id} className="flex items-center gap-3 rounded-[8px] bg-wahaj-card px-3 py-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white font-bold text-wahaj-rose">{index + 1}</span>
+        <div key={item.id} className="flex items-center gap-3 rounded-xl border border-neutral-200/60 bg-white/80 px-3.5 py-2.5 shadow-2xs">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-burgundy/10 text-xs font-bold text-brand-burgundy">
+            {index + 1}
+          </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-wahaj-ink">{item.label}</p>
+            <p className="truncate text-xs font-bold text-[#2A1215]">{item.label}</p>
           </div>
-          <span className="shrink-0 font-bold text-wahaj-rose">{item.value.toLocaleString("ar-YE")} {item.unit}</span>
+          <span className="shrink-0 text-xs font-bold text-brand-burgundy">
+            {item.value.toLocaleString("en-US")} {item.unit}
+          </span>
         </div>
       ))}
     </div>
