@@ -18,6 +18,7 @@ export type Product = {
   id: string;
   slug: string;
   name: string;
+  sku?: string;
   brand?: string;
   category: string;
   price: number;

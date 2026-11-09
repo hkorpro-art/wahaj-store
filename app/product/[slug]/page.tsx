@@ -115,9 +115,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const siteContent = await getCachedSiteContent();
   const initialProduct =
     managedProducts.find((item) => matchesProductRoute(item, slug) && item.visible !== false) ?? null;
-  const initialSimilarProducts = initialProduct
-    ? managedProducts.filter((item) => item.visible !== false && item.category === initialProduct.category && item.id !== initialProduct.id).slice(0, 3)
+  // Same category first, then other available products from the catalog (up to 24 products)
+  const sameCategoryProducts = initialProduct
+    ? managedProducts.filter((item) => item.visible !== false && item.id !== initialProduct.id && item.category === initialProduct.category)
     : [];
+  const otherCategoryProducts = initialProduct
+    ? managedProducts.filter((item) => item.visible !== false && item.id !== initialProduct.id && item.category !== initialProduct.category)
+    : [];
+  const initialSimilarProducts = [...sameCategoryProducts, ...otherCategoryProducts].slice(0, 24);
 
   const productCategory = initialProduct ? findProductCategory(initialProduct) : undefined;
 

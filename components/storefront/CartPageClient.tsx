@@ -69,7 +69,7 @@ export default function CartPageClient() {
       const coupon = data.coupon;
 
       if (subtotal < coupon.minOrder) {
-        setCouponError(`الحد الأدنى للطلب ${coupon.minOrder.toLocaleString("ar-YE")} ر.ي`);
+        setCouponError(`الحد الأدنى للطلب ${formatPrice(coupon.minOrder)}`);
         setCouponSuccess("");
         setAppliedCoupon(null);
         setDiscount(0);
@@ -85,7 +85,7 @@ export default function CartPageClient() {
 
       setDiscount(discountValue);
       setCouponSuccess(
-        `تم تطبيق الخصم: ${coupon.type === "percentage" ? `${coupon.value}%` : `${discountValue.toLocaleString("ar-YE")} ر.ي`}`
+        `تم تطبيق الخصم: ${coupon.type === "percentage" ? `${coupon.value}%` : `${formatPrice(discountValue)}`}`
       );
     } catch {
       setCouponError("فشل الاتصال. حاولي مرة أخرى.");
@@ -161,14 +161,14 @@ export default function CartPageClient() {
       })
     }).catch(() => {});
 
-    let message = buildCartMessage(cartItems);
-
-    if (appliedCoupon) {
-      const discountText = appliedCoupon.type === "percentage"
-        ? `${appliedCoupon.value}%`
-        : `${discount.toLocaleString("ar-YE")} ر.ي`;
-      message = message.replace("الاسم:", `كود الخصم: ${appliedCoupon.code} (خصم ${discountText})\nالاسم:`);
-    }
+    const message = buildCartMessage(cartItems, {
+      coupon: appliedCoupon
+        ? {
+            code: appliedCoupon.code,
+            discountAmount: discount
+          }
+        : null
+    });
 
     window.open(whatsappUrl(message), "_blank", "noopener,noreferrer");
 
@@ -245,19 +245,6 @@ export default function CartPageClient() {
       </header>
 
       <div className="mx-auto max-w-lg px-4 pb-8 pt-4">
-        {/* Apple Luxury Free Shipping Banner */}
-        <div className="mb-4 flex items-center justify-between rounded-2xl border border-amber-300/40 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 px-4 py-3 text-xs text-[#2A1215] shadow-xs">
-          <span className="flex items-center gap-2 font-bold">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-champagne/30 text-amber-900">
-              ✨
-            </span>
-            <span>شحن فاخر ومجاني لجميع الطلبات</span>
-          </span>
-          <span className="rounded-full bg-brand-champagne/30 px-2.5 py-0.5 text-[11px] font-bold text-amber-950">
-            مفعل تلقائياً
-          </span>
-        </div>
-
         <p className="mb-3 px-1 font-thmanyah-text text-xs font-bold text-neutral-500">
           قطعك المختارة ({totalQty})
         </p>
@@ -348,8 +335,8 @@ export default function CartPageClient() {
               </div>
             ) : null}
             <div className="flex justify-between">
-              <span className="text-neutral-500">الشحن</span>
-              <span className="font-semibold text-emerald-700">مجاني لجميع المحافظات ✨</span>
+              <span className="text-neutral-500">التوصيل</span>
+              <span className="font-semibold text-emerald-700">مجاني (ضمن النطاق) ✨</span>
             </div>
             <div className="my-2 border-t border-neutral-200/60 pt-3">
               <div className="flex items-baseline justify-between">

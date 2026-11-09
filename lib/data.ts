@@ -370,10 +370,28 @@ export const customers: Customer[] = [
   }
 ];
 
-export function formatPrice(value: number) {
-  return new Intl.NumberFormat("ar-YE", {
-    style: "currency",
-    currency: "YER",
-    maximumFractionDigits: 0
-  }).format(value);
+export function formatPrice(value: number): string {
+  return `${new Intl.NumberFormat("en-US").format(value)} ريال`;
+}
+
+export function formatPriceRiyal(value: number): string {
+  return `${new Intl.NumberFormat("en-US").format(value)} ريال`;
+}
+
+export function getProductCode(product: { id: string; sku?: string }, index?: number): string {
+  if (product && product.sku && /^\d{3,4}$/.test(product.sku.trim())) {
+    return product.sku.trim();
+  }
+  if (typeof index === "number" && index >= 0) {
+    return String(101 + (index % 898)).padStart(3, "0");
+  }
+  if (product && product.id) {
+    let hash = 0;
+    for (let i = 0; i < product.id.length; i++) {
+      hash = (hash * 31 + product.id.charCodeAt(i)) >>> 0;
+    }
+    const codeNum = 101 + (hash % 898);
+    return String(codeNum).padStart(3, "0");
+  }
+  return "101";
 }

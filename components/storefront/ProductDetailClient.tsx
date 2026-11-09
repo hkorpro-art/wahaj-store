@@ -9,6 +9,8 @@ import { useCart } from "@/lib/cart-context";
 import type { ManagedProduct, SiteContent } from "@/lib/admin-local";
 import { imageUrl, productCoverUrl, resolveImageSrc } from "@/lib/imagekit";
 import { whatsappUrl } from "@/lib/whatsapp";
+import { formatPrice, getProductCode } from "@/lib/data";
+import { ProductCard } from "@/components/storefront/ProductCard";
 
 type ProductDetailClientProps = {
   slug: string;
@@ -91,6 +93,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
   );
   const [similarProducts, setSimilarProducts] = useState<ManagedProduct[]>(initialSimilarProducts);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [color, setColor] = useState(initialProduct?.colors[0] ?? "");
   const [size, setSize] = useState(initialProduct?.sizes[0] ?? "");
   const [added, setAdded] = useState(false);
@@ -123,12 +126,12 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
   }, [product?.id]);
 
   useEffect(() => {
-    if (!product || product.images.length <= 1 || reducedMotion) return;
+    if (!product || product.images.length <= 1 || reducedMotion || hasInteracted) return;
     const timer = setInterval(() => {
       setSelectedImageIndex((i) => (i + 1) % product.images.length);
-    }, 4000);
+    }, 8000);
     return () => clearInterval(timer);
-  }, [product, reducedMotion]);
+  }, [product, reducedMotion, hasInteracted]);
 
   const { addToCart, cartCount } = useCart();
 
@@ -149,11 +152,13 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       body: JSON.stringify({ type: "whatsapp_click", productId: product.id, productName: product.name, source: "product_detail" })
     }).catch(() => {});
 
+    const code = getProductCode(product);
     const link = window.location.href;
-    let message = `مرحباً وهاج ✨\nأرغب بطلب القطعة التالية:\n\nالمنتج: ${product.name}\n`;
+    let message = `مرحبًا وهاج ✨\nأود طلب القطعة التالية:\n\n${product.name} (#${code})\n`;
     if (color) message += `اللون: ${color}\n`;
     if (size) message += `المقاس: ${size}\n`;
-    message += "الكمية: 1\n\n";
+    message += "الكمية: 1\n";
+    message += `السعر: ${formatPrice(product.price)}\n\n`;
     message += `رابط القطعة: ${link}`;
 
     window.open(whatsappUrl(message), "_blank", "noopener,noreferrer");
@@ -262,7 +267,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
       {/* ─── PRODUCT HERO ─── */}
       <section className="relative">
         <div
-          className="relative w-full overflow-hidden bg-wahaj-card"
+          className="relative w-full overflow-hidden bg-wahaj-card" onTouchStart={() => setHasInteracted(true)} onPointerDown={() => setHasInteracted(true)}
           style={{ height: "55vh", minHeight: "420px", maxHeight: "660px" }}
         >
           <AnimatePresence mode="wait">
@@ -312,7 +317,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
               return (
                 <button
                   key={`${image?.url || "image"}-${index}`}
-                  onClick={() => setSelectedImageIndex(index)}
+                  onClick={() => { setSelectedImageIndex(index); setHasInteracted(true); }}
                   className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-[6px] border transition-all duration-300 ${
                     isSelected
                       ? "border-wahaj-rose ring-1 ring-wahaj-rose/30 scale-105"
@@ -435,24 +440,6 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
 
         {/* ─── PURCHASE ACTIONS & APPLE TRUST BADGES ─── */}
         <section className="mt-6 space-y-3">
-          {/* Subtle Compact Trust Badge Strip */}
-          <div className="flex items-center justify-around rounded-xl border border-neutral-200/50 bg-white/70 px-3 py-2 text-[11px] font-semibold text-neutral-600 backdrop-blur-xs shadow-2xs">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5 text-brand-burgundy" />
-              <span>فحص ومعاينة</span>
-            </span>
-            <span className="text-neutral-300">•</span>
-            <span className="flex items-center gap-1.5">
-              <Truck className="h-3.5 w-3.5 text-brand-burgundy" />
-              <span>توصيل سريع</span>
-            </span>
-            <span className="text-neutral-300">•</span>
-            <span className="flex items-center gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5 text-brand-burgundy" />
-              <span>استبدال واسترجاع</span>
-            </span>
-          </div>
-
           <button
             onClick={handleDirectCheckout}
             className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-full bg-brand-burgundy px-4 font-bold text-white shadow-[0_8px_24px_rgba(69,0,6,0.22)] transition-all hover:bg-brand-burgundy-deep active:scale-[0.98]"
@@ -530,41 +517,31 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           })}
         </section>
 
-        {/* ─── RELATED PRODUCTS ─── */}
+        {/* ─── RELATED PRODUCTS (Luxury Apple Grid) ─── */}
         {similarProducts.length > 0 ? (
-          <section className="mt-8">
-            <div className="mb-4">
-              <h2 className="font-thmanyah-display text-xl font-medium text-wahaj-ink">قد يعجبك أيضاً</h2>
+          <section className="mt-10 border-t border-neutral-200/60 pt-8">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h2 className="font-thmanyah-display text-xl font-bold text-[#2A1215]">قد يعجبك أيضاً</h2>
+                <p className="text-xs text-neutral-500">قطع فاخرة منتقاة بعناية تليق باختيارك</p>
+              </div>
+              <span className="rounded-full bg-wahaj-soft px-3 py-1 text-xs font-bold text-brand-burgundy">
+                {similarProducts.length} قطعة
+              </span>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {similarProducts.slice(0, 3).map((item) => (
-                <Link
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {similarProducts.map((item) => (
+                <ProductCard
                   key={item.id}
-                  href={`/product/${item.slug}`}
-                  className="group overflow-hidden rounded-[8px] border border-wahaj-border/60 bg-white/70 shadow-sm transition-shadow hover:shadow-glow"
-                >
-                  <div className="relative aspect-[4/5] overflow-hidden">
-                    <Image
-                      src={productCoverUrl(item.images, { width: 440, height: 550 }) || "/favicon.ico"}
-                      alt={item.name}
-                      fill
-                      sizes="(max-width: 640px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <p className="line-clamp-2 min-h-10 text-sm font-bold text-wahaj-ink">{item.name}</p>
-                    <p className="mt-1 font-thmanyah-text text-sm font-medium text-brand-burgundy">{formatPriceRiyal(item.price)}</p>
-                  </div>
-                </Link>
+                  product={item}
+                  onCart={addToCart}
+                />
               ))}
             </div>
           </section>
         ) : null}
       </div>
 
-
-    
       {/* ─── APPLE HIG MOBILE STICKY BUY BAR ─── */}
       {product ? (
         <div className="fixed safe-bottom inset-x-4 z-40 mx-auto max-w-md md:hidden">

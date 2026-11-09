@@ -50,7 +50,17 @@ import {
   type ManagedProduct,
   type SiteContent
 } from "@/lib/admin-local";
-import { categories, formatPrice, orders as seedOrders, products as seedProducts } from "@/lib/data";
+import { categories, formatPrice, getProductCode, orders as seedOrders, products as seedProducts } from "@/lib/data";
+
+const storeCategories = [
+  { id: "atqam", name: "أطقم" },
+  { id: "uqud", name: "عقود" },
+  { id: "asawir", name: "أساور" },
+  { id: "aqrat", name: "أقراط" },
+  { id: "khawatim", name: "خواتم" },
+  { id: "tyjan", name: "تيجان" },
+  { id: "other", name: "أخرى" }
+];
 import {
   imageUrl,
   MENU_ICON_IDS,
@@ -1202,6 +1212,7 @@ function QuickActions({ onAction }: { onAction: (tab: TabId) => void }) {
 
 type ProductFormState = {
   id?: string;
+  sku?: string;
   name: string;
   brand: string;
   price: string;
@@ -1233,11 +1244,12 @@ type ProductFormState = {
 
 function emptyProductForm(): ProductFormState {
   return {
+    sku: "",
     name: "",
     brand: "",
     price: "",
     compareAt: "",
-    category: categories[0]?.id || "sets",
+    category: storeCategories[0]?.id || "atqam",
     description: "",
     material: "زركون فاخر مع طلاء Rose Gold مقاوم للبهتان",
     stock: "10",
@@ -1630,6 +1642,7 @@ function MenuIconsManager() {
 function productToForm(product: ManagedProduct): ProductFormState {
   return {
     id: product.id,
+    sku: product.sku || getProductCode(product),
     name: product.name,
     brand: product.brand || "",
     price: product.price.toString(),
@@ -1727,6 +1740,7 @@ function ProductsManager({
     const product: ManagedProduct = {
       id: productId,
       slug,
+      sku: form.sku?.trim() || getProductCode({ id: productId }),
       name: form.name.trim(),
       brand: form.brand.trim() || undefined,
       category: form.category,
@@ -1819,9 +1833,14 @@ function ProductsManager({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="rounded-full bg-wahaj-soft px-2 py-0.5 text-[11px] font-bold text-wahaj-rose">
-                      {getCategoryName(product.category)}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="rounded-full bg-wahaj-soft px-2 py-0.5 text-[11px] font-bold text-wahaj-rose">
+                        {getCategoryName(product.category)}
+                      </span>
+                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-mono font-bold text-neutral-600">
+                        #{getProductCode(product)}
+                      </span>
+                    </div>
                     <span className={`text-[11px] font-bold ${product.stock > 0 ? "text-emerald-700" : "text-rose-600"}`}>
                       {product.stock > 0 ? `${product.stock} متوفر` : "نفد المخزون"}
                     </span>
@@ -1930,7 +1949,7 @@ function ProductsManager({
                         <img src={imageUrl(product.images[0])} alt="" className="h-full w-full object-cover" />
                       </span>
                       <div>
-                        <p className="font-bold text-wahaj-ink">{product.name}</p>
+                        <div className="flex items-center gap-2"><p className="font-bold text-wahaj-ink">{product.name}</p><span className="rounded-md bg-neutral-100 px-1.5 py-0.5 text-[10px] font-mono font-bold text-neutral-500">#{getProductCode(product)}</span></div>
                         <p className="text-xs text-wahaj-text/55">{product.tags.join("، ")}</p>
                       </div>
                     </div>
@@ -2027,14 +2046,26 @@ function ProductsManager({
       <div className="space-y-5">
         <Panel title={form.id ? "تعديل منتج" : "إضافة منتج سريع"} icon={PackagePlus}>
           <div className="space-y-3.5">
-            <div>
-              <label className="mb-1 block text-xs font-bold text-wahaj-text/70">اسم المنتج / القطعة *</label>
-              <input
-                className="AdminInput text-base font-bold"
-                value={form.name}
-                onChange={(event) => setForm({ ...form, name: event.target.value })}
-                placeholder="مثال: طقم فراشة ناعم"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2">
+              <div>
+                <label className="mb-1 block text-xs font-bold text-wahaj-text/70">اسم المنتج / القطعة *</label>
+                <input
+                  className="AdminInput text-base font-bold"
+                  value={form.name}
+                  onChange={(event) => setForm({ ...form, name: event.target.value })}
+                  placeholder="مثال: طقم فراشة ناعم"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold text-wahaj-text/70">كود القطعة</label>
+                <input
+                  className="AdminInput text-sm font-mono font-bold text-brand-burgundy text-center"
+                  value={form.sku || ""}
+                  onChange={(event) => setForm({ ...form, sku: event.target.value })}
+                  placeholder="101"
+                  maxLength={6}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -2068,7 +2099,7 @@ function ProductsManager({
                   value={form.category}
                   onChange={(event) => setForm({ ...form, category: event.target.value })}
                 >
-                  {categories.map((category) => (
+                  {storeCategories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
@@ -2143,35 +2174,11 @@ function ProductsManager({
                   />
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold text-wahaj-text/60">نهاية الخصم المؤقت</label>
-                  <input
-                    className="AdminInput text-sm"
-                    type="date"
-                    value={form.discountEndsAt}
-                    onChange={(event) => setForm({ ...form, discountEndsAt: event.target.value })}
-                  />
-                </div>
-
                 <textarea
                   className="AdminInput min-h-20 py-2.5 text-sm"
                   value={form.description}
                   onChange={(event) => setForm({ ...form, description: event.target.value })}
                   placeholder="الوصف الفاخر (اختياري - يوضع وصف أنيق تلقائياً إن ترك فارغاً)"
-                />
-
-                <input
-                  className="AdminInput text-sm"
-                  value={form.material}
-                  onChange={(event) => setForm({ ...form, material: event.target.value })}
-                  placeholder="الخامة (مثال: زركون فاخر مع طلاء Rose Gold)"
-                />
-
-                <input
-                  className="AdminInput text-sm"
-                  value={form.tags}
-                  onChange={(event) => setForm({ ...form, tags: event.target.value })}
-                  placeholder="الوسوم (مثال: وهاج، زركون، جديد)"
                 />
 
                 <div className="rounded-xl border border-wahaj-border/70 bg-white p-3">
@@ -4037,22 +4044,22 @@ function HeroCarouselManager({
                     </div>
 
                     <div className="flex items-center gap-1">
-                      <button onClick={() => handleMoveSlide(slide.id, -1)} disabled={index === 0} className="flex h-7 w-7 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose disabled:opacity-30" aria-label="تحريك لأعلى">
+                      <button onClick={() => handleMoveSlide(slide.id, -1)} disabled={index === 0} className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose disabled:opacity-30 active:scale-90" aria-label="تحريك لأعلى">
                         <ArrowUp className="h-3.5 w-3.5" />
                       </button>
-                      <button onClick={() => handleMoveSlide(slide.id, 1)} disabled={index === slides.length - 1} className="flex h-7 w-7 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose disabled:opacity-30" aria-label="تحريك لأسفل">
+                      <button onClick={() => handleMoveSlide(slide.id, 1)} disabled={index === slides.length - 1} className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose disabled:opacity-30 active:scale-90" aria-label="تحريك لأسفل">
                         <ArrowDown className="h-3.5 w-3.5" />
                       </button>
-                      <button onClick={() => handleToggleActive(slide.id)} className={`flex h-7 w-7 items-center justify-center rounded-full ${slide.isActive ? "bg-wahaj-success/18 text-wahaj-success" : "bg-wahaj-card text-wahaj-text/40"}`} aria-label="تفعيل/تعطيل">
+                      <button onClick={() => handleToggleActive(slide.id)} className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full active:scale-90 ${slide.isActive ? "bg-wahaj-success/18 text-wahaj-success" : "bg-wahaj-card text-wahaj-text/40"}`} aria-label="تفعيل/تعطيل">
                         <Eye className="h-3.5 w-3.5" />
                       </button>
-                      <button onClick={() => setPreviewSlide(slide)} className="flex h-7 w-7 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose" aria-label="معاينة">
+                      <button onClick={() => setPreviewSlide(slide)} className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose active:scale-90" aria-label="معاينة">
                         <Sparkles className="h-3.5 w-3.5" />
                       </button>
-                      <button onClick={() => { setEditingSlide(slide); setIsAdding(false); }} className="flex h-7 w-7 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose" aria-label="تعديل">
+                      <button onClick={() => { setEditingSlide(slide); setIsAdding(false); }} className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose active:scale-90" aria-label="تعديل">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
-                      <button onClick={() => handleDuplicateSlide(slide)} className="flex h-7 w-7 items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose" aria-label="تكرار">
+                      <button onClick={() => handleDuplicateSlide(slide)} className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full bg-wahaj-card text-wahaj-rose active:scale-90" aria-label="تكرار">
                         <Copy className="h-3.5 w-3.5" />
                       </button>
                       <button onClick={() => handleDeleteSlide(slide.id)} className="flex h-7 w-7 items-center justify-center rounded-full bg-red-50 text-red-500" aria-label="حذف">
