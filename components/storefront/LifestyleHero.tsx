@@ -205,7 +205,7 @@ export default function LifestyleHero({ products, onContrastChange, searchQuery 
           value={searchQuery}
           onChange={(e) => onSearchChange?.(e.target.value)}
           className="h-full min-w-0 flex-1 bg-transparent text-sm font-medium text-[#2A1215] outline-none placeholder-[#2A1215]/45"
-          placeholder="ابحثي عن زركون، تاج، طقم..."
+          placeholder="ابحثي بالاسم، التصنيف، أو كود القطعة (#105)..."
           dir="rtl"
           aria-label="ابحثي في متجر وهاج"
         />

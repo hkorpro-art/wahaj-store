@@ -72,14 +72,27 @@ export default function WahajStorefront({
   const [heroContrasts, setHeroContrasts] = useState<ElementContrasts>({ logo: "dark", menu: "dark", cart: "dark", search: "dark" });
 
   const filteredProducts = useMemo(() => {
-    return storeProducts.filter((product) => {
-      const matchesVisibility = product.visible !== false;
-      const matchesQuery =
-        query.trim().length === 0 ||
-        product.name.includes(query.trim()) ||
-        product.tags.some((tag) => tag.includes(query.trim()));
+    const cleanQuery = query.trim().toLowerCase();
+    const queryDigits = cleanQuery.replace(/[^\d]/g, "");
 
-      return matchesVisibility && matchesQuery;
+    return storeProducts.filter((product) => {
+      if (product.visible === false) return false;
+      if (cleanQuery.length === 0) return true;
+
+      const code = getProductCode(product);
+      const matchesName = product.name.toLowerCase().includes(cleanQuery);
+      const matchesTags = product.tags.some((tag) => tag.toLowerCase().includes(cleanQuery));
+      const matchesCode =
+        code === cleanQuery ||
+        `#${code}` === cleanQuery ||
+        (queryDigits.length >= 2 && code.includes(queryDigits)) ||
+        Boolean(product.sku && (
+          product.sku.toLowerCase() === cleanQuery ||
+          `#${product.sku.toLowerCase()}` === cleanQuery ||
+          (queryDigits.length >= 2 && product.sku.includes(queryDigits))
+        ));
+
+      return matchesName || matchesTags || matchesCode;
     });
   }, [storeProducts, query]);
 

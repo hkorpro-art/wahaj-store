@@ -20,6 +20,11 @@ export function rowToManagedProduct(row: ProductRow): ManagedProduct | null {
   }
 
   const stock = numberValue(row.stock, 0);
+  const rawTags = arrayValue(row.tags);
+  const skuTag = rawTags.find((t) => t.startsWith("sku:") || /^#\d{3,4}$/.test(t));
+  const rawSku = stringValue(row.sku);
+  const sku = rawSku || (skuTag ? skuTag.replace(/^sku:/, "").replace(/^#/, "") : undefined);
+  const cleanTags = rawTags.filter((t) => !t.startsWith("sku:") && !/^#\d{3,4}$/.test(t));
 
   return {
     id,
@@ -40,7 +45,8 @@ export function rowToManagedProduct(row: ProductRow): ManagedProduct | null {
     inventoryStatus: (stringValue(row.inventory_status ?? row.inventoryStatus) || inventoryFromStock(stock)) as ManagedProduct["inventoryStatus"],
     description: stringValue(row.description),
     material: stringValue(row.material),
-    tags: arrayValue(row.tags),
+    tags: cleanTags,
+    sku,
     views: numberValue(row.views, 0),
     sold: numberValue(row.sold, 0),
     visible: booleanValue(row.visible, true),
@@ -85,7 +91,10 @@ export function productToRow(product: ManagedProduct) {
     inventory_status: product.inventoryStatus,
     description: product.description,
     material: product.material,
-    tags: product.tags,
+    tags: [
+      ...(product.tags || []).filter((t) => !t.startsWith("sku:") && !/^#\d{3,4}$/.test(t)),
+      ...(product.sku ? [`sku:${product.sku.trim()}`] : [])
+    ],
     views: product.views,
     sold: product.sold,
     visible: product.visible !== false,
