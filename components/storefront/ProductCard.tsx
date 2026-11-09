@@ -37,7 +37,7 @@ export function ProductCard({ product, priority, loading, onCart }: ProductCardP
     >
       <div>
         <div className="relative">
-          <Link href={productHref} className="relative block aspect-[3/4] overflow-hidden bg-wahaj-card">
+          <Link href={productHref} scroll={true} className="relative block aspect-[3/4] overflow-hidden bg-wahaj-card">
             <Image
               src={imageUrl(product.images[0], { width: 640, height: 853 })}
               alt={product.name}
@@ -49,7 +49,7 @@ export function ProductCard({ product, priority, loading, onCart }: ProductCardP
             />
             <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 via-black/10 to-transparent" />
           </Link>
-          <div className="absolute right-2.5 top-2.5 flex flex-wrap gap-1.5">
+          <div className="pointer-events-none absolute right-2.5 top-2.5 flex flex-wrap gap-1.5">
             {product.badges.slice(0, 2).map((badge) => (
               <span
                 key={badge}
@@ -62,20 +62,20 @@ export function ProductCard({ product, priority, loading, onCart }: ProductCardP
         </div>
 
         <div className="p-3.5">
-          <Link href={productHref}>
+          <Link href={productHref} scroll={true} className="block">
             <h3 className="line-clamp-2 text-sm font-bold leading-snug text-wahaj-ink transition-colors duration-200 group-hover:text-brand-burgundy">
               {product.name}
             </h3>
           </Link>
           <div className="mt-2.5 flex flex-wrap items-baseline gap-1.5">
-            <span className="font-thmanyah-display text-base sm:text-lg font-extrabold text-brand-burgundy tracking-tight">
+            <span className="font-sans font-black text-lg sm:text-xl text-[#450006] tracking-tight tabular-nums">
               {new Intl.NumberFormat("en-US").format(product.price)}
             </span>
-            <span className="text-xs font-bold text-brand-burgundy/85">
+            <span className="text-xs font-black text-[#450006]/85">
               ريال
             </span>
             {product.compareAt ? (
-              <span className="mr-1 text-xs font-medium text-neutral-400 line-through">
+              <span className="mr-1 text-xs font-semibold text-neutral-400 line-through tabular-nums">
                 {new Intl.NumberFormat("en-US").format(product.compareAt)} ريال
               </span>
             ) : null}
@@ -83,7 +83,7 @@ export function ProductCard({ product, priority, loading, onCart }: ProductCardP
         </div>
       </div>
 
-      <div className="px-3.5 pb-3.5 pt-0">
+      <div className="relative z-10 px-3.5 pb-3.5 pt-0">
         <motion.button
           onClick={handleAdd}
           className={`flex min-h-[42px] w-full items-center justify-center gap-1.5 rounded-full px-3 text-xs font-bold transition-all duration-300 active:scale-[0.96] shadow-sm ${

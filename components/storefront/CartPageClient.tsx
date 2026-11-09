@@ -274,7 +274,7 @@ export default function CartPageClient() {
                   <p className="line-clamp-2 text-sm font-bold leading-snug text-[#2A1215]">
                     {item.product.name}
                   </p>
-                  <p className="mt-1 font-thmanyah-text text-sm font-bold text-brand-burgundy">
+                  <p className="mt-1 font-sans text-sm font-black text-[#450006] tabular-nums">
                     {formatPrice(item.product.price)}
                   </p>
                 </div>
@@ -326,12 +326,12 @@ export default function CartPageClient() {
           <div className="space-y-2.5 text-sm">
             <div className="flex justify-between">
               <span className="text-neutral-500">المجموع الفرعي</span>
-              <span className="font-semibold text-[#2A1215]">{formatPrice(subtotal)}</span>
+              <span className="font-sans font-bold text-[#2A1215] tabular-nums">{formatPrice(subtotal)}</span>
             </div>
             {discount > 0 ? (
               <div className="flex justify-between">
                 <span className="text-neutral-500">الخصم</span>
-                <span className="font-semibold text-emerald-700">-{formatPrice(discount)}</span>
+                <span className="font-sans font-bold text-emerald-700 tabular-nums">-{formatPrice(discount)}</span>
               </div>
             ) : null}
             <div className="flex justify-between">
@@ -344,7 +344,7 @@ export default function CartPageClient() {
                   <span className="block text-sm font-bold text-[#2A1215]">الإجمالي النهائي</span>
                   <span className="text-[11px] text-neutral-400">شامل المعاينة والتغليف</span>
                 </div>
-                <span className="font-thmanyah-display text-2xl font-bold text-brand-burgundy">
+                <span className="font-sans text-2xl font-black text-[#450006] tracking-tight tabular-nums">
                   {formatPrice(finalTotal)}
                 </span>
               </div>

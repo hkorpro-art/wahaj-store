@@ -186,6 +186,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         />
       ) : null}
       <ProductDetailClient
+        key={slug}
         slug={slug}
         initialProduct={initialProduct}
         initialSimilarProducts={initialSimilarProducts}

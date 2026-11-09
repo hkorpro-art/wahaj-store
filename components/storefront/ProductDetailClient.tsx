@@ -109,6 +109,24 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
   }, []);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [slug]);
+
+  useEffect(() => {
+    if (initialProduct) {
+      setProduct({
+        ...initialProduct,
+        images: normalizeProductImages(initialProduct.images)
+      });
+      setSimilarProducts(initialSimilarProducts);
+      setColor(initialProduct.colors[0] ?? "");
+      setSize(initialProduct.sizes[0] ?? "");
+      setSelectedImageIndex(0);
+      setHasInteracted(false);
+    }
+  }, [slug, initialProduct, initialSimilarProducts]);
+
+  useEffect(() => {
     if (!product) {
       return;
     }
@@ -198,35 +216,7 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
             العودة إلى المتجر
           </Link>
         </div>
-            {/* ─── APPLE HIG MOBILE STICKY BUY BAR ─── */}
-      {product ? (
-        <div className="fixed safe-bottom inset-x-4 z-40 mx-auto max-w-md md:hidden">
-          <div className="flex items-center justify-between gap-3 rounded-full liquid-glass-pill px-4 py-2 shadow-[0_16px_40px_rgba(45,0,4,0.14)]">
-            <div className="min-w-0 flex-1 pr-1 text-right">
-              <p className="truncate text-xs font-bold text-wahaj-ink">{product.name}</p>
-              <p className="font-thmanyah-text text-sm font-extrabold text-brand-burgundy">{formatPriceRiyal(product.price)}</p>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={addTouch}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-wahaj-soft text-brand-burgundy transition-transform active:scale-90"
-                aria-label="أضيفي للسلة"
-              >
-                <ShoppingBag className="h-4 w-4" />
-              </button>
-              <button
-                onClick={handleDirectCheckout}
-                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-full bg-brand-burgundy px-5 text-xs font-bold text-white shadow-sm transition-transform active:scale-95"
-              >
-                <Sparkles className="h-4 w-4 text-brand-champagne" />
-                <span>اطلبي الآن</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-    </main>
+      </main>
     );
   }
 
@@ -352,13 +342,20 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
               {product.name}
             </h1>
             <div className="shrink-0 text-left">
-              <p className="font-thmanyah-display text-2xl font-semibold leading-none text-[#5A222A]">
-                {formatPriceRiyal(product.price)}
-              </p>
+              <div className="flex items-baseline justify-end gap-1.5">
+                <span className="font-sans font-black text-3xl sm:text-4xl text-[#450006] tracking-tight tabular-nums">
+                  {new Intl.NumberFormat("en-US").format(product.price)}
+                </span>
+                <span className="text-sm sm:text-base font-black text-[#7A1D28]">
+                  ريال
+                </span>
+              </div>
               {product.compareAt ? (
-                <p className="mt-1 text-sm font-medium leading-none text-[#A15C64]/60 line-through">
-                  {formatPriceRiyal(product.compareAt)}
-                </p>
+                <div className="mt-1 flex items-baseline justify-end gap-1">
+                  <span className="text-sm sm:text-base font-semibold text-neutral-400 line-through tabular-nums">
+                    {new Intl.NumberFormat("en-US").format(product.compareAt)} ريال
+                  </span>
+                </div>
               ) : null}
             </div>
           </div>
@@ -548,7 +545,9 @@ export default function ProductDetailClient({ slug, initialProduct, initialSimil
           <div className="flex items-center justify-between gap-3 rounded-full liquid-glass-pill px-4 py-2 shadow-[0_16px_40px_rgba(45,0,4,0.14)]">
             <div className="min-w-0 flex-1 pr-1 text-right">
               <p className="truncate text-xs font-bold text-wahaj-ink">{product.name}</p>
-              <p className="font-thmanyah-text text-sm font-extrabold text-brand-burgundy">{formatPriceRiyal(product.price)}</p>
+              <p className="font-sans text-sm font-black text-[#450006] tracking-tight tabular-nums">
+                {new Intl.NumberFormat("en-US").format(product.price)} <span className="text-xs font-black text-[#7A1D28]">ريال</span>
+              </p>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
